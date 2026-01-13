@@ -1,0 +1,6 @@
+[package]
+name = "build-your-own-nn"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]

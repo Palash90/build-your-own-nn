@@ -8,8 +8,10 @@ fn main() -> Result<(), TensorError> {
         vec![3, 3],
     )?;
 
-    println!("{}", a);
+    let c = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![4])?;
 
+    println!("{}", a);
     println!("{}", b);
+    println!("{}", c);
     Ok(())
 }

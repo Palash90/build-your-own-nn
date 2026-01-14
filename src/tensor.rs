@@ -12,7 +12,9 @@ impl Error for TensorError {}
 impl std::fmt::Display for TensorError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            TensorError::ShapeMismatch => write!(f, "Tensor shapes do not match for the operation."),
+            TensorError::ShapeMismatch => {
+                write!(f, "Tensor shapes do not match for the operation.")
+            }
             TensorError::InvalidRank => write!(f, "Tensor rank is invalid (must be 1D or 2D)."),
             TensorError::InconsistentData => write!(f, "Data length does not match tensor shape."),
         }
@@ -122,5 +124,43 @@ impl Tensor {
         }
 
         Tensor::new(transposed_data, vec![cols, rows])
+    }
+
+    pub fn matmul_naive(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        let (a_rows, a_cols) = match self.shape.len() {
+            1 => (1, self.shape[0]),
+            2 => (self.shape[0], self.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        let (b_rows, b_cols) = match other.shape.len() {
+            1 => (other.shape[0], 1),
+            2 => (other.shape[0], other.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        if a_cols != b_rows {
+            return Err(TensorError::ShapeMismatch);
+        }
+
+        let mut result_data = vec![0.0; a_rows * b_cols];
+
+        for i in 0..a_rows {
+            for j in 0..b_cols {
+                for k in 0..a_cols {
+                    result_data[i * b_cols + j] +=
+                        self.data[i * a_cols + k] * other.data[k * b_cols + j];
+                }
+            }
+        }
+
+        let out_shape = match (self.shape.len(), other.shape.len()) {
+            (1, 1) => vec![1],
+            (1, 2) => vec![b_cols],
+            (2, 1) => vec![a_rows],
+            _ => vec![a_rows, b_cols],
+        };
+
+        Tensor::new(result_data, out_shape)
     }
 }

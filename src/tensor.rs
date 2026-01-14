@@ -115,9 +115,9 @@ impl Tensor {
         let cols = self.shape[1];
         let mut transposed_data = vec![0.0; self.data.len()];
 
-        for r in 0..rows {
-            for c in 0..cols {
-                transposed_data[c * rows + r] = self.data[r * cols + c];
+        for row in 0..rows {
+            for col in 0..cols {
+                transposed_data[col * rows + row] = self.data[row * cols + col];
             }
         }
 

@@ -1,3 +1,25 @@
+use std::error::Error;
+
+#[derive(Debug, PartialEq)]
+pub enum TensorError {
+    ShapeMismatch,
+    InvalidRank,
+    InconsistentData,
+}
+
+impl Error for TensorError {}
+
+impl std::fmt::Display for TensorError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TensorError::ShapeMismatch => write!(f, "Tensor shapes do not match for the operation."),
+            TensorError::InvalidRank => write!(f, "Tensor rank is invalid (must be 1D or 2D)."),
+            TensorError::InconsistentData => write!(f, "Data length does not match tensor shape."),
+        }
+    }
+}
+
+#[derive(Debug, PartialEq)]
 pub struct Tensor {
     data: Vec<f32>,
     shape: Vec<usize>,
@@ -30,9 +52,13 @@ impl std::fmt::Display for Tensor {
 }
 
 impl Tensor {
-    pub fn _element_wise_op(&self, other: &Tensor, op: fn(f32, f32) -> f32) -> Tensor {
+    fn _element_wise_op(
+        &self,
+        other: &Tensor,
+        op: fn(f32, f32) -> f32,
+    ) -> Result<Tensor, TensorError> {
         if self.shape != other.shape {
-            panic!("Shapes do not match for element-wise operation");
+            return Err(TensorError::ShapeMismatch);
         }
 
         let data: Vec<f32> = self
@@ -45,15 +71,15 @@ impl Tensor {
         Tensor::new(data, self.shape.clone())
     }
 
-    pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Self {
+    pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Result<Tensor, TensorError> {
         if shape.len() == 0 || shape.len() > 2 {
-            panic!("Only 1D and 2D tensors are supported");
+            return Err(TensorError::InvalidRank);
         }
 
         if data.len() != shape.iter().product::<usize>() {
-            panic!("Data length does not match shape");
+            return Err(TensorError::InconsistentData);
         }
-        Tensor { data, shape }
+        Ok(Tensor { data, shape })
     }
 
     pub fn data(&self) -> &[f32] {
@@ -64,15 +90,37 @@ impl Tensor {
         &self.shape
     }
 
-    pub fn add(&self, other: &Tensor) -> Tensor {
+    pub fn add(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a + b)
     }
 
-    pub fn sub(&self, other: &Tensor) -> Tensor {
+    pub fn sub(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a - b)
     }
 
-    pub fn mul(&self, other: &Tensor) -> Tensor {
+    pub fn mul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a * b)
+    }
+
+    pub fn transpose(&self) -> Result<Tensor, TensorError> {
+        if self.shape.len() != 1 && self.shape.len() != 2 {
+            return Err(TensorError::InvalidRank);
+        }
+
+        if self.shape.len() == 1 {
+            return Tensor::new(self.data.clone(), self.shape.clone());
+        }
+
+        let rows = self.shape[0];
+        let cols = self.shape[1];
+        let mut transposed_data = vec![0.0; self.data.len()];
+
+        for r in 0..rows {
+            for c in 0..cols {
+                transposed_data[c * rows + r] = self.data[r * cols + c];
+            }
+        }
+
+        Tensor::new(transposed_data, vec![cols, rows])
     }
 }

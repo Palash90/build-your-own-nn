@@ -163,4 +163,48 @@ impl Tensor {
 
         Tensor::new(result_data, out_shape)
     }
+
+    pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        let (a_rows, a_cols) = match self.shape.len() {
+            1 => (1, self.shape[0]),
+            2 => (self.shape[0], self.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        let (b_rows, b_cols) = match other.shape.len() {
+            1 => (other.shape[0], 1),
+            2 => (other.shape[0], other.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        if a_cols != b_rows {
+            return Err(TensorError::ShapeMismatch);
+        }
+
+        let mut data = vec![0.0; a_rows * b_cols];
+
+        for i in 0..a_rows {
+            let out_row_offset = i * b_cols;
+
+            for k in 0..a_cols {
+                let aik = self.data[i * a_cols + k];
+                let rhs_row_offset = k * b_cols;
+                let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
+                let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
+
+                for j in 0..b_cols {
+                    out_slice[j] = out_slice[j] + aik * rhs_slice[j];
+                }
+            }
+        }
+
+        let out_shape = match (self.shape.len(), other.shape.len()) {
+            (1, 1) => vec![1],
+            (1, 2) => vec![b_cols],
+            (2, 1) => vec![a_rows],
+            _ => vec![a_rows, b_cols],
+        };
+
+        Ok(Tensor { data, shape: out_shape })
+    }
 }

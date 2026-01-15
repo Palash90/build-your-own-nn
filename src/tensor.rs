@@ -205,6 +205,52 @@ impl Tensor {
             _ => vec![a_rows, b_cols],
         };
 
-        Ok(Tensor { data, shape: out_shape })
+        Ok(Tensor {
+            data,
+            shape: out_shape,
+        })
+    }
+
+    pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
+        match axis {
+            None => {
+                let sum: f32 = self.data.iter().sum();
+                Tensor::new(vec![sum], vec![1])
+            }
+
+            Some(0) => {
+                if self.shape.len() < 2 {
+                    return self.sum(None);
+                }
+                let rows = self.shape[0];
+                let cols = self.shape[1];
+                let mut result_data = vec![0.0; cols];
+
+                for r in 0..rows {
+                    for c in 0..cols {
+                        result_data[c] += self.data[r * cols + c];
+                    }
+                }
+                Tensor::new(result_data, vec![cols])
+            }
+
+            Some(1) => {
+                if self.shape.len() < 2 {
+                    return self.sum(None);
+                }
+                let rows = self.shape[0];
+                let cols = self.shape[1];
+                let mut result_data = vec![0.0; rows];
+
+                for r in 0..rows {
+                    for c in 0..cols {
+                        result_data[r] += self.data[r * cols + c];
+                    }
+                }
+                Tensor::new(result_data, vec![rows])
+            }
+
+            _ => Err(TensorError::InvalidRank),
+        }
     }
 }

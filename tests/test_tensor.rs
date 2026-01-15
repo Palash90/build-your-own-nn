@@ -107,7 +107,7 @@ mod tests {
         let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
         let b = Tensor::new(vec![5.0, 6.0, 7.0, 8.0], vec![2, 2])?;
         let c = a.matmul_naive(&b)?;
-        let c1 = a.matmul(&b)?;  
+        let c1 = a.matmul(&b)?;
         assert_eq!(c.data(), &[19.0, 22.0, 43.0, 50.0]);
         assert_eq!(c.shape(), &[2, 2]);
         assert_eq!(c.data(), c1.data());
@@ -126,7 +126,10 @@ mod tests {
         let h = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
         let i = g.matmul_naive(&h)?;
         let i1 = g.matmul(&h)?;
-        assert_eq!(i.data(), &[4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 12.0, 15.0, 18.0]);
+        assert_eq!(
+            i.data(),
+            &[4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 12.0, 15.0, 18.0]
+        );
         assert_eq!(i.shape(), &[3, 3]);
         assert_eq!(i.data(), i1.data());
         assert_eq!(i.shape(), i1.shape());
@@ -170,4 +173,54 @@ mod tests {
         Ok(())
     }
 
+    fn setup_matrix_for_reduction() -> Tensor {
+        let data = vec![
+            1000.0, 2000.0, 3000.0, 1200.0, 1800.0, 2000.0, 1500.0, 2500.0, 2200.0,
+        ];
+        Tensor::new(data, vec![3, 3]).expect("Failed to create matrix for reduction tests")
+    }
+
+    #[test]
+    fn test_reduce_sum_global() {
+        let tensor = setup_matrix_for_reduction();
+        let res = tensor.sum(None).unwrap();
+
+        assert_eq!(res.data(), &[17200.0]);
+        assert_eq!(res.shape(), &[1]);
+    }
+
+    #[test]
+    fn test_reduce_sum_axis_0_brand_total() {
+        let tensor = setup_matrix_for_reduction();
+        let res = tensor.sum(Some(0)).unwrap();
+
+        assert_eq!(res.data(), &[3700.0, 6300.0, 7200.0]);
+        assert_eq!(res.shape(), &[3]);
+    }
+
+    #[test]
+    fn test_reduce_sum_axis_1_monthly_total() {
+        let tensor = setup_matrix_for_reduction();
+        let res = tensor.sum(Some(1)).unwrap();
+
+        assert_eq!(res.data(), &[6000.0, 5000.0, 6200.0]);
+        assert_eq!(res.shape(), &[3]);
+    }
+
+    #[test]
+    fn test_reduce_sum_1d_tensor() {
+        let tensor = Tensor::new(vec![1.0, 2.0, 3.0], vec![3]).unwrap();
+        let res = tensor.sum(Some(0)).unwrap();
+
+        assert_eq!(res.data(), &[6.0]);
+        assert_eq!(res.shape(), &[1]);
+    }
+
+    #[test]
+    fn test_reduce_sum_invalid_axis() {
+        let tensor = setup_matrix_for_reduction();
+        let res = tensor.sum(Some(2));
+
+        assert_eq!(res.err(), Some(TensorError::InvalidRank));
+    }
 }

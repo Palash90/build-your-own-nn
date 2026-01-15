@@ -223,4 +223,12 @@ mod tests {
 
         assert_eq!(res.err(), Some(TensorError::InvalidRank));
     }
+
+    #[test]
+    fn test_reduce_sum_empty() {
+        let tensor = Tensor::new(vec![], vec![0]).unwrap();
+        let res = tensor.sum(Some(2));
+
+        assert_eq!(res.err(), Some(TensorError::InvalidRank));
+    }
 }

@@ -32,7 +32,7 @@ body {
     body { margin-left: 0 !important; }
 }
 
-h1, h2, h3, h4, h5, strong { color: #f0f6fc !important; }
+h1, h2, h3, h4, h5, strong { color: #5295d8 !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
 </style>
 <style>
@@ -40,7 +40,7 @@ a { color: var(--link-color) !important; text-decoration: none; }
     position: fixed;
     top: 50px;
     left: 20px;
-    width: var(--toc-width);
+    width: 20vw;
     max-height: 80vh;
     overflow-y: auto;
     font-size: 0.85em;

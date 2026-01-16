@@ -3,6 +3,26 @@ layout: default
 ---
 
 <style>
+/* VS Code Dark+ Colors for Code Blocks */
+.highlight {
+    background: #1e1e1e !important; /* VS Code dark background */
+    color: #d4d4d4;
+    padding: 16px;
+    border-radius: 8px;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
+    line-height: 1.5;
+}
+
+/* Syntax Highlighting overrides */
+.highlight .k { color: #569cd6; } /* Keywords (fn, let, impl) */
+.highlight .nc { color: #4ec9b0; } /* Class/Type names (Tensor, Result) */
+.highlight .nf { color: #dcdcaa; } /* Function names */
+.highlight .s { color: #ce9178; }  /* Strings */
+.highlight .mi { color: #b5cea8; } /* Numbers */
+.highlight .nb { color: #4ec9b0; } /* Built-ins */
+.highlight .c1 { color: #6a9955; font-style: italic; } /* Comments */
+.highlight .kt { color: #4ec9b0; } /* Primitive types (f32, usize) */
+.highlight .p { color: #d4d4d4; }  /* Punctuation */
 /* 1. Define Color Variables */
 :root {
     --bg-color: #ffffff;

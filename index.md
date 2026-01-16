@@ -3,26 +3,36 @@ layout: default
 ---
 
 <style>
-/* VS Code Dark+ Colors for Code Blocks */
-.highlight {
-    background: #1e1e1e !important; /* VS Code dark background */
-    color: #d4d4d4;
-    padding: 16px;
-    border-radius: 8px;
-    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
-    line-height: 1.5;
+/* VS Code Dark+ Colors */
+:root {
+    --vscode-bg: #1e1e1e;
+    --vscode-text: #d4d4d4;
 }
 
-/* Syntax Highlighting overrides */
-.highlight .k { color: #569cd6; } /* Keywords (fn, let, impl) */
-.highlight .nc { color: #4ec9b0; } /* Class/Type names (Tensor, Result) */
-.highlight .nf { color: #dcdcaa; } /* Function names */
-.highlight .s { color: #ce9178; }  /* Strings */
-.highlight .mi { color: #b5cea8; } /* Numbers */
-.highlight .nb { color: #4ec9b0; } /* Built-ins */
-.highlight .c1 { color: #6a9955; font-style: italic; } /* Comments */
-.highlight .kt { color: #4ec9b0; } /* Primitive types (f32, usize) */
-.highlight .p { color: #d4d4d4; }  /* Punctuation */
+/* 1. Target the outer container and the inner pre tag */
+.highlight, 
+pre.highlight,
+.language-rust.highlighter-rouge .highlight {
+    background-color: var(--vscode-bg) !important;
+    color: var(--vscode-text) !important;
+    padding: 16px;
+    border-radius: 8px;
+    border: 1px solid #333; /* Subtle border like VS Code */
+    overflow-x: auto;
+}
+
+/* 2. Remove any background from individual spans (the gray bars) */
+.highlight span {
+    background-color: transparent !important;
+}
+
+/* 3. Syntax Highlighting Overrides */
+.highlight .k { color: #569cd6 !important; } /* Keywords */
+.highlight .nc { color: #4ec9b0 !important; } /* Types */
+.highlight .nf { color: #dcdcaa !important; } /* Functions */
+.highlight .s { color: #ce9178 !important; }  /* Strings */
+.highlight .mi { color: #b5cea8 !important; } /* Numbers */
+.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
 /* 1. Define Color Variables */
 :root {
     --bg-color: #ffffff;

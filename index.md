@@ -82,46 +82,34 @@ a { color: var(--link-color) !important; text-decoration: none; }
 
 /* Mobile Breadcrumb Style */
 @media screen and (max-width: 1011px) {
+    /* Reset the TOC container */
     #markdown-toc {
         display: block !important;
-        background: #161b22;
-        border: 1px solid var(--border-color);
+        padding: 20px !important;
+        background: #161b22 !important;
+        border: 1px solid #30363d !important;
         border-radius: 8px;
-        padding: 15px !important;
-        margin: 20px 0 !important;
-        list-style: none !important;
+        list-style-type: none !important;
     }
 
-    /* Keep top-level items bold */
-    #markdown-toc > li {
-        font-weight: bold;
-        margin-bottom: 10px;
-        color: #58a6ff;
+    /* Indent levels naturally */
+    #markdown-toc ul { 
+        list-style-type: none !important;
+        padding-left: 20px !important; 
+        margin: 5px 0 !important;
     }
 
-    /* Hide deep nested levels (3 and 4) on mobile to save space */
-    #markdown-toc ul ul {
-        display: none !important;
-    }
-
-    /* Style the sub-items (Level 2) */
-    #markdown-toc ul {
-        display: block !important;
-        list-style: none !important;
-        padding-left: 15px !important;
-        font-weight: normal;
-    }
-
+    /* Style the links */
     #markdown-toc li a {
-        display: block;
-        padding: 5px 0;
+        display: inline-block;
+        padding: 4px 0;
+        color: #8b949e !important;
         text-decoration: none;
         font-size: 14px;
-        border-bottom: 1px solid rgba(48, 54, 61, 0.5);
     }
-    
-    /* Remove slash separators if they are hardcoded in your CSS */
-    #markdown-toc li::after {
+
+    /* Remove those slashes (/) */
+    #markdown-toc li::after, #markdown-toc li::before {
         content: "" !important;
     }
 }

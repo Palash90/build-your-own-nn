@@ -59,7 +59,7 @@ a { color: var(--link-color) !important; text-decoration: none; }
 
 #markdown-toc li {
     background: #161b22 !important;
-    border: 1px solid #30363d !important;
+    border: 0px solid #30363d !important;
     padding: 4px 12px !important;
     border-radius: 2px !important;
     transition: all 0.2s ease !important;

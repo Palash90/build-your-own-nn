@@ -306,21 +306,23 @@ document.querySelectorAll('blockquote').forEach(bq => {
 </script>
 
 <script>
-document.querySelectorAll('.highlight').forEach((codeBlock) => {
-    // Create the button
+<script>
+document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
+    // 1. Ensure the parent container is relative so the button sticks to it
+    codeBlock.style.position = 'relative';
+
+    // 2. Create the button
     const button = document.createElement('button');
     button.className = 'copy-btn';
     button.type = 'button';
     button.innerText = 'Copy';
 
-    // Add click event
+    // 3. Logic to grab ONLY the text inside this specific block
     button.addEventListener('click', () => {
-        const code = codeBlock.querySelector('code').innerText;
+        const code = codeBlock.innerText.replace('Copy', '').trim();
         navigator.clipboard.writeText(code).then(() => {
             button.innerText = 'Copied!';
             button.classList.add('copied');
-
-            // Reset after 2 seconds
             setTimeout(() => {
                 button.innerText = 'Copy';
                 button.classList.remove('copied');
@@ -330,6 +332,7 @@ document.querySelectorAll('.highlight').forEach((codeBlock) => {
 
     codeBlock.appendChild(button);
 });
+</script>
 </script>
 
 <section style="margin-top: 50px; border-top: 1px solid var(--border-color); padding-top: 20px;">

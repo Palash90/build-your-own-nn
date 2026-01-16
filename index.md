@@ -246,6 +246,20 @@ blockquote strong::before {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<script>
+document.querySelectorAll('blockquote').forEach(bq => {
+  const text = bq.innerText.toUpperCase();
+  if (text.includes('NOTE')) {
+    bq.style.backgroundColor = 'rgba(56, 139, 253, 0.1)';
+    bq.style.borderLeftColor = '#1f6feb';
+    bq.querySelector('strong').style.color = '#58a6ff';
+  } else if (text.includes('TIP')) {
+    bq.style.backgroundColor = 'rgba(63, 185, 80, 0.1)';
+    bq.style.borderLeftColor = '#238636';
+    bq.querySelector('strong').style.color = '#3fb950';
+  }
+});
+</script>
 
 * TOC
 {:toc}

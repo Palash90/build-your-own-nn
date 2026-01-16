@@ -597,7 +597,7 @@ With this mathematical background, we can now understand what transpose operatio
 
 To implement transpose, we have to physically move our numbers into a new Vec. While some advanced libraries just change the "metadata" (using something called strides), we are going to actually rebuild the data. This keeps our memory "contiguous," which makes our other operations faster because the CPU can predict where the next number is.
 
-##### The Logic:
+**The Logic:**
 
 1. Check the Rank: We only support transposing 1D or 2D tensors.
 

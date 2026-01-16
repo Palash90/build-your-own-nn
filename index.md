@@ -133,6 +133,20 @@ blockquote {
 .highlight .nd { color: #c586c0 !important; } /* Macros and Attributes #[...] */
 </style>
 
+<style>
+    .giscus {
+    max-width: 800px;
+    margin-top: 40px;
+    /* On desktop, this ensures it aligns with your pushed-right content */
+}
+
+@media screen and (min-width: 1012px) {
+    .giscus-frame {
+        margin-left: 0; 
+    }
+}
+</style>
+
 <script>
   <script>
   window.MathJax = {
@@ -166,3 +180,21 @@ blockquote {
 {:toc: .toc-list levels="1..4"}
 
 {% include_relative README.md %}
+
+<section style="margin-top: 50px; border-top: 1px solid var(--border-color); padding-top: 20px;">
+  <script src="https://giscus.app/client.js"
+        data-repo="palash90/build-your-own-nn"
+        data-repo-id="R_kgDOQ42YxA"
+        data-category="[ENTER CATEGORY NAME HERE]"
+        data-category-id="[ENTER CATEGORY ID HERE]"
+        data-mapping="pathname"
+        data-strict="0"
+        data-reactions-enabled="1"
+        data-emit-metadata="0"
+        data-input-position="bottom"
+        data-theme="preferred_color_scheme"
+        data-lang="en"
+        crossorigin="anonymous"
+        async>
+</script>
+</section>

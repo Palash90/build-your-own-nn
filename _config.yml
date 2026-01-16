@@ -1,11 +1,4 @@
-lsi: false
-safe: true
-source: /
-incremental: false
-highlighter: rouge
-gist:
-  noscript: false
-markdown: GFM
-kramdown:
-  math_engine: mathjax
-  syntax_highlighter: rouge
+title: My Project Documentation
+theme: jekyll-theme-primer
+description: Math and Code heavy README
+remote_theme: pages-themes/primer@v0.2.0

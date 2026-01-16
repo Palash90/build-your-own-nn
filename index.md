@@ -83,22 +83,47 @@ a { color: var(--link-color) !important; text-decoration: none; }
 /* Mobile Breadcrumb Style */
 @media screen and (max-width: 1011px) {
     #markdown-toc {
-        position: relative;
-        width: auto;
-        left: 0;
-        top: 0;
-        display: flex; /* Makes it horizontal */
-        flex-wrap: wrap;
-        gap: 10px;
-        padding: 10px;
-        border-left: none;
-        border-bottom: 1px solid var(--border-color);
-        margin-bottom: 20px;
-        background: transparent;
+        display: block !important;
+        background: #161b22;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px !important;
+        margin: 20px 0 !important;
+        list-style: none !important;
     }
-    #markdown-toc li { display: inline; }
-    #markdown-toc li::after { content: " / "; margin-left: 10px; color: #666; }
-    #markdown-toc li:last-child::after { content: ""; }
+
+    /* Keep top-level items bold */
+    #markdown-toc > li {
+        font-weight: bold;
+        margin-bottom: 10px;
+        color: #58a6ff;
+    }
+
+    /* Hide deep nested levels (3 and 4) on mobile to save space */
+    #markdown-toc ul ul {
+        display: none !important;
+    }
+
+    /* Style the sub-items (Level 2) */
+    #markdown-toc ul {
+        display: block !important;
+        list-style: none !important;
+        padding-left: 15px !important;
+        font-weight: normal;
+    }
+
+    #markdown-toc li a {
+        display: block;
+        padding: 5px 0;
+        text-decoration: none;
+        font-size: 14px;
+        border-bottom: 1px solid rgba(48, 54, 61, 0.5);
+    }
+    
+    /* Remove slash separators if they are hardcoded in your CSS */
+    #markdown-toc li::after {
+        content: "" !important;
+    }
 }
 
 /* Hide only level 5 and deeper in the TOC */

@@ -32,10 +32,64 @@ body {
     body { margin-left: 0 !important; }
 }
 
-h1, h2, h3, h4, h5, strong { color: #5295d8 !important; }
+h1, h2, h3, h4, h5, strong { color: #51cbdb !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
 </style>
 <style>
+/* --- 2. Navigation & Alerts --- */
+#markdown-toc {
+    position: fixed;
+    top: 50px;
+    left: 20px;
+    width: var(--toc-width);
+    max-height: 80vh;
+    overflow-y: auto;
+    font-size: 0.85em;
+    list-style-type: none;
+    padding: 15px;
+    border-left: 2px solid var(--border-color);
+    background: var(--sidebar-bg);
+    z-index: 100;
+}
+
+/* Mobile Breadcrumb Style */
+@media screen and (max-width: 1011px) {
+    #markdown-toc {
+        position: relative;
+        width: auto;
+        left: 0;
+        top: 0;
+        display: flex; /* Makes it horizontal */
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 10px;
+        border-left: none;
+        border-bottom: 1px solid var(--border-color);
+        margin-bottom: 20px;
+        background: transparent;
+    }
+    #markdown-toc li { display: inline; }
+    #markdown-toc li::after { content: " / "; margin-left: 10px; color: #666; }
+    #markdown-toc li:last-child::after { content: ""; }
+}
+
+/* MathJax Wrapping Fix */
+.MathJax {
+    white-space: normal;
+    overflow-x: auto;
+    overflow-y: hidden;
+    max-width: 100%;
+}
+
+blockquote {
+    padding: 0.5em 1em;
+    color: #8b949e;
+    border-left: 0.25em solid var(--border-color);
+    background: rgba(48, 54, 61, 0.2);
+    margin: 1.5em 0;
+}
+
+/*
 #markdown-toc {
     position: fixed;
     top: 50px;
@@ -51,7 +105,7 @@ a { color: var(--link-color) !important; text-decoration: none; }
     z-index: 100;
 }
 
-/* Hide TOC on mobile or it will overlap the text */
+/* Hide TOC on mobile or it will overlap the text 
 @media screen and (max-width: 1011px) {
     #markdown-toc { position: relative; width: auto; left: 0; top: 0; margin-bottom: 20px; }
 }
@@ -63,6 +117,7 @@ blockquote {
     background: rgba(48, 54, 61, 0.2);
     margin: 1.5em 0;
 }
+*/
 </style>
 
 <style>

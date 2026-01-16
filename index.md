@@ -223,6 +223,23 @@ blockquote strong::before {
 .highlight .nt { color: #569cd6 !important; } /* Generic brackets < > */
 .highlight .vi, .highlight .vc, .highlight .nv { color: #9cdcfe !important; } /* Variables and self */
 .highlight .nd { color: #c586c0 !important; } /* Macros and Attributes #[...] */
+
+/* Force code blocks to be independent "islands" */
+.highlight {
+    display: block !important;
+    unicode-bidi: embed;
+    white-space: pre; /* Keeps code structure */
+    margin-bottom: 24px !important;
+    border-radius: 6px;
+    overflow: hidden;
+}
+
+/* Reset the internal pre so it doesn't double-wrap */
+.highlight pre {
+    margin: 0 !important;
+    padding: 16px !important;
+    background-color: #0d1117 !important;
+}
 </style>
 
 <style>

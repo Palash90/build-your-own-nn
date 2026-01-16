@@ -163,6 +163,6 @@ blockquote {
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 * TOC
-{:toc}
+{:toc: .toc-list levels="1..4"}
 
 {% include_relative README.md %}

@@ -1,6 +1,6 @@
 title: Build Your Own Neural Network
 description: A comprehensive guide to building neural networks from scratch.
 author: Palash Kanti Kundu
-theme: jekyll-theme-modern
+theme: jekyll-theme-cayman
 markdown: kramdown
 mathjax: true

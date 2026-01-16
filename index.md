@@ -165,6 +165,4 @@ blockquote {
 * TOC
 {:toc}
 
----
-
 {% include_relative README.md %}

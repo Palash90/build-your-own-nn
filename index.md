@@ -153,6 +153,15 @@ blockquote {
       inlineMath: [['$', '$'], ['\\(', '\\)']],
       displayMath: [['$$', '$$'], ['\\[', '\\]']],
       processEscapes: true
+    },
+    options: {
+        renderActions: {
+            addMenu: [] // Cleaner look without the MathJax context menu
+        }
+    },
+    chtml: {
+        displayAlign: 'left', // Aligns math to the left for better reading
+        displayIndent: '2em'
     }
   };
 </script>

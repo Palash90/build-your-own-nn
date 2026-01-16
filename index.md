@@ -217,6 +217,44 @@ blockquote strong::before {
     }
 }
 </style>
+<style>
+/* Container for the code block and button */
+.highlight {
+    position: relative;
+}
+
+/* The Copy Button */
+.copy-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    font-size: 12px;
+    color: #c9d1d9;
+    background-color: #21262d;
+    border: 1px solid #30363d;
+    border-radius: 6px;
+    cursor: pointer;
+    opacity: 0; /* Hidden by default */
+    transition: opacity 0.2s, background-color 0.2s;
+    z-index: 10;
+}
+
+/* Show button on hover */
+.highlight:hover .copy-btn {
+    opacity: 1;
+}
+
+.copy-btn:hover {
+    background-color: #30363d;
+    border-color: #8b949e;
+}
+
+.copy-btn.copied {
+    color: #3fb950;
+    border-color: #238636;
+}
+</style>
 
 <script>
   <script>
@@ -246,6 +284,12 @@ blockquote strong::before {
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+* TOC
+{:toc}
+
+{% include_relative README.md %}
+
 <script>
 document.querySelectorAll('blockquote').forEach(bq => {
   const text = bq.innerText.toUpperCase();
@@ -261,10 +305,32 @@ document.querySelectorAll('blockquote').forEach(bq => {
 });
 </script>
 
-* TOC
-{:toc}
+<script>
+document.querySelectorAll('.highlight').forEach((codeBlock) => {
+    // Create the button
+    const button = document.createElement('button');
+    button.className = 'copy-btn';
+    button.type = 'button';
+    button.innerText = 'Copy';
 
-{% include_relative README.md %}
+    // Add click event
+    button.addEventListener('click', () => {
+        const code = codeBlock.querySelector('code').innerText;
+        navigator.clipboard.writeText(code).then(() => {
+            button.innerText = 'Copied!';
+            button.classList.add('copied');
+
+            // Reset after 2 seconds
+            setTimeout(() => {
+                button.innerText = 'Copy';
+                button.classList.remove('copied');
+            }, 2000);
+        });
+    });
+
+    codeBlock.appendChild(button);
+});
+</script>
 
 <section style="margin-top: 50px; border-top: 1px solid var(--border-color); padding-top: 20px;">
   <script src="https://giscus.app/client.js"

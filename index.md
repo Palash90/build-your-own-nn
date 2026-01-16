@@ -248,6 +248,7 @@ blockquote strong::before {
 /* Force code blocks to be independent "islands" */
 .highlight {
     display: block !important;
+    background-color: #05070a !important;
     unicode-bidi: embed;
     white-space: pre; /* Keeps code structure */
     margin-bottom: 24px !important;
@@ -260,6 +261,10 @@ blockquote strong::before {
     margin: 0 !important;
     padding: 16px !important;
     background-color: #0d1117 !important;
+    overflow-x: auto !important; /* Horizontal scroll */
+    background-color: transparent !important; /* Uses container color */
+    white-space: pre !important;
+    word-wrap: normal !important;
 }
 </style>
 

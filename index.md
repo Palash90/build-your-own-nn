@@ -82,35 +82,31 @@ a { color: var(--link-color) !important; text-decoration: none; }
 
 /* Mobile Breadcrumb Style */
 @media screen and (max-width: 1011px) {
-    /* Reset the TOC container */
     #markdown-toc {
+        /* STOP it from floating */
+        position: relative !important; 
+        top: 0 !important;
+        left: 0 !important;
+        width: 100% !important;
+        
+        /* Layout */
         display: block !important;
-        padding: 20px !important;
+        box-sizing: border-box;
+        margin: 20px 0 !important;
+        padding: 15px !important;
+        
+        /* Visuals */
         background: #161b22 !important;
         border: 1px solid #30363d !important;
         border-radius: 8px;
-        list-style-type: none !important;
+        z-index: 1; /* Ensure it doesn't overlap headers */
     }
 
-    /* Indent levels naturally */
-    #markdown-toc ul { 
-        list-style-type: none !important;
-        padding-left: 20px !important; 
-        margin: 5px 0 !important;
-    }
-
-    /* Style the links */
-    #markdown-toc li a {
-        display: inline-block;
-        padding: 4px 0;
-        color: #8b949e !important;
-        text-decoration: none;
-        font-size: 14px;
-    }
-
-    /* Remove those slashes (/) */
-    #markdown-toc li::after, #markdown-toc li::before {
-        content: "" !important;
+    /* Clear any floats that might be lingering */
+    #markdown-toc::after {
+        content: "";
+        display: table;
+        clear: both;
     }
 }
 

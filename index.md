@@ -400,6 +400,81 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
 });
 </script>
 
+<style>
+.author-card {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--sidebar-bg); /* Uses your existing dark gray */
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 24px;
+    margin: 40px 0;
+}
+
+.author-image {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    border: 2px solid var(--link-color);
+    object-fit: cover;
+}
+
+.author-info {
+    flex: 1;
+}
+
+.author-name {
+    color: var(--link-color) !important;
+    font-size: 1.2em;
+    font-weight: bold;
+    margin: 0 0 8px 0 !important;
+}
+
+.author-bio {
+    font-size: 0.95em;
+    line-height: 1.5;
+    color: #8b949e;
+    margin-bottom: 12px;
+}
+
+.author-socials a {
+    margin-right: 15px;
+    font-size: 0.85em;
+    opacity: 0.8;
+    transition: opacity 0.2s;
+}
+
+.author-socials a:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+/* Mobile responsive */
+@media screen and (max-width: 600px) {
+    .author-card {
+        flex-direction: column;
+        text-align: center;
+    }
+}
+</style>
+
+<div class="author-card">
+    <img src="https://github.com/{{ site.github_username }}.png" alt="Author" class="author-image">
+    
+    <div class="author-info">
+        <h3 class="author-name">Written by {{ site.author_name }}</h3>
+        <p class="author-bio">
+            {{ site.author_bio }}
+        </p>
+        <div class="author-socials">
+            <a href="https://linkedin.com/in/{{ site.linkedin_username }}">LinkedIn</a>
+            <a href="https://dev.to/{{ site.devto_username }}">DEV.to</a>
+            <a href="https://github.com/{{ site.github_username }}">GitHub</a>
+        </div>
+    </div>
+</div>
+
 <section style="margin-top: 50px; border-top: 1px solid var(--border-color); padding-top: 20px;">
   <script src="https://giscus.app/client.js"
         data-repo="palash90/build-your-own-nn"

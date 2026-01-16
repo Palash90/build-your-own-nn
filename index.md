@@ -28,7 +28,7 @@ a:hover { text-decoration: underline; }
     position: fixed;
     top: 50px;
     left: 20px;
-    width: 220px;
+    width: 0.2w;
     max-height: 80vh;
     overflow-y: auto;
     font-size: 0.85em;
@@ -54,6 +54,32 @@ a:hover { text-decoration: underline; }
 .highlight .s { color: #ce9178 !important; }  /* Strings */
 .highlight .mi { color: #b5cea8 !important; } /* Numbers */
 .highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
+
+.highlight .k  { color: #569cd6 !important; } /* Keywords: fn, impl, let, pub, match */
+.highlight .nc { color: #4ec9b0 !important; } /* Structs/Classes: Tensor, Result */
+.highlight .nn { color: #4ec9b0 !important; } /* Module/Namespace */
+.highlight .nf { color: #dcdcaa !important; } /* Functions: new, push, iter */
+.highlight .s  { color: #ce9178 !important; } /* Strings */
+.highlight .mi { color: #b5cea8 !important; } /* Numbers/Integers */
+.highlight .mf { color: #b5cea8 !important; } /* Floats */
+.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
+.highlight .kt { color: #4ec9b0 !important; } /* Primitive Types: f32, usize, bool */
+
+/* Operators & Punctuation */
+.highlight .o  { color: #d4d4d4 !important; } /* Operators: +, -, *, / */
+.highlight .p  { color: #d4d4d4 !important; } /* Punctuation: (), [], {}, , , ; */
+
+/* Generics and Lifetimes */
+.highlight .nt { color: #569cd6 !important; } /* Generic brackets < > and tags */
+.highlight .nd { color: #c586c0 !important; } /* Attributes/Macros: #[derive] */
+
+/* Variables and Properties */
+.highlight .vc { color: #9cdcfe !important; } /* Variables */
+.highlight .vg { color: #9cdcfe !important; } /* Global variables */
+.highlight .vi { color: #9cdcfe !important; } /* Instance variables (self.data) */
+
+/* Special Rust additions */
+.highlight .nb { color: #4ec9b0 !important; } /* Built-in types like Vec, Option, Box */
 
 /* 5. Modern GitHub-style Alerts */
 blockquote {

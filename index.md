@@ -72,7 +72,13 @@ pre { background-color: var(--code-bg) !important; border: 1px solid var(--borde
 <script>
   // MathJax Config
   window.MathJax = {
-    tex: { inlineMath: [['$', '$']], displayMath: [['$$', '$$']] }
+    loader: {load: ['[tex]/color']},
+    tex: {
+      packages: {'[+]': ['color']},
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']],
+      processEscapes: true
+    }
   };
 
   // Theme Switching Logic

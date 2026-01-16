@@ -6,7 +6,7 @@ layout: default
 :root {
     --bg-color: #0d1117;
     --text-color: #c9d1d9;
-    --link-color: #58a6ff;
+    --link-color: #5187c5;
     --sidebar-bg: #161b22;
     --border-color: #30363d;
     --vscode-bg: #1e1e1e;
@@ -32,7 +32,7 @@ body {
     body { margin-left: 0 !important; }
 }
 
-h1, h2, h3, h4, h5, strong { color: #E2E8F0 !important; }
+h1, h2, h3, h4, h5, strong { color: #becbda !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
 </style>
 <style>

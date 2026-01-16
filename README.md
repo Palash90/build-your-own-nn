@@ -1,42 +1,5 @@
 # Build Your Own Neural Network from Scratch in Rust: From Zero to Image Reconstruction
 
-## Table of Contents
-Front Matter
- - [Prologue: Breaking the Black Box](#prologue-breaking-the-black-box)
- - [Prerequisites](#prerequisites)
- - [Project Philosophy](#project-philosophy)
-   - [The Roadmap](#the-roadmap-from-zero-to-image-reconstruction)
-
-Part I: The Foundation
- - [The Tensor](#the-tensor)
-   - [Journey from Scalar to Tensor](#journey-from-scalar-to-tensor)
-   - [Matrix Notation and Indexing](#matrix-notation-and-indexing)
-   - [Implementation: Memory Layout and Buffers](#implementation-memory-buffers-and-layout)
-   - [Display](#display-pretty-printing-matrix)
- - [Basic Tensor Arithmetic](#basic-tensor-arithmetic)
-   - [Element Wise Addition](#element-wise-addition)
-   - [Element Wise Subtraction](#element-wise-subtraction)
-   - [Element Wise Multiplication](#element-wise-multiplication)
-   - [Implementation](#implementation)
- - [Linear Transformations and Aggregations](#linear-transformations-and-aggregations)
-   - [Transpose](#transpose)
-     - [Vector Transpose](#vector-transpose)
-     - [Square Matrix Transpose](#square-matrix-transpose)
-     - [Rectangular Matrix Transpose](#rectangular-matrix-transpose)
-     - [Implementation](#implementation-1)
-   - [Dot Product](#dot-product)
-     - [Vector Vector Dot Product](#vector-vector-dot-product)
-     - [Matrix Vector Dot Product](#matrix-vector-dot-product)
-     - [Matrix Matrix Dot Product](#matrix-matrix-dot-product)
-     - [Implementation](#implementation-2)
-       - [Tests for Matrix Multiplication](#tests-for-matrix-multiplication)
-       - [The Naive Implementation](#the-naive-implementation-ijk)
-       - [The Optimized Implementation](#the-optimized-implementation-ikj)
-      
-
-
-
-
 ## Prologue: Breaking the Black Box
 Machine Learning often felt like a "black box" to me. Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. Hence, I decided to start learning this technology by building it from scratch. 
 

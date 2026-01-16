@@ -80,6 +80,22 @@ a { color: var(--link-color) !important; text-decoration: none; }
     overflow-y: hidden;
     max-width: 100%;
 }
+.mjx-container {
+    display: inline-grid !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    white-space: normal !important;
+}
+
+/* Optional: Subtle scrollbar for wide matrices that cannot be broken */
+.mjx-container::-webkit-scrollbar {
+    height: 4px;
+}
+.mjx-container::-webkit-scrollbar-thumb {
+    background: var(--border-color);
+    border-radius: 10px;
+}
 
 blockquote {
     padding: 0.5em 1em;
@@ -146,6 +162,7 @@ blockquote {
 </style>
 
 <script>
+  <script>
   window.MathJax = {
     loader: {load: ['[tex]/color']},
     tex: {
@@ -154,16 +171,23 @@ blockquote {
       displayMath: [['$$', '$$'], ['\\[', '\\]']],
       processEscapes: true
     },
-    options: {
-        renderActions: {
-            addMenu: [] // Cleaner look without the MathJax context menu
+    // This tells MathJax to break long lines automatically
+    chtml: {
+        displayAlign: 'left',
+        linebreaks: { 
+            allow: true, 
+            width: 'container' 
         }
     },
-    chtml: {
-        displayAlign: 'left', // Aligns math to the left for better reading
-        displayIndent: '2em'
+    svg: {
+        linebreaks: { 
+            allow: true, 
+            width: 'container' 
+        }
     }
   };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 

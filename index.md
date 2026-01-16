@@ -32,7 +32,7 @@ body {
     body { margin-left: 0 !important; }
 }
 
-h1, h2, h3, h4, h5, strong { color: #bcd2ff !important; }
+h1, h2, h3, h4, h5, strong { color: #E2E8F0 !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
 </style>
 <style>

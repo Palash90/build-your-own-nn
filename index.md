@@ -177,6 +177,27 @@ blockquote strong::before {
     margin-right: 8px;
     font-size: 1.1em;
 }
+
+/* Note/Blue (Default) */
+.bq-note {
+    background-color: rgba(56, 139, 253, 0.1) !important;
+    border-left: 0.25em solid #1f6feb !important;
+}
+.bq-note strong { color: #58a6ff !important; }
+
+/* Tip/Green */
+.bq-tip {
+    background-color: rgba(63, 185, 80, 0.1) !important;
+    border-left: 0.25em solid #238636 !important;
+}
+.bq-tip strong { color: #3fb950 !important; }
+
+/* Warning/Orange */
+.bq-warning {
+    background-color: rgba(210, 153, 34, 0.1) !important;
+    border-left: 0.25em solid #d29922 !important;
+}
+.bq-warning strong { color: #d29922 !important; }
 </style>
 
 <style>
@@ -291,21 +312,22 @@ blockquote strong::before {
 {% include_relative README.md %}
 
 <script>
-document.querySelectorAll('blockquote').forEach(bq => {
-  const text = bq.innerText.toUpperCase();
-  if (text.includes('NOTE')) {
-    bq.style.backgroundColor = 'rgba(56, 139, 253, 0.1)';
-    bq.style.borderLeftColor = '#1f6feb';
-    bq.querySelector('strong').style.color = '#58a6ff';
-  } else if (text.includes('TIP')) {
-    bq.style.backgroundColor = 'rgba(63, 185, 80, 0.1)';
-    bq.style.borderLeftColor = '#238636';
-    bq.querySelector('strong').style.color = '#3fb950';
-  }
-});
-</script>
+  document.querySelectorAll('blockquote').forEach(bq => {
+    // Get the first strong tag or the beginning of the text
+    const header = bq.querySelector('strong');
+    if (!header) return;
 
-<script>
+    const type = header.innerText.toUpperCase();
+
+    if (type.includes('NOTE')) {
+      bq.classList.add('bq-note');
+    } else if (type.includes('TIP')) {
+      bq.classList.add('bq-tip');
+    } else if (type.includes('WARNING') || type.includes('IMPORTANT')) {
+      bq.classList.add('bq-warning');
+    }
+  });
+</script>
 <script>
 document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
     // 1. Ensure the parent container is relative so the button sticks to it
@@ -332,7 +354,6 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
 
     codeBlock.appendChild(button);
 });
-</script>
 </script>
 
 <section style="margin-top: 50px; border-top: 1px solid var(--border-color); padding-top: 20px;">

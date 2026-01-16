@@ -1358,14 +1358,16 @@ For example, if we want to know the value of $y$ when $x$ is $900$, we can easil
 
 The aim of linear regression is to derive these foundational values from data. If we can collect many data points in input/output pair we can try to find the $m$ and $c$ of the equation to predict any value of $x$, provided the given data set has an almost linear representation.
 
-We'll continue with the following minimal dataset, such that we can perform the calculations in our head:
+We'll continue with the following minimal dataset, such that we can follow the calculations easily:
 
 
 ```mermaid
 xychart-beta
-    title "Linear Regression with Real-World Noise"
-    x-axis "X" [0, 1, 2, 3, 4, 5]
-    y-axis "Y" 0 --> 14
-    scatter [2.85, 5.42, 6.78, 9.15, 10.65, 13.30]
+    title "Linear Regression Data Set"
+    x-axis "X-Input" [0, 1, 2, 3, 4, 5]
+    y-axis "Y-Output" 0 --> 15
+    bar [2.8, 5.4, 6.7, 9.2, 10.6, 13.3]
     line [3, 5, 7, 9, 11, 13]
 ```
+
+## The Process

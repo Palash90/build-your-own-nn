@@ -401,10 +401,18 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
 </script>
 
 <script type="module">
-  import mermaid from '[https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs](https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs)';
+  import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+
+  mermaid.initialize({ 
+    startOnLoad: false, // We will manually run it after replacement
+    theme: 'dark',
+    securityLevel: 'loose'
+  });
   
   // 1. Find all Jekyll-generated mermaid code blocks
   const blocks = document.querySelectorAll('.language-mermaid');
+
+  console.log("Got blocks", blocks);
   
   blocks.forEach((block) => {
     // 2. Create a new div with class "mermaid"
@@ -414,10 +422,12 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
     
     // 3. Replace the <pre><code> block with our new <div>
     block.parentElement.replaceWith(div);
+    
   });
 
   // 4. Initialize Mermaid
   mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+  mermaid.run()
 </script>
 
 <style>

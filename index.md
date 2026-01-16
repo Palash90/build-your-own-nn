@@ -56,6 +56,28 @@ a { color: var(--link-color) !important; text-decoration: none; }
     border-color: #8b949e;
     cursor: pointer;
 }
+#markdown-toc li {
+    background: #161b22 !important;
+    border: 1px solid #30363d !important;
+    padding: 4px 12px !important;
+    border-radius: 20px !important;
+    transition: all 0.2s ease !important;
+}
+
+#markdown-toc li:hover {
+    border-color: #58a6ff !important;
+    background: #1c2128 !important;
+}
+
+#markdown-toc li a {
+    color: #8b949e !important;
+    font-size: 12px !important;
+}
+
+#markdown-toc li a:hover {
+    color: #58a6ff !important;
+    text-decoration: none !important;
+}
 
 /* Mobile Breadcrumb Style */
 @media screen and (max-width: 1011px) {

@@ -3,32 +3,44 @@ layout: default
 ---
 
 <style>
-/* 1. Permanent Dark Theme Variables */
 :root {
-    --bg-color: #0d1117; /* GitHub Dark Background */
+    --bg-color: #0d1117;
     --text-color: #c9d1d9;
     --link-color: #58a6ff;
     --sidebar-bg: #161b22;
     --border-color: #30363d;
     --vscode-bg: #1e1e1e;
     --vscode-text: #d4d4d4;
+    --toc-width: 250px; /* Fixed width is safer than vw for overlap */
 }
 
-/* 2. Global Styling */
+/* Base styling */
 body { 
     background-color: var(--bg-color) !important; 
     color: var(--text-color) !important; 
+    padding: 20px !important;
+    transition: margin-left 0.3s ease;
 }
+
+/* Desktop: Push content to the right */
+@media screen and (min-width: 1012px) {
+    body { margin-left: calc(var(--toc-width) + 60px) !important; }
+}
+
+/* Mobile: Reset margin so it doesn't look weird */
+@media screen and (max-width: 1011px) {
+    body { margin-left: 0 !important; }
+}
+
 h1, h2, h3, h4, h5, strong { color: #f0f6fc !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
-a:hover { text-decoration: underline; }
-
-/* 3. Sticky Sidebar */
+</style>
+<style>
 #markdown-toc {
     position: fixed;
     top: 50px;
     left: 20px;
-    width: 0.2w;
+    width: var(--toc-width);
     max-height: 80vh;
     overflow-y: auto;
     font-size: 0.85em;
@@ -36,9 +48,24 @@ a:hover { text-decoration: underline; }
     padding: 15px;
     border-left: 2px solid var(--border-color);
     background: var(--sidebar-bg);
+    z-index: 100;
 }
 
-/* 4. VS Code Code Blocks */
+/* Hide TOC on mobile or it will overlap the text */
+@media screen and (max-width: 1011px) {
+    #markdown-toc { position: relative; width: auto; left: 0; top: 0; margin-bottom: 20px; }
+}
+
+blockquote {
+    padding: 0.5em 1em;
+    color: #8b949e;
+    border-left: 0.25em solid var(--border-color);
+    background: rgba(48, 54, 61, 0.2);
+    margin: 1.5em 0;
+}
+</style>
+
+<style>
 .highlight, pre.highlight {
     background-color: var(--vscode-bg) !important;
     color: var(--vscode-text) !important;
@@ -47,54 +74,20 @@ a:hover { text-decoration: underline; }
     border: 1px solid var(--border-color);
     overflow-x: auto;
 }
+
 .highlight span { background-color: transparent !important; }
-.highlight .k { color: #569cd6 !important; } /* Keywords */
-.highlight .nc { color: #4ec9b0 !important; } /* Types */
+
+/* VS Code Colors */
+.highlight .k, .highlight .kd { color: #569cd6 !important; } /* keywords: fn, let, impl, pub */
+.highlight .nc, .highlight .nn, .highlight .kt, .highlight .nb { color: #4ec9b0 !important; } /* Structs, Types, Vec */
 .highlight .nf { color: #dcdcaa !important; } /* Functions */
-.highlight .s { color: #ce9178 !important; }  /* Strings */
-.highlight .mi { color: #b5cea8 !important; } /* Numbers */
-.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
-
-.highlight .k  { color: #569cd6 !important; } /* Keywords: fn, impl, let, pub, match */
-.highlight .nc { color: #4ec9b0 !important; } /* Structs/Classes: Tensor, Result */
-.highlight .nn { color: #4ec9b0 !important; } /* Module/Namespace */
-.highlight .nf { color: #dcdcaa !important; } /* Functions: new, push, iter */
-.highlight .s  { color: #ce9178 !important; } /* Strings */
-.highlight .mi { color: #b5cea8 !important; } /* Numbers/Integers */
-.highlight .mf { color: #b5cea8 !important; } /* Floats */
-.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
-.highlight .kt { color: #4ec9b0 !important; } /* Primitive Types: f32, usize, bool */
-
-/* Operators & Punctuation */
-.highlight .o  { color: #d4d4d4 !important; } /* Operators: +, -, *, / */
-.highlight .p  { color: #d4d4d4 !important; } /* Punctuation: (), [], {}, , , ; */
-
-/* Generics and Lifetimes */
-.highlight .nt { color: #569cd6 !important; } /* Generic brackets < > and tags */
-.highlight .nd { color: #c586c0 !important; } /* Attributes/Macros: #[derive] */
-
-/* Variables and Properties */
-.highlight .vc { color: #9cdcfe !important; } /* Variables */
-.highlight .vg { color: #9cdcfe !important; } /* Global variables */
-.highlight .vi { color: #9cdcfe !important; } /* Instance variables (self.data) */
-
-/* Special Rust additions */
-.highlight .nb { color: #4ec9b0 !important; } /* Built-in types like Vec, Option, Box */
-
-/* 5. Modern GitHub-style Alerts */
-blockquote {
-    padding: 0.5em 1em;
-    color: #8b949e;
-    border-left: 0.25em solid var(--border-color);
-    background: rgba(48, 54, 61, 0.2);
-    margin: 1.5em 0;
-}
-/* Style for NOTE/TIP specifically */
-blockquote p strong {
-    display: flex;
-    align-items: center;
-    gap: 5px;
-}
+.highlight .s, .highlight .sc { color: #ce9178 !important; } /* Strings and Chars */
+.highlight .mi, .highlight .mf, .highlight .mh { color: #b5cea8 !important; } /* Numbers */
+.highlight .c1, .highlight .cm { color: #6a9955 !important; font-style: italic; } /* Comments */
+.highlight .o, .highlight .p { color: #d4d4d4 !important; } /* Operators (+, *) and Punctuation ([, <, >) */
+.highlight .nt { color: #569cd6 !important; } /* Generic brackets < > */
+.highlight .vi, .highlight .vc, .highlight .nv { color: #9cdcfe !important; } /* Variables and self */
+.highlight .nd { color: #c586c0 !important; } /* Macros and Attributes #[...] */
 </style>
 
 <script>

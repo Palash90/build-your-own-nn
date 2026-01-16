@@ -1,4 +1,4 @@
-title: My Project Documentation
-theme: jekyll-theme-primer
-description: Math and Code heavy README
-remote_theme: pages-themes/primer@v0.2.0
+title: Math & Code Blog
+theme: minima
+markdown: kramdown
+highlighter: rouge

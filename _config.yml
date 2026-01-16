@@ -1,0 +1,16 @@
+# Site Settings
+title: Bare Neural Net
+description: Breaking the Black Box of ML with Rust
+
+# Markdown & Math
+markdown: kramdown
+kramdown:
+  math_engine: mathjax
+  syntax_highlighter: rouge
+
+# Exclude files from being built into the site
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor

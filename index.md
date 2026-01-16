@@ -56,11 +56,12 @@ a { color: var(--link-color) !important; text-decoration: none; }
     border-color: #8b949e;
     cursor: pointer;
 }
+
 #markdown-toc li {
     background: #161b22 !important;
     border: 1px solid #30363d !important;
     padding: 4px 12px !important;
-    border-radius: 20px !important;
+    border-radius: 2px !important;
     transition: all 0.2s ease !important;
 }
 

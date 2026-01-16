@@ -211,12 +211,24 @@ blockquote strong::before {
 
 <style>
 .highlight, pre.highlight {
+    position: relative !important;
+    display: flex !important;
+    flex-direction: column;
+    background: #0d1117;
+    border: 1px solid #30363d;
     background-color: var(--vscode-bg) !important;
     color: var(--vscode-text) !important;
-    padding: 4px;
+    padding: 2px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     overflow-x: auto;
+}
+
+.highlight pre {
+    margin: 0 !important;
+    padding: 16px !important;
+    overflow-x: auto !important; /* This allows code to scroll */
+    white-space: pre !important;
 }
 
 .highlight span { background-color: transparent !important; }
@@ -272,9 +284,10 @@ blockquote strong::before {
 
 /* The Copy Button */
 .copy-btn {
-    position: absolute;
+    position: absolute !important;
     top: 8px;
     right: 8px;
+    z-index: 20; /* Keeps it above scrolling code */
     padding: 4px 8px;
     font-size: 12px;
     color: #c9d1d9;
@@ -282,9 +295,9 @@ blockquote strong::before {
     border: 1px solid #30363d;
     border-radius: 6px;
     cursor: pointer;
+    display: flex;
     opacity: 0; /* Hidden by default */
     transition: opacity 0.2s, background-color 0.2s;
-    z-index: 10;
 }
 
 /* Show button on hover */

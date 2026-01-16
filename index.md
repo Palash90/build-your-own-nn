@@ -32,7 +32,7 @@ body {
     body { margin-left: 0 !important; }
 }
 
-h1, h2, h3, h4, h5, strong { color: #51cbdb !important; }
+h1, h2, h3, h4, h5, strong { color: #bcd2ff !important; }
 a { color: var(--link-color) !important; text-decoration: none; }
 </style>
 <style>
@@ -248,7 +248,7 @@ blockquote strong::before {
 /* Force code blocks to be independent "islands" */
 .highlight {
     display: block !important;
-    background-color: #0c1420 !important;
+    background-color: #191a1d !important;
     unicode-bidi: embed;
     white-space: pre; /* Keeps code structure */
     margin-bottom: 24px !important;

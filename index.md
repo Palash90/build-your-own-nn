@@ -11,7 +11,7 @@ layout: default
     --border-color: #30363d;
     --vscode-bg: #1e1e1e;
     --vscode-text: #d4d4d4;
-    --toc-width: 250px; /* Fixed width is safer than vw for overlap */
+    --toc-width: 20vw; /* Fixed width is safer than vw for overlap */
 }
 
 /* Base styling */
@@ -105,35 +105,7 @@ blockquote {
     margin: 1.5em 0;
 }
 
-/*
-#markdown-toc {
-    position: fixed;
-    top: 50px;
-    left: 20px;
-    width: 20vw;
-    max-height: 80vh;
-    overflow-y: auto;
-    font-size: 0.85em;
-    list-style-type: none;
-    padding: 15px;
-    border-left: 2px solid var(--border-color);
-    background: var(--sidebar-bg);
-    z-index: 100;
-}
 
-/* Hide TOC on mobile or it will overlap the text 
-@media screen and (max-width: 1011px) {
-    #markdown-toc { position: relative; width: auto; left: 0; top: 0; margin-bottom: 20px; }
-}
-
-blockquote {
-    padding: 0.5em 1em;
-    color: #8b949e;
-    border-left: 0.25em solid var(--border-color);
-    background: rgba(48, 54, 61, 0.2);
-    margin: 1.5em 0;
-}
-*/
 </style>
 
 <style>
@@ -188,10 +160,8 @@ blockquote {
   };
 </script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
-## Table of Contents
 * TOC
 {:toc}
 

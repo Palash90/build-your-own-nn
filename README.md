@@ -1,6 +1,4 @@
-# Build Your Own Neural Network from Scratch in Rust: From Zero to Image Reconstruction
-
-## Prologue: Breaking the Black Box
+# Prologue: Breaking the Black Box
 Machine Learning often felt like a "black box" to me. Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. Hence, I decided to start learning this technology by building it from scratch. 
 
 I have spent years trying to learn Rust. After experimenting with various methods (The Book, RBE, Rustlings, etc.) over the years, I found the missing link: the difficulty lay not in the language, but in the lack of a motivating end-goal.
@@ -10,7 +8,7 @@ This project began as a month-long deep dive into Linear Regression. However, my
 To be clear: This project is not meant to replace PyTorch, TensorFlow, or ndarray. It is a 'toy' engine by design. Its purpose is to replace the 'I don't know' in your head when you call torch.matmul() with a clear, mental model of memory buffers and cache lines. We aren't building for production; we are building for mastery.
 
 
-## Prerequisites
+# Prerequisites
 This guide is designed as a self-contained journey. We do not assume a prior mathematical background. Instead, we derive the necessary mathematical principles as they arise.
 
 While this guide does not assume mastery in Rust, a basic understanding of the following concepts will make the progression smoother:
@@ -22,10 +20,10 @@ While this guide does not assume mastery in Rust, a basic understanding of the f
 >**NOTE**
 >In keeping with our philosophy of Radical Transparency, we will not rely on external linear algebra crates like ndarray. Our only dependency is the Rust Standard Library.
 
-## Project Philosophy
+# Project Philosophy
 This guide is designed with a specific philosophy in mind: **Radical Transparency**. We do not start with frameworks or pre-built third-party libraries. We start with a blank file and a single `fn main()`. From there, we will incrementally build the mathematical and structural architecture required to perform complex tasks.
 
-### The Roadmap: From Zero to Image Reconstruction
+## The Roadmap: From Zero to Image Reconstruction
 
 This is the roadmap I wish I had two years ago. Whether you are a Rustacean curious about AI or an ML practitioner looking to understand systems-level implementation, this journey is for you.
 
@@ -38,10 +36,10 @@ This is the roadmap I wish I had two years ago. Whether you are a Rustacean curi
 
 And that’s where the story begins...
 
-## The Tensor
+# The Tensor
 To build a neural network from scratch, we need to construct the fundamental building blocks first. In the world of Machine Learning, that building block would be a **Tensor**. In simple terms, a tensor is a collection of numbers organized in a grid.
 
-### Journey from Scalar to Tensor
+## Journey from Scalar to Tensor
 To understand the data structure we are building, we need to develop an intuition first. Let's start building it from scratch as well.
 
 - **Scalar:** We are familiar with this and use it every time we perform arithmetic operations: a single number (e.g. 5). 
@@ -64,7 +62,7 @@ $$
 \end{array}
 $$
 
-### Matrix Notation and Indexing
+## Matrix Notation and Indexing
 
 When we want to refer to an element inside the matrix, we need a notation to identify a specific element.
 
@@ -86,10 +84,10 @@ a = [[1, 2], [3, 4]];
 println!("{}", a[0][0]); // Output: 1
 ```
 
->[!NOTE]
+>**NOTE**
 >Mathematical notation and programming differ in how they index a collection of numbers. Mathematics typically uses 1-based indexing, whereas programming uses 0-based indexing.
 
-### Implementation: Memory Buffers and Layout
+## Implementation: Memory Buffers and Layout
 With the mathematical background, now we'll design and implement the `Tensor`. Let's first kick off the project and then we'll add elements to it. We'll use the default `cargo new` command for this:
 
 ```shell
@@ -246,7 +244,7 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 ```
 
->[!NOTE]
+>**NOTE**
 >We will be using standard Rust module system throughout.
 
 Currently the directory structure should look like the following:
@@ -261,7 +259,7 @@ tests
 Cargo.toml
 ```
 
-### Display: Pretty Printing Matrix
+## Display: Pretty Printing Matrix
 The definition and implementation of the tensor is now clear. But how can we intuitively inspect the data if we need to. Looking at the data directly from `Vec` isn't very intuitive.
 
 Let's first try to understand the problem and then we'll fix it. We rewrite the `main` function to inspect the data inside the tensor:
@@ -394,12 +392,12 @@ fn main() -> Result<(), TensorError> {
 **Challenge to the readers:** I encourage the readers to implement their own formatting. I chose this formatting because I like it, you don't have to stick to this.
 
 
-## Basic Tensor Arithmetic
+# Basic Tensor Arithmetic
 We have defined our tensor and established its notation. Now let's see how we operate on them.
 
 For tensors of any size or rank, we define the following operations:
 
-### Element Wise Addition
+## Element Wise Addition
 Element wise addition is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A+B$ is calculated as:
 
 $$
@@ -411,7 +409,7 @@ Let's take an example,
 $$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} + \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} = \begin{bmatrix} \color{cyan}6 & \color{magenta}8 \\\ \color{#D4A017}10 & \color{#2ECC71}12 \end{bmatrix} $$
 
 
-### Element Wise Subtraction
+## Element Wise Subtraction
 Element wise subtraction is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A-B$ is calculated as:
 
 $$
@@ -422,7 +420,7 @@ Let's take an example,
 
 $$ \begin{bmatrix} \color{cyan}{5} & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}7 \end{bmatrix} - \begin{bmatrix} \color{cyan}1 & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} = \begin{bmatrix} \color{cyan}4 & \color{magenta}4\\\ \color{#D4A017}4 & \color{#2ECC71}4 \end{bmatrix} $$
 
-### Element Wise Multiplication
+## Element Wise Multiplication
 Element wise multiplication (a.k.a. _Hadamard Product_) is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A \odot B$ is calculated as:
 
 $$
@@ -435,7 +433,7 @@ $$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \co
 
 Now that we have the mathematical blueprint, let's translate these concepts into Rust code.
 
-### Implementation
+## Implementation
 We should expose methods for `add`, `sub` and `mul`. We'll first add these method definitions into our existing tensor `impl` block.
 
 ```rust
@@ -512,12 +510,12 @@ Now we'll implement these operations. All the implementations so far operate on 
     }
 ```
 
-## Linear Transformations and Aggregations
+# Linear Transformations and Aggregations
 In the previous operations, we treated matrices like rigid containers—adding or multiplying elements that lived in the exact same "neighborhood." However, to build a neural network, we need to support a few _2D_ operations as well. To perform these, we need to move around a little.
 
 The following are a few operations we are going to describe, write tests for and implement in our `Tensor`.
 
-### Transpose
+## Transpose
 One of the most fundamental transformations in linear algebra involves changing the very orientation of the data. This is known as **Transpose**. In a transposition operation, the rows of the matrix become columns and the columns become rows.
 
 $$
@@ -526,29 +524,29 @@ $$
 
 Let's take a few examples:
 
-#### Vector Transpose
+### Vector Transpose
 
 $$
 \begin{bmatrix} 1 & 2 & 3 & 4 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 \\\ 2 \\\ 3 \\\ 4 \end{bmatrix}
 $$
 
-#### Square Matrix Transpose
+### Square Matrix Transpose
 
 $$
 \begin{bmatrix} 1 & 2 \\\ 3 & 4 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 & 3 \\\ 2 & 4 \end{bmatrix}
 $$
 
-#### Rectangular Matrix Transpose
+### Rectangular Matrix Transpose
 $$
 \begin{bmatrix} 1 & 2 \\\ 3 & 4 \\\ 5 & 6 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 & 3 & 5 \\\ 2 & 4 & 6 \end{bmatrix}
 $$
 
->[!NOTE]
+>**NOTE**
 >In the matrix transpose examples, take a note that the main diagonal elements ($A_{i,j}$ where $i=j$) stay in their positions and don't move. Additionally, in the case of rectangular matrix transposition the shape changes. 
 
 For example, here transposition converts $(3 \times 2) \xrightarrow{} (2 \times 3)$.
 
-#### Implementation
+### Implementation
 With this mathematical background, we can now understand what transpose operation will transform the data. With that understanding, we'll first add these tests:
 
 ```rust
@@ -599,7 +597,7 @@ With this mathematical background, we can now understand what transpose operatio
 
 To implement transpose, we have to physically move our numbers into a new Vec. While some advanced libraries just change the "metadata" (using something called strides), we are going to actually rebuild the data. This keeps our memory "contiguous," which makes our other operations faster because the CPU can predict where the next number is.
 
-##### The Logic:
+#### The Logic:
 
 1. Check the Rank: We only support transposing 1D or 2D tensors.
 
@@ -607,7 +605,7 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
 
 1. The 2D Re-map: We create a new Vec of the same size. Then, we use a nested loop to visit every "cell" of our grid.
 
->[!NOTE]
+>**NOTE**
 >The Index Swap: In our original data, we find an element at $row * cols + col$. In our new data, the dimensions are swapped, so the position becomes $col * rows + row$.
 
 ```rust
@@ -635,7 +633,7 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
 ```
 
 
-### Dot Product
+## Dot Product
 We have already seen how to multiply two matrices or vectors element wise. However, there is another multiplication operation we can perform on tensors, known as the **Dot Product**. It is slightly more involved, as it combines element wise multiplication and a reduction operation into a single step.
 
 The dot product of two vectors $A$ and $B$ of length n is defined as:
@@ -646,14 +644,14 @@ $$
 
 Let's take a few examples.
 
-#### Vector Vector Dot Product
+### Vector Vector Dot Product
 Here is an example of a dot product between two vectors:
 
 $$
 \begin{bmatrix} \color{#2ECC71}{1} \\\ \color{cyan}{2} \\\ \color{magenta}{3} \\\ \color{#D4A017}{4} \end{bmatrix} \cdot \begin{bmatrix} \color{#2ECC71}1 \\\ \color{cyan}2 \\\ \color{magenta}3 \\\ \color{#D4A017}4 \end{bmatrix} = \color{#2ECC71}{(1 \times 1)} \color{white}+ \color{cyan}{(2 \times 2)} \color{white}+ \color{magenta}{(3 \times 3)} \color{white}+ \color{#D4A017}{(4 \times 4)}\color{white}=30
 $$
 
-#### Matrix Vector Dot Product
+### Matrix Vector Dot Product
 In a Matrix-Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
 
 To perform a dot product between a matrix $A$ and a vector $v$, the number of columns in the matrix must equal the number of elements (rows) in the vector.
@@ -673,7 +671,7 @@ $$
 \end{bmatrix} = \begin{bmatrix} 50 \\\ 122 \end{bmatrix}
 $$
 
-#### Matrix Matrix Dot Product
+### Matrix Matrix Dot Product
 In a Matrix-Matrix dot product (often simply called **Matrix Multiplication**), we don't just multiply corresponding "neighborhoods." Instead, we calculate the dot product of every row from the first matrix with every column of the second matrix.
 
 To perform a dot product between matrix $A$ and matrix $B$, the number of columns in $A$ must equal the number of rows in $B$.
@@ -692,7 +690,7 @@ $$
 \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 9, 11]} & \color{#2ECC71}{[1, 2, 3]}\cdot \color{magenta}{[8, 10, 12]} \\\ \color{#D4A017}[4, 5, 6] \cdot \color{cyan}{[7, 9, 11]} & \color{#D4A017}[4, 5, 6] \cdot \color{magenta}{[8, 10, 12]} \\\ \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{9} + \color{#2ECC71}{3} \times \color{cyan}{11}) & (\color{#2ECC71}{1} \times \color{magenta}{8} + \color{#2ECC71}{2} \times \color{magenta}{10} + \color{#2ECC71}{3} \times \color{magenta}{12}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{9} + \color{#D4A017}{6} \times \color{cyan}{11}) & (\color{#D4A017}{4} \times \color{magenta}{8} + \color{#D4A017}{5} \times \color{magenta}{10} + \color{#D4A017}{6} \times \color{magenta}{12}) \end{bmatrix} = \begin{bmatrix} 58 & 64 \\\ 139 & 154 \end{bmatrix}
 $$
 
-#### Implementation
+### Implementation
 Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the most simple network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
 
 Unfortunately, by nature, matrix multiplication is an $O(n^3)$ operation. Tons of optimizations have been done over the decades on this operation both on Software front as well as Hardware front. Those optimization techniques are themselves worthy of their own book.
@@ -701,7 +699,7 @@ However, to make our tensor useful, we'll avoid the textbook naive implementatio
 
 First we'll write tests for matrix multiplications with correct assumptions and then we'll jump into both the implementations.
 
-##### Tests for Matrix Multiplication
+#### Tests for Matrix Multiplication
 This test will capture many scenarios based on 1D, 2D matrix operations. We will add this to our existing tests:
 
 ```rust
@@ -774,9 +772,9 @@ This test will capture many scenarios based on 1D, 2D matrix operations. We will
     }
 ```
 
-##### The Naive Implementation (IJK)
+#### The Naive Implementation (IJK)
 
->[!TIP] 
+>**TIP** 
 >We will not use this function, this is here for reference and validation purposes. You may skip to the [next section](#the-optimized-implementation-ikj) if you want to.
 
 In a standard textbook, you learn to calculate one cell of the result matrix at a time by taking the dot product of a row from $A$ and a column from $B$. In code, it looks like this:
@@ -830,7 +828,7 @@ A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \
 B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
 $$
 
-###### Calculation of $C_{0,0}$​ (Top Left)
+##### Calculation of $C_{0,0}$​ (Top Left)
 
 $$
 \begin{array}{}
@@ -849,7 +847,7 @@ C_{0,0} & i=0  & j=0 & k=2 & 25 + (\color{#2ECC71}A_{0,2}​ \color{white}\times
 \end{array}
 $$
 
-###### Calculation of $C_{0,1}$​ (Top Right)
+##### Calculation of $C_{0,1}$​ (Top Right)
 
 $$
 \begin{array}{}
@@ -869,7 +867,7 @@ C_{0,1} & i=0  & j=1 & k=2 & 28 + (\color{#2ECC71}A_{0,2}​ \color{white}\times
 $$
 
 
-###### Calculation of $C_{1,0}$​ (Bottom Left)
+##### Calculation of $C_{1,0}$​ (Bottom Left)
 
 $$
 \begin{array}{}
@@ -888,7 +886,7 @@ C_{1,0} & i=1  & j=0 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times
 \end{array}
 $$
 
-###### Calculation of $C_{1,1}$​ (Bottom Right)
+##### Calculation of $C_{1,1}$​ (Bottom Right)
 
 $$
 \begin{array}{}
@@ -907,7 +905,7 @@ C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times
 \end{array}
 $$
 
-##### The Optimized Implementation (IKJ)
+#### The Optimized Implementation (IKJ)
 We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
 1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
 1. Modern CPU cores use SIMD (Single Instruction, Multiple Data) to perform the same operation on multiple values simultaneously as long as the operations can be performed independently of each other. The naive implementation is sequential. So, it cannot leverage the parallel processing power of the CPU.
@@ -944,7 +942,7 @@ A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \
 B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
 $$
 
-###### Processing Row $i = 0$ (First row of A)
+##### Processing Row $i = 0$ (First row of A)
 We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
         
 $$
@@ -964,7 +962,7 @@ C_{row 0} & k = 2 & C_{row 0} + (A_{0,2} \times B_{row2}) & [25, 28] + \color{#2
 \end{array}
 $$
 
-###### Processing Row $i = 1$ (Second row of A)
+##### Processing Row $i = 1$ (Second row of A)
 We move to the second row of our result $C$.
 
 $$
@@ -984,7 +982,7 @@ C_{row 1} & k = 2 & C_{row 1} + (A_{1,2} \times B_{row2}) & [73, 82] + \color{#D
 \end{array}
 $$
  
-###### Full Implementation
+#### Full Implementation
 Here is the full implementation of the optimized method:
 
 ```rust
@@ -1156,11 +1154,11 @@ Final Result:
   |139.0000, 154.0000|
 
 ```
->[!NOTE] 
+>**NOTE** 
 >We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
 
 
-### Reduction
+## Reduction
 A matrix or a vector gives us information about individual elements, but at times we need an aggregation of those individual elements.
 
 Let's look at an example of a matrix which represents sales records of cars in the last three months:
@@ -1209,7 +1207,7 @@ Dec  & 1500 & 2500 & 2200 & 6200 \\
 \end{array}
 $$
 
-#### Implementation
+### Implementation
 We are almost coming to an end to our tensor journey. The only remaining tensor operation we'll implement is a sum reducer.
 
 Following our mathematical definitions, let's start defining our method first. We should be able to sum across rows or columns or reduce the whole tensor into a single scalar value. We would need the axis on which to sum but for a global sum, we don't have anything to pass. We will use `Option` type for the `axis` parameter and we will return a tensor object.

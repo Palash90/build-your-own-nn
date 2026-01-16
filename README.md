@@ -19,7 +19,7 @@ While this guide does not assume mastery in Rust, a basic understanding of the f
 - **The Module System:** Familiarity with how Rust organizes code across files.
 - **The Toolchain:** You’ll need `rustc` and `cargo` installed and ready.
 
->[!NOTE]
+>**NOTE**
 >In keeping with our philosophy of Radical Transparency, we will not rely on external linear algebra crates like ndarray. Our only dependency is the Rust Standard Library.
 
 ## Project Philosophy

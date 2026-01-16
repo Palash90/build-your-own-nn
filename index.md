@@ -204,7 +204,7 @@ blockquote strong::before {
 .highlight, pre.highlight {
     background-color: var(--vscode-bg) !important;
     color: var(--vscode-text) !important;
-    padding: 16px;
+    padding: 4px;
     border-radius: 6px;
     border: 1px solid var(--border-color);
     overflow-x: auto;

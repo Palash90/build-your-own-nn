@@ -3,72 +3,33 @@ layout: default
 ---
 
 <style>
-/* VS Code Dark+ Colors */
+/* 1. Permanent Dark Theme Variables */
 :root {
+    --bg-color: #0d1117; /* GitHub Dark Background */
+    --text-color: #c9d1d9;
+    --link-color: #58a6ff;
+    --sidebar-bg: #161b22;
+    --border-color: #30363d;
     --vscode-bg: #1e1e1e;
     --vscode-text: #d4d4d4;
 }
 
-/* 1. Target the outer container and the inner pre tag */
-.highlight, 
-pre.highlight,
-.language-rust.highlighter-rouge .highlight {
-    background-color: var(--vscode-bg) !important;
-    color: var(--vscode-text) !important;
-    padding: 16px;
-    border-radius: 8px;
-    border: 1px solid #333; /* Subtle border like VS Code */
-    overflow-x: auto;
-}
-
-/* 2. Remove any background from individual spans (the gray bars) */
-.highlight span {
-    background-color: transparent !important;
-}
-
-/* 3. Syntax Highlighting Overrides */
-.highlight .k { color: #569cd6 !important; } /* Keywords */
-.highlight .nc { color: #4ec9b0 !important; } /* Types */
-.highlight .nf { color: #dcdcaa !important; } /* Functions */
-.highlight .s { color: #ce9178 !important; }  /* Strings */
-.highlight .mi { color: #b5cea8 !important; } /* Numbers */
-.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
-/* 1. Define Color Variables */
-:root {
-    --bg-color: #ffffff;
-    --text-color: #2b2b2b;
-    --link-color: #007bff;
-    --sidebar-bg: #ffffff;
-    --border-color: #eee;
-    --code-bg: #f8f8f8;
-}
-
-[data-theme="dark"] {
-    --bg-color: #1a1a1a;
-    --text-color: #e0e0e0;
-    --link-color: #4db3ff;
-    --sidebar-bg: #252525;
-    --border-color: #444;
-    --code-bg: #2d2d2d;
-}
-
-/* 2. Apply Variables to the Theme */
+/* 2. Global Styling */
 body { 
     background-color: var(--bg-color) !important; 
     color: var(--text-color) !important; 
 }
-h1, h2, h3, h4, h5, strong { color: var(--text-color) !important; }
-a { color: var(--link-color) !important; }
-code { background-color: var(--code-bg) !important; color: #ff79c6; }
-pre { background-color: var(--code-bg) !important; border: 1px solid var(--border-color); }
+h1, h2, h3, h4, h5, strong { color: #f0f6fc !important; }
+a { color: var(--link-color) !important; text-decoration: none; }
+a:hover { text-decoration: underline; }
 
-/* 3. Sticky Sidebar Styling */
+/* 3. Sticky Sidebar */
 #markdown-toc {
     position: fixed;
-    top: 80px;
+    top: 50px;
     left: 20px;
     width: 220px;
-    max-height: 70vh;
+    max-height: 80vh;
     overflow-y: auto;
     font-size: 0.85em;
     list-style-type: none;
@@ -77,30 +38,40 @@ pre { background-color: var(--code-bg) !important; border: 1px solid var(--borde
     background: var(--sidebar-bg);
 }
 
-/* 4. The Toggle Button */
-#theme-toggle {
-    position: fixed;
-    top: 20px;
-    left: 20px;
-    z-index: 1000;
-    padding: 8px 12px;
-    cursor: pointer;
-    background: var(--sidebar-bg);
-    color: var(--text-color);
+/* 4. VS Code Code Blocks */
+.highlight, pre.highlight {
+    background-color: var(--vscode-bg) !important;
+    color: var(--vscode-text) !important;
+    padding: 16px;
+    border-radius: 6px;
     border: 1px solid var(--border-color);
-    border-radius: 5px;
+    overflow-x: auto;
 }
+.highlight span { background-color: transparent !important; }
+.highlight .k { color: #569cd6 !important; } /* Keywords */
+.highlight .nc { color: #4ec9b0 !important; } /* Types */
+.highlight .nf { color: #dcdcaa !important; } /* Functions */
+.highlight .s { color: #ce9178 !important; }  /* Strings */
+.highlight .mi { color: #b5cea8 !important; } /* Numbers */
+.highlight .c1 { color: #6a9955 !important; font-style: italic; } /* Comments */
 
-@media screen and (max-width: 1100px) {
-    #markdown-toc { position: relative; width: auto; top: 0; left: 0; }
-    #theme-toggle { position: relative; top: 0; left: 0; margin-bottom: 10px; }
+/* 5. Modern GitHub-style Alerts */
+blockquote {
+    padding: 0.5em 1em;
+    color: #8b949e;
+    border-left: 0.25em solid var(--border-color);
+    background: rgba(48, 54, 61, 0.2);
+    margin: 1.5em 0;
+}
+/* Style for NOTE/TIP specifically */
+blockquote p strong {
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 </style>
 
-<button id="theme-toggle">🌙 Dark Mode</button>
-
 <script>
-  // MathJax Config
   window.MathJax = {
     loader: {load: ['[tex]/color']},
     tex: {
@@ -110,30 +81,7 @@ pre { background-color: var(--code-bg) !important; border: 1px solid var(--borde
       processEscapes: true
     }
   };
-
-  // Theme Switching Logic
-  const toggleBtn = document.getElementById('theme-toggle');
-  const currentTheme = localStorage.getItem('theme');
-
-  if (currentTheme === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    toggleBtn.textContent = "☀️ Light Mode";
-  }
-
-  toggleBtn.addEventListener('click', () => {
-    let theme = document.documentElement.getAttribute('data-theme');
-    if (theme === 'dark') {
-        document.documentElement.removeAttribute('data-theme');
-        localStorage.setItem('theme', 'light');
-        toggleBtn.textContent = "🌙 Dark Mode";
-    } else {
-        document.documentElement.setAttribute('data-theme', 'dark');
-        localStorage.setItem('theme', 'dark');
-        toggleBtn.textContent = "☀️ Light Mode";
-    }
-  });
 </script>
-
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 ## Table of Contents

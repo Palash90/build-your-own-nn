@@ -127,42 +127,32 @@ blockquote {
 
 </style>
 
+
 <style>
-/* GitHub-style Alerts */
+/* 1. The GitHub Alert Box */
 blockquote {
-    padding: 0 1em;
-    color: #8b949e;
-    border-left: 0.25em solid #30363d;
-    margin: 1.5em 0;
+    padding: 0.8em 1em !important;
+    margin: 1.5em 0 !important;
+    background-color: rgba(56, 139, 253, 0.1) !important; /* GitHub's blue tint */
+    border-left: 0.25em solid #1f6feb !important;        /* GitHub's blue border */
+    border-radius: 6px !important;
+    color: #c9d1d9 !important;
 }
 
-/* Base style for the header inside the blockquote */
-blockquote p:first-child strong {
-    display: flex;
-    align-items: center;
-    margin-bottom: 8px;
-    font-size: 14px;
+/* 2. Target the "NOTE" text specifically */
+blockquote strong {
+    color: #58a6ff !important; /* The cyan/blue from your screenshot */
+    font-size: 0.9em !important;
+    letter-spacing: 0.5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
 }
 
-/* Blue NOTE style */
-blockquote:has(strong:contains("NOTE")) {
-    border-left-color: #1f6feb;
-}
-blockquote:has(strong:contains("NOTE")) strong {
-    color: #58a6ff;
-}
-/* Adding the GitHub Info Icon via SVG */
-blockquote:has(strong:contains("NOTE")) strong::before {
-    content: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" width="16" height="16" fill="%2358a6ff"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>');
+/* 3. Optional: Add the GitHub info icon */
+blockquote strong::before {
+    content: "ⓘ"; 
     margin-right: 8px;
-}
-
-/* Green TIP style */
-blockquote:has(strong:contains("TIP")) {
-    border-left-color: #238636;
-}
-blockquote:has(strong:contains("TIP")) strong {
-    color: #3fb950;
+    font-size: 1.1em;
 }
 </style>
 

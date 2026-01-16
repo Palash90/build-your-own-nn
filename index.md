@@ -248,7 +248,7 @@ blockquote strong::before {
 /* Force code blocks to be independent "islands" */
 .highlight {
     display: block !important;
-    background-color: #05070a !important;
+    background-color: #0c1420 !important;
     unicode-bidi: embed;
     white-space: pre; /* Keeps code structure */
     margin-bottom: 24px !important;

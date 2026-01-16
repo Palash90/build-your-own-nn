@@ -400,6 +400,26 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
 });
 </script>
 
+<script type="module">
+  import mermaid from '[https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs](https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs)';
+  
+  // 1. Find all Jekyll-generated mermaid code blocks
+  const blocks = document.querySelectorAll('.language-mermaid');
+  
+  blocks.forEach((block) => {
+    // 2. Create a new div with class "mermaid"
+    const div = document.createElement('div');
+    div.className = 'mermaid';
+    div.textContent = block.textContent;
+    
+    // 3. Replace the <pre><code> block with our new <div>
+    block.parentElement.replaceWith(div);
+  });
+
+  // 4. Initialize Mermaid
+  mermaid.initialize({ startOnLoad: true, theme: 'dark' });
+</script>
+
 <style>
 .author-card {
     display: flex;

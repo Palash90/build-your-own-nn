@@ -3,38 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rust Project Documentation</title>
+    <title>Rust Technical Docs</title>
     
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.2.0/github-markdown-dark.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
     
     <style>
-        body { background-color: #ffffff; } /* Matches GitHub Light */
+        body { background-color: #0d1117; margin: 0; }
         .markdown-body {
             box-sizing: border-box;
             min-width: 200px;
             max-width: 1012px;
             margin: 0 auto;
             padding: 45px;
-            border: 1px solid #d0d7de;
+        }
+        /* Custom styling for GitHub Alerts [!NOTE] */
+        .markdown-alert {
+            padding: 0.5rem 1rem;
+            margin-bottom: 1rem;
+            color: inherit;
+            border-left: .25em solid #30363d;
             border-radius: 6px;
-            margin-top: 20px;
         }
-        @media (max-width: 767px) {
-            .markdown-body { padding: 15px; border: none; }
-        }
+        .markdown-alert-note { border-left-color: #1f6feb; }
+        .markdown-alert-note .alert-title { color: #58a6ff; font-weight: 500; display: flex; align-items: center; }
     </style>
 
     <script>
         window.MathJax = {
             tex: {
-                inlineMath: [['$', '$'], ['\\(', '\\)']],
-                displayMath: [['$$', '$$'], ['\\[', '\\]']],
-                processEscapes: true,
-                processEnvironments: true
-            },
-            options: {
-                skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+                inlineMath: [['$', '$']],
+                displayMath: [['$$', '$$']],
+                processEscapes: true
             }
         };
     </script>
@@ -49,19 +49,28 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-rust.min.js"></script>
 
     <script>
+        // Custom parser for GitHub-style [!NOTE] tags
+        const renderer = new marked.Renderer();
+        renderer.blockquote = (quote) => {
+            if (quote.includes('[!NOTE]')) {
+                const content = quote.replace(/\[!NOTE\]/g, '').replace('<blockquote>', '').replace('</blockquote>', '');
+                return `<div class="markdown-alert markdown-alert-note"><p class="alert-title">Note</p>${content}</div>`;
+            }
+            return `<blockquote>${quote}</blockquote>`;
+        };
+
+        marked.setOptions({ renderer: renderer });
+
         async function render() {
             const response = await fetch('README.md');
-            const text = await response.text();
+            let text = await response.text();
             
-            // Set the HTML
+            // Fix misplaced hline/array logic before parsing
             document.getElementById('content').innerHTML = marked.parse(text);
 
-            // Trigger MathJax
-            if (window.MathJax && window.MathJax.typesetPromise) {
-                window.MathJax.typesetPromise();
+            if (window.MathJax) {
+                MathJax.typesetPromise();
             }
-
-            // Trigger Prism for Rust code blocks
             Prism.highlightAll();
         }
         render();

@@ -1,7 +1,3 @@
----
-layout: default
-title: Home
----
 # Build Your Own Neural Network from Scratch in Rust: From Zero to Image Reconstruction
 
 ## Prologue: Breaking the Black Box

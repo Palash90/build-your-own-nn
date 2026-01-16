@@ -1351,3 +1351,21 @@ xychart-beta
     line [3, 5, 7, 9, 11, 13]
 
 ```
+
+Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can derive at these two values, we can find the output of the equation given any unknown $x$ value.
+
+For example, if we want to know the value of $y$ when $x$ is $900$, we can easily derive at the output - $1803$.
+
+The aim of linear regression is to derive these foundational values from data. If we can collect many data points in input/output pair we can try to find the $m$ and $c$ of the equation to predict any value of $x$, provided the given data set has an almost linear representation.
+
+We'll continue with the following minimal dataset, such that we can perform the calculations in our head:
+
+
+```mermaid
+xychart-beta
+    title "Linear Regression with Real-World Noise"
+    x-axis "X" [0, 1, 2, 3, 4, 5]
+    y-axis "Y" 0 --> 14
+    scatter [2.85, 5.42, 6.78, 9.15, 10.65, 13.30]
+    line [3, 5, 7, 9, 11, 13]
+```

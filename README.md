@@ -1332,3 +1332,13 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 
 That's all the mathematics that we care for now and all the implementations are completed. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
 
+
+
+```mermaid
+xychart-beta
+    title "Training Loss"
+    x-axis "Epochs" [1, 2, 3, 4, 5]
+    y-axis "Value" 0 --> 1
+    line [0.8, 0.5, 0.3, 0.2, 0.1]
+
+```

@@ -1332,13 +1332,22 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 
 That's all the mathematics that we care for now and all the implementations are completed. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
 
+# Linear Regression
+Now that we have covered the mathematics, let's take at the simplest training process. In this section, we will see how we train machines to learn the linear relationship between input $X$ and output $Y$.
 
+The equation of a straight line expressed as:
+
+$$
+y = mx+c
+$$
+
+Let's visualize this on a 2 Dimensional Plane:
 
 ```mermaid
 xychart-beta
-    title "Training Loss"
-    x-axis "Epochs" [1, 2, 3, 4, 5]
-    y-axis "Value" 0 --> 1
-    line [0.8, 0.5, 0.3, 0.2, 0.1]
+    title "Linear Equation"
+    x-axis "X" [0, 1, 2, 3, 4, 5]
+    y-axis "Y" 0 --> 13
+    line [3, 5, 7, 9, 11, 13]
 
 ```

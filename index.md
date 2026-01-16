@@ -73,6 +73,20 @@ a { color: var(--link-color) !important; text-decoration: none; }
     #markdown-toc li:last-child::after { content: ""; }
 }
 
+/* Hide only level 5 and deeper in the TOC */
+#markdown-toc ul ul ul ul {
+    display: none !important;
+}
+
+/* Optional: Desktop indentation for hierarchy */
+@media screen and (min-width: 1012px) {
+    #markdown-toc ul {
+        list-style-type: none !important;
+        padding-left: 1.2em !important;
+        margin-top: 5px;
+    }
+}
+
 /* MathJax Wrapping Fix */
 .MathJax {
     white-space: normal;
@@ -177,7 +191,7 @@ blockquote {
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 * TOC
-{:toc: .toc-list levels="1..4"}
+{:toc}
 
 {% include_relative README.md %}
 
@@ -192,7 +206,7 @@ blockquote {
         data-reactions-enabled="1"
         data-emit-metadata="0"
         data-input-position="bottom"
-        data-theme="preferred_color_scheme"
+        data-theme="transparent_dark"
         data-lang="en"
         crossorigin="anonymous"
         async>

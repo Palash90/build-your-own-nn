@@ -67,7 +67,7 @@ a { color: var(--link-color) !important; text-decoration: none; }
 
 #markdown-toc li:hover {
     border-color: #58a6ff !important;
-    background: #1c2128 !important;
+    /* background: #1c2128 !important; */
 }
 
 #markdown-toc li a {

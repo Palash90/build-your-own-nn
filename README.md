@@ -23,7 +23,7 @@ While this guide does not assume mastery in Rust, a basic understanding of the f
 # Project Philosophy
 This guide is designed with a specific philosophy in mind: **Radical Transparency**. We do not start with frameworks or pre-built third-party libraries. We start with a blank file and a single `fn main()`. From there, we will incrementally build the mathematical and structural architecture required to perform complex tasks.
 
-## The Roadmap: From Zero to Image Reconstruction
+## The Roadmap
 
 This is the roadmap I wish I had two years ago. Whether you are a Rustacean curious about AI or an ML practitioner looking to understand systems-level implementation, this journey is for you.
 

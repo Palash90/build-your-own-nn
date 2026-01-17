@@ -391,8 +391,9 @@ fn main() -> Result<(), TensorError> {
 
 **Challenge to the readers:** I encourage the readers to implement their own formatting. I chose this formatting because I like it, you don't have to stick to this.
 
-
 # Basic Tensor Arithmetic
+If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).
+
 We have defined our tensor and established its notation. Now let's see how we operate on them.
 
 For tensors of any size or rank, we define the following operations:
@@ -1386,8 +1387,208 @@ We'll continue with the following minimal dataset, such that we can follow the c
 
 ```
 
-## The Process
+## The Random Starting Point
 If you look at the dataset carefully, you will find that the data (blue dots) does not follow a perfect straight line but the green straight line is a quite close approximation to all those data points. We'll try to train our model to guess the straight line from the dataset.
 
-The model starts with random values for $m$ and $c$. Then it calculates the $y$ values for the input $x$. This is model's prediction. Model now verifies the prediction with the actual output $y$ value for the corresponding $x$ value and it measures the difference between the actual $y$ value and the predicted value $\hat{y}$.
+The model starts with random values for $m$ and $c$. Then it calculates the $y$ values for the input $x$. This is model's prediction. Model now verifies the prediction with the actual output $y$ value for the corresponding $x$ value.
+
+Let's start implementing this first part. We have five data points here in this small example (in real-world datasets, we often have millions of such datapoints and once  we pass through the basic understanding of linear regression, we'll also work with larger datasets).
+
+We can define a random variables `m` and `c` separately and can initiate those variables with random values. Then we run a `for` loop on each entry of $x$ values to derive $y = mx + c$. However, this approach is not flexible. If we have $z = mx + ny +c$, where we deal with two inputs $x$ and $y$, rather than only $x$, we now need to trace two variables and this goes out of hand very quickly.
+
+To solve this problem, we will use our `Tensor` implementation instead. With tensors, we can handle multiple inputs and outputs at once and we can easily switch between different length of inputs and outputs.
+
+In fact, right now, we will use a single tensor to track both the values of $m$ and $c$. We will use a shortcut known as **Bias Trick**:
+
+$$
+W=\begin{bmatrix} m \\ c \end{bmatrix}
+$$
+
+And we append $1$ alongside $x$,
+
+$$
+X=\begin{bmatrix} x & 1\end{bmatrix}
+$$
+
+If we now calculate the dot product of these two matrices, we get the equation back:
+
+$$
+X \cdot W = \begin{bmatrix} x & 1\end{bmatrix} \cdot \begin{bmatrix} m \\ c \end{bmatrix} = x \cdot m + 1 \cdot c = mx + c
+$$
+
+
+Let's implement this. We need a random number generator first. As we are maintaining a no third-party policy, we'll write the maths ourselves. First we create a `trait` in `lib.rs`.
+
+```rust
+pub trait Rng {
+    fn next_u32(&mut self) -> i32;
+    fn next_f32(&mut self) -> f32 {
+        (self.next_u32() as f32) / (i32::MAX as f32)
+    }
+}
+
+```
+
+Then, we create a simple [Linear Congruential Generator](https://en.wikipedia.org/wiki/Linear_congruential_generator) in `main.rs`.
+
+```rust
+struct SimpleRng {
+    state: u64,
+}
+
+impl Rng for SimpleRng {
+    fn next_u32(&mut self) -> i32 {
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (self.state >> 32) as i32
+    }
+}
+```
+
+>**WARNING**
+>in real life scenarios, we would rather use optmized and more flexible libraries like `rand`, `rand_distr` etc. and I endourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
+
+We'll now create a new module (`linear.rs`) in our project to implement the linear regression. It will be a `struct` to hold the weights. The `impl` block will have the initiation, accessor and prediction methods. We'll name our prediction method as `forward` and very soon we'll see why such a naming convention is used.
+
+```rust
+pub struct Linear {
+    weight: Tensor,
+}
+
+impl Linear {
+    pub fn new(in_features: usize, out_features: usize, rng: &mut dyn Rng) -> Self {
+        let weights = (0..in_features * out_features)
+            .map(|_| rng.next_f32())
+            .collect();
+        let weight = Tensor::new(weights, vec![out_features, in_features]).unwrap();
+
+        Linear { weight }
+    }
+
+    pub fn forward(&self, input: &Tensor) -> Result<Tensor, TensorError> {
+        input.matmul(&self.weight.transpose()?)
+    }
+    
+    pub fn weight(&self) -> &Tensor {
+        &self.weight
+    }
+}
+
+```
+
+Finally, we'll add some driver code in our `main` function by replacing the existing code with the following:
+
+```rust
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let linear = Linear::new(2, 1, &mut rng);
+
+    println!("Weights:");
+    println!("{}", linear.weight());
+
+    let input = Tensor::new(vec![1.0, 1.0_f32, 2.0, 1.0_f32, 3.0, 1.0_f32, 4.0, 1.0_f32, 5.0, 1.0_f32], vec![5, 2])?;
+
+    println!("Input:");
+    println!("{}", input);
+
+    let output = linear.forward(&input).unwrap();
+    println!("Output:");
+    println!("{}", output);
+
+    Ok(())
+}
+```
+
+Look closer on when we are forming the `input` tensor. We are manually adding five `1.0_f32` after each original $x$ input values and we are adding one extra column in the input for bias. The resulting `output` will have $(5 \times 2) \cdot (2 \times 1) = (5 \times 1)$ predictions, matching our actual output dimensions. However, setting the bias this way is very cumbersome and error prone. Soon we'll add a method to add the bias term.
+
+Once built, we'll see the generated random weights and generated predictions:
+
+```text
+$ target/release/build-your-own-nn 
+Weights:
+  |  0.3701|
+  |  0.2155|
+
+Input:
+  |  1.0000,   1.0000|
+  |  2.0000,   1.0000|
+  |  3.0000,   1.0000|
+  |  4.0000,   1.0000|
+  |  5.0000,   1.0000|
+
+Output:
+  |  0.5855|
+  |  0.9556|
+  |  1.3257|
+  |  1.6958|
+  |  2.0658|
+
+```
+
+The output gives us the predicted $y$ values or $\hat(y)$. Let's visualize the generated line at this point, along with the target we are trying to achieve and the actual data:
+
+```plotly
+{
+  "title": "Generated Line After Initialization",
+  "traces": [
+    {
+      "type": "scatter",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.6, 6.6, 9.5, 10.2, 14],
+      "name": "Actual Data"
+    },
+    {
+      "type": "line",
+      "x": [0, 1, 2, 3, 4, 5, 6],
+      "y": [3, 5, 7, 9, 11, 13, 15],
+      "name": "Target"
+    },
+    {
+      "type": "line",
+      "x": [1, 2, 3, 4, 5],
+      "y": [0.5855, 0.9556, 1.3257, 1.6958, 2.0658],
+      "name": "Model Prediction"
+    }
+  ]
+}
+```
+
+>**NOTE**
+>as the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
+>A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fasctinating by nature. If you spare some time, I would encourage you to look farther.
+
+## The Loss Function
+Looking at the plot above, our eyes immediately register that the generated line is 'wrong'. It’s too low, and the slope is too shallow. But a computer doesn't have eyes—it cannot see that the line is far away, the way we see it. We need a way to translate this visual distance into a single number that the computer can minimize. This is where Loss Functions come in. We need a 'scorecard' that tells the model exactly how much it is failing.
+
+The easiest way would be to measure the distance between our predicted values and the actual values as follows:
+
+```plotly
+{
+  "title": "Residual Error Gap",
+  "traces": [
+    {
+      "type": "scatter",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.6, 6.6, 9.5, 10.2, 14],
+      "name": "Actual Data"
+    },
+    {
+      "type": "scatter",
+      "x": [1, 2, 3, 4, 5],
+      "y": [0.5855, 0.9556, 1.3257, 1.6958, 2.0658],
+      "name": "Model Prediction"
+    },
+    {
+      "type": "bar",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.0145, 5.6444, 8.1743, 8.5042, 11.9342],
+      "base": [0.5855, 0.9556, 1.3257, 1.6958, 2.0658],
+      "name": "Error Gap",
+      "marker": {"color": "rgba(214, 39, 40, 0.7)"},
+      "width": 0.05
+    }
+  ]
+}
+```
+
 

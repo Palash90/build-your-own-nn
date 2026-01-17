@@ -1,17 +1,34 @@
+use build_your_own_nn::Rng;
+use build_your_own_nn::linear::Linear;
 use build_your_own_nn::tensor::{Tensor, TensorError};
 
+struct SimpleRng {
+    state: u64,
+}
+
+impl Rng for SimpleRng {
+    fn next_u32(&mut self) -> i32 {
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (self.state >> 32) as u32 as i32
+    }
+}
+
 fn main() -> Result<(), TensorError> {
-    let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
+    let mut rng = SimpleRng { state: 73 };
 
-    let b = Tensor::new(
-        vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
-        vec![3, 3],
-    )?;
+    let linear = Linear::new(2, 1, &mut rng);
 
-    let c = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![4])?;
+    println!("Weights:");
+    println!("{}", linear.weight());
 
-    println!("{}", a);
-    println!("{}", b);
-    println!("{}", c);
+    let input = Tensor::new(vec![1.0, 1.0_f32, 2.0, 1.0_f32, 3.0, 1.0_f32, 4.0, 1.0_f32, 5.0, 1.0_f32], vec![5, 2])?;
+
+    println!("Input:");
+    println!("{}", input);
+
+    let output = linear.forward(&input).unwrap();
+    println!("Output:");
+    println!("{}", output);
+
     Ok(())
 }

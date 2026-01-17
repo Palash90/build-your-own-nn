@@ -908,6 +908,7 @@ $$
 
 #### The Optimized Implementation (IKJ)
 We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
+
 1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
 1. Modern CPU cores use SIMD (Single Instruction, Multiple Data) to perform the same operation on multiple values simultaneously as long as the operations can be performed independently of each other. The naive implementation is sequential. So, it cannot leverage the parallel processing power of the CPU.
 
@@ -934,7 +935,8 @@ Instead of the standard $i \xrightarrow{} j \xrightarrow{} k$ loop order, if we 
 
 1. **Improved Cache Locality:** In the IKJ order, the innermost loop moves across index `j`. This means we are reading `other.data` and writing to data in a straight, continuous line. The CPU can predict this "streaming" access and pre-fetch the data into the cache avoiding the RAM fetch.
 
-1. **Autovectorization (SIMD) Potential:** Because we are operating on contiguous slices of memory in the inner loop, the Rust compiler can easily apply SIMD. It can load 4 or 8 values from Matrix $B$, multiply them by the constant `aik` in one go, and add them to the result slice in a single CPU instruction.
+1. **Autovectorization (SIMD) Potential:** Because the inner loop operates on contiguous slices of memory and applies the same arithmetic operation independently across elements, this loop structure is amenable to compiler autovectorization. In such cases, the Rust compiler (via LLVM) may choose to emit SIMD instructions, allowing multiple values from matrix $B$ to be loaded, multiplied by the scalar `aik`, and accumulated into the output slice in parallel.
+It is important to note that SIMD usage is **not guaranteed**. However, this implementation aligns with the access patterns that modern compilers are most capable of optimizing.
 
 We have an intuition how it will work under the hood but we also need to make sure that the mathematics involved is intact and we end up in same result. Let's verify the mathematics in this case to ensure we are not missing any crucial point:
 
@@ -945,7 +947,7 @@ $$
 
 ##### Processing Row $i = 0$ (First row of A)
 We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
-        
+
 $$
 \begin{array}{}
 \begin{array}{c|c|c|c|}
@@ -1331,7 +1333,7 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
     }
 ```
 
-That's all the mathematics that we care for now and all the implementations are completed. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
+That's all the heavy mathematics that we care for now and all the implementations are completed. A few minor functions will still be needed, we'll implement them as required. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
 
 # Linear Regression
 Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. Machine learns the rules from data, thus the term "Machine Learning".
@@ -1591,4 +1593,163 @@ The easiest way would be to measure the distance between our predicted values an
 }
 ```
 
+In this lucky guess, we somehow got every error on the positive side but for a large number of data, this may not be the case. So, if we sum the differences, the result may become negative. 
+
+To solve the problem, we can choose to use the absolute differences, which automatically makes everything positive. This is a loss function (a.k.a **L1 loss**) used in many applications. However, L1 loss is not the only choice. Another common option is **L2 Loss** and is preferred over L1 at times.
+
+Now let's quickly write the functions to calculate the loss. We'll write these two functions in a separate module `loss` and also create a separate tests module `test_loss.rs`.
+
+```rust
+#[cfg(test)]
+mod tests {
+    use build_your_own_nn::{loss::{l1_loss, mse_loss}, tensor::{Tensor, TensorError}};
+
+    fn create_tensor(data: Vec<f32>, shape: Vec<usize>) -> Tensor {
+        Tensor::new(data, shape).unwrap()
+    }
+
+    #[test]
+    fn test_l1_loss_correctness() {
+        // L1 = sum(|predicted - actual|)
+        // |2.0 - 1.0| + |4.0 - 5.0| = 1.0 + 1.0 = 2.0
+        let pred = create_tensor(vec![2.0, 4.0], vec![2, 1]);
+        let actual = create_tensor(vec![1.0, 5.0], vec![2, 1]);
+        
+        let loss = l1_loss(&pred, &actual).unwrap();
+        
+        assert_eq!(loss.data()[0], 1.0);
+    }
+
+    #[test]
+    fn test_mse_loss_correctness() {
+        // MSE = 1/n * sum((predicted - actual)^2)
+        // (1/2) * ((2.0 - 1.0)^2 + (4.0 - 6.0)^2)
+        // (1/2) * (1.0 + 4.0) = 2.5
+        let pred = create_tensor(vec![2.0, 4.0], vec![2, 1]);
+        let actual = create_tensor(vec![1.0, 6.0], vec![2, 1]);
+        
+        let loss = mse_loss(&pred, &actual).unwrap();
+        
+        assert_eq!(loss.data()[0], 2.5);
+    }
+
+    #[test]
+    fn test_loss_shape_mismatch() {
+        let pred = create_tensor(vec![1.0, 2.0, 3.0], vec![3, 1]);
+        let actual = create_tensor(vec![1.0, 2.0], vec![2, 1]);
+        
+        let l1_result = l1_loss(&pred, &actual);
+        let mse_result = mse_loss(&pred, &actual);
+
+        assert!(matches!(l1_result, Err(TensorError::ShapeMismatch)));
+        assert!(matches!(mse_result, Err(TensorError::ShapeMismatch)));
+    }
+
+    #[test]
+    fn test_zero_loss() {
+        let pred = create_tensor(vec![1.0, 2.0, 3.0], vec![3, 1]);
+        let actual = create_tensor(vec![1.0, 2.0, 3.0], vec![3, 1]);
+        
+        let loss = mse_loss(&pred, &actual).unwrap();
+        assert_eq!(loss.data()[0], 0.0);
+    }
+}
+```
+
+We lack the implementation of few math functions in our tensor library.
+
+```rust
+    fn _element_wise_op_single<F>(&self, op: F) -> Result<Tensor, TensorError>
+    where
+        F: Fn(f32) -> f32,
+    {
+        let mut new_data = Vec::with_capacity(self.data.len());
+        for &val in &self.data {
+            new_data.push(op(val));
+        }
+        Tensor::new(new_data, self.shape.clone())
+    }
+
+    pub fn abs(&self) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a: f32| a.abs())
+    }
+
+    pub fn powf(&self, power: f32) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a: f32| a.powf(power))
+    }
+
+    pub fn scale(&self, scalar: &f32) -> Result<Tensor, TensorError> {
+        let scalar = *scalar;
+        self._element_wise_op_single(|a: f32| a * scalar)
+    }
+
+```
+
+Now, we can complete our implementations.
+
+```rust
+use crate::tensor::Tensor;
+use crate::tensor::TensorError;
+
+pub fn l1_loss(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    if predicted.shape() != actual.shape() {
+        return Err(TensorError::ShapeMismatch);
+    }
+
+    let n = predicted.shape().iter().product::<usize>() as f32;
+
+    let diff = predicted.sub(actual)?.abs()?;
+    diff.sum(None)?.scale(&(1.0 / n))
+}
+
+pub fn mse_loss(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    if predicted.shape() != actual.shape() {
+        return Err(TensorError::ShapeMismatch);
+    }
+
+    let n = predicted.shape().iter().product::<usize>() as f32;
+
+    predicted
+        .sub(actual)?
+        .powf(2.0)?
+        .sum(None)?
+        .scale(&(1.0 / n))
+}
+
+```
+
+Let's also look at both the results. We'll add the following lines after the last print statement:
+
+```rust
+
+    let actual = Tensor::new(vec![5.6, 6.6, 9.5, 10.2, 14.0], vec![5, 1])?;
+
+    println!("Actual:");
+    println!("{}", actual);
+
+    let l1_loss = l1_loss(&output, &actual)?;
+    let mse_loss = mse_loss(&output, &actual)?;
+
+    println!("L1 Loss:");
+    println!("{}", l1_loss);
+
+    println!("MSE Loss:");
+    println!("{}", mse_loss);
+
+```
+
+We now have all the ingredients to make predictions and to measure how wrong those predictions are. Let’s pause for a moment and restate where we are:
+
+- We have a model that produces predictions $\hat{y}$
+- We have actual values $y$
+- We have a loss function that converts the difference between $y$ and $\hat{y}$ into a single number
+
+At this point, the computer can tell us how bad the prediction is, but it still has no idea how to improve it.
+
+This is where the optimizer comes in.
+
+## Optimizer
+An optimizer answers a very specific question:
+
+>Given how wrong we are, how should we change the model parameters to be less wrong next time?
 

@@ -73,6 +73,17 @@ impl Tensor {
         Tensor::new(data, self.shape.clone())
     }
 
+    fn _element_wise_op_single<F>(&self, op: F) -> Result<Tensor, TensorError>
+    where
+        F: Fn(f32) -> f32,
+    {
+        let mut new_data = Vec::with_capacity(self.data.len());
+        for &val in &self.data {
+            new_data.push(op(val));
+        }
+        Tensor::new(new_data, self.shape.clone())
+    }
+
     pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Result<Tensor, TensorError> {
         if shape.len() == 0 || shape.len() > 2 {
             return Err(TensorError::InvalidRank);
@@ -102,6 +113,19 @@ impl Tensor {
 
     pub fn mul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a * b)
+    }
+
+    pub fn abs(&self) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a: f32| a.abs())
+    }
+
+    pub fn powf(&self, power: f32) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a: f32| a.powf(power))
+    }
+
+    pub fn scale(&self, scalar: &f32) -> Result<Tensor, TensorError> {
+        let scalar = *scalar;
+        self._element_wise_op_single(|a: f32| a * scalar)
     }
 
     pub fn transpose(&self) -> Result<Tensor, TensorError> {

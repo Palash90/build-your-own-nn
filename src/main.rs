@@ -1,5 +1,6 @@
 use build_your_own_nn::Rng;
 use build_your_own_nn::linear::Linear;
+use build_your_own_nn::loss::{l1_loss, mse_loss};
 use build_your_own_nn::tensor::{Tensor, TensorError};
 
 struct SimpleRng {
@@ -29,6 +30,21 @@ fn main() -> Result<(), TensorError> {
     let output = linear.forward(&input).unwrap();
     println!("Output:");
     println!("{}", output);
+
+
+    let actual = Tensor::new(vec![5.6, 6.6, 9.5, 10.2, 14.0], vec![5, 1])?;
+
+    println!("Actual:");
+    println!("{}", actual);
+
+    let l1_loss = l1_loss(&output, &actual)?;
+    let mse_loss = mse_loss(&output, &actual)?;
+
+    println!("L1 Loss:");
+    println!("{}", l1_loss);
+
+    println!("MSE Loss:");
+    println!("{}", mse_loss);
 
     Ok(())
 }

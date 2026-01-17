@@ -1343,12 +1343,17 @@ $$
 
 Let's visualize this on a 2 Dimensional Plane:
 
-```mermaid
-xychart-beta
-    title "Linear Equation"
-    x-axis "X" [0, 1, 2, 3, 4, 5]
-    y-axis "Y" 0 --> 13
-    line [3, 5, 7, 9, 11, 13]
+```plotly
+{
+    "title": "Linear Equation",
+    "traces":[
+        {
+            "type": "line",
+            "x": [1, 2, 3, 4, 5],
+            "y": [5, 7, 9, 11, 13]
+        }
+    ]
+}
 
 ```
 
@@ -1361,24 +1366,28 @@ The aim of linear regression is to derive these foundational values from data. I
 We'll continue with the following minimal dataset, such that we can follow the calculations easily:
 
 
-```mermaid
----
-config:
-  themeVariables:
-    xyChart:
-      plotColorPalette: '#88C0D0, #FF0000'
-      showDataLabel: true
----
-xychart-beta
-    title "Linear Regression Data Set"
-    x-axis "X-Input" [0, 1, 2, 3, 4, 5, 6, 7]
-    y-axis "Y-Output" 0 --> 21
-    bar [2.6, 5.9, 6.2, 10, 10.5, 13.5, 14.6, 18.3]
-    line [3, 5, 7, 9, 11, 13, 15, 17]
+```plotly
+
+{
+  "title": "Linear Regression Dataset",
+  "traces": [
+    {
+      "type": "scatter",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.6, 6.6, 9.5, 10.2, 14]
+    },
+    {
+      "type": "line",
+      "x": [0, 1, 2, 3, 4, 5, 6],
+      "y": [3, 5, 7, 9, 11, 13, 15]
+    }
+  ]
+}
+
 ```
 
 ## The Process
-If you look at the dataset carefully, you will find that the data (blue bars) does not follow a perfect straight line but the red straight line is a quite close approximation to all those data points. We'll try to train our model to guess the red line from the dataset.
+If you look at the dataset carefully, you will find that the data (blue dots) does not follow a perfect straight line but the green straight line is a quite close approximation to all those data points. We'll try to train our model to guess the straight line from the dataset.
 
 The model starts with random values for $m$ and $c$. Then it calculates the $y$ values for the input $x$. This is model's prediction. Model now verifies the prediction with the actual output $y$ value for the corresponding $x$ value and it measures the difference between the actual $y$ value and the predicted value $\hat{y}$.
 

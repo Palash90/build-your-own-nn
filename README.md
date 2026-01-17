@@ -652,7 +652,7 @@ $$
 $$
 
 ### Matrix Vector Dot Product
-In a Matrix-Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
+In a Matrix Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
 
 To perform a dot product between a matrix $A$ and a vector $v$, the number of columns in the matrix must equal the number of elements (rows) in the vector.
 
@@ -1333,7 +1333,7 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 That's all the mathematics that we care for now and all the implementations are completed. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
 
 # Linear Regression
-Now that we have covered the mathematics, let's take at the simplest training process. In this section, we will see how we train machines to learn the linear relationship between input $X$ and output $Y$.
+Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. Machine learns the rules from data, thus the term "Machine Learning".
 
 The equation of a straight line expressed as:
 
@@ -1379,4 +1379,6 @@ xychart-beta
 
 ## The Process
 If you look at the dataset carefully, you will find that the data (blue bars) does not follow a perfect straight line but the red straight line is a quite close approximation to all those data points. We'll try to train our model to guess the red line from the dataset.
+
+The model starts with random values for $m$ and $c$. Then it calculates the $y$ values for the input $x$. This is model's prediction. Model now verifies the prediction with the actual output $y$ value for the corresponding $x$ value and it measures the difference between the actual $y$ value and the predicted value $\hat{y}$.
 

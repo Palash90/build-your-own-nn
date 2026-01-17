@@ -1,3 +1,5 @@
 target
 /.quarto/
-
+_site
+Gemfile.lock
+/node_modules

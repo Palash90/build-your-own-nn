@@ -322,7 +322,6 @@ blockquote strong::before {
 </style>
 
 <script>
-  <script>
   window.MathJax = {
     loader: {load: ['[tex]/color']},
     tex: {
@@ -422,7 +421,7 @@ document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
     
     // 3. Replace the <pre><code> block with our new <div>
     block.parentElement.replaceWith(div);
-    
+
   });
 
   // 4. Initialize Mermaid

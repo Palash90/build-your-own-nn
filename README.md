@@ -1366,7 +1366,7 @@ xychart-beta
     title "Linear Regression Data Set"
     x-axis "X-Input" [0, 1, 2, 3, 4, 5]
     y-axis "Y-Output" 0 --> 15
-    bar [2.8, 5.4, 6.7, 9.2, 10.6, 13.3]
+    bar [2.8, 5.4, 6.4, 9.6, 10.2, 13.2]
     line [3, 5, 7, 9, 11, 13]
 ```
 

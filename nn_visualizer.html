@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neural Network: Demystified</title>
+    <style>
+        /* Highlight for the layer currently being processed */
+        .active-layer {
+            stroke: #fff !important;
+            stroke-width: 3px !important;
+            filter: drop-shadow(0 0 8px #00ff00);
+        }
+
+        .active-link {
+            stroke: #00ff00 !important;
+            stroke-width: 2px !important;
+            opacity: 1.0 !important;
+        }
+
+        body {
+            background: #1a1a1a;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            display: flex;
+            gap: 20px;
+            padding: 20px;
+            margin: 0;
+            height: 100vh;
+            box-sizing: border-box;
+        }
+
+        /* Sidebar & Inspector */
+        .sidebar {
+            width: 380px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            overflow-y: auto;
+        }
+
+        .panel {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        /* SVG Display */
+        #svg-container {
+            flex: 1;
+            background: #000;
+            border: 1px solid #444;
+            border-radius: 8px;
+            position: relative;
+        }
+
+        svg {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Neuron Styling */
+        .neuron-shell {
+            fill: #222;
+            stroke: #444;
+        }
+
+        .stage-linear {
+            fill: #111;
+            stroke: #0088ff;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .stage-linear:hover {
+            fill: #004466;
+            r: 9;
+        }
+
+        .stage-activation {
+            fill: #111;
+            stroke: #ff00ff;
+            stroke-width: 2;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .stage-activation:hover {
+            fill: #660066;
+            r: 9;
+        }
+
+        /* Activation Colors */
+        .act-relu {
+            stroke: #ff00ff;
+        }
+
+        .act-sigmoid {
+            stroke: #ffff00;
+        }
+
+        .act-tanh {
+            stroke: #00ffff;
+        }
+
+        .act-softmax {
+            stroke: #ffffff;
+        }
+
+        .act-linear {
+            stroke: #888888;
+        }
+
+        .link {
+            stroke: #333;
+            stroke-width: 1;
+            opacity: 0.5;
+        }
+
+        /* Inspector Text */
+        h4 {
+            margin: 0 0 10px 0;
+            color: #aaa;
+            text-transform: uppercase;
+            font-size: 0.8em;
+        }
+
+        .data-val {
+            color: #fff;
+            font-family: monospace;
+            font-size: 0.85em;
+            word-break: break-all;
+            background: #1a1a1a;
+            padding: 8px;
+            display: block;
+            margin-top: 5px;
+            border-radius: 4px;
+            border-left: 3px solid #444;
+        }
+
+        button {
+            width: 100%;
+            background: #004400;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="sidebar">
+        <div class="panel">
+            <h4>Architecture Definition</h4>
+            <p style="font-size: 0.7em; color: #888;">Format: nodes:type, nodes:type...</p>
+            <input type="text" id="topoInput" value="2:linear, 4:relu, 3:softmax"
+                style="width:100%; background:#111; color:#00ff00; border:1px solid #00ff00; padding:8px; box-sizing: border-box;">
+            <button onclick="initNetwork()">REBUILD & INITIALIZE</button>
+        </div>
+
+        <div class="panel">
+            <div class="panel">
+                <h4>Inference Test</h4>
+                <p style="font-size: 0.7em; color: #888;">Input Vector (comma separated):</p>
+                <input type="text" id="vectorInput" value="0.5, -0.2"
+                    style="width:100%; background:#111; color:#00ff00; border:1px solid #444; padding:8px; box-sizing: border-box;">
+
+                <p style="font-size: 0.7em; color: #888; margin-top: 10px;">Target Vector (for Backprop):</p>
+                <input type="text" id="targetInput" value="1.0, 0.0, 0.0"
+                    style="width:100%; background:#111; color:#ff00ff; border:1px solid #444; padding:8px; box-sizing: border-box;">
+
+                <button onclick="runInferenceUI()"
+                    style="background: #003366; border-color: #0088ff; color: #88ccff;">RUN FULL PASS</button>
+
+                <button onclick="stepDebugger()"
+                    style="background: #443300; border-color: #ffaa00; color: #ffaa00;">STEP
+                    THROUGH LAYERS</button>
+            </div>
+        </div>
+        <div class="panel">
+            <h4>Performance</h4>
+            <p>Current Loss (MSE): <span id="lossValue" style="color: #ff00ff;">0.0000</span></p>
+        </div>
+
+        <div class="panel" id="inspector">
+            <h3 style="margin-top:0; color:#00ff00; border-bottom: 1px solid #444; padding-bottom: 10px;">Inspector</h3>
+            <div id="inspect-content">
+                <p style="color:#666">Click any Blue (Linear) or Pink/Yellow (Activation) circle to see the math
+                    buffers.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="svg-container">
+        <svg id="mainSvg">
+            <g id="linksGroup"></g>
+            <g id="nodesGroup"></g>
+        </svg>
+    </div>
+
+    <script>
+
+        let currentStep = 0;
+        let isForwardPass = true;
+        let errorSignal = [];
+        let stepperInput = []; // To remember the original input for backprop
+
+        function highlightLayer(idx, isBackward = false) {
+            // Clear existing
+            document.querySelectorAll('.active-layer, .active-link').forEach(el => el.classList.remove('active-layer', 'active-link'));
+
+            const color = isBackward ? "#ff00ff" : "#00ff00";
+            const nodes = document.querySelectorAll(`.layer-group-${idx} .neuron-shell`);
+
+            nodes.forEach(n => {
+                n.classList.add('active-layer');
+                n.style.filter = `drop-shadow(0 0 8px ${color})`;
+                n.style.stroke = color;
+            });
+        }
+
+        function stepDebugger() {
+    const inspector = document.getElementById('inspect-content');
+
+    // --- FORWARD PASS LOGIC ---
+    if (isForwardPass) {
+        // Step 0: Handle Initial Input
+        if (currentStep === 0) {
+            stepperInput = document.getElementById('vectorInput').value.split(',').map(v => parseFloat(v.trim()));
+            window.activeSignal = [...stepperInput];
+            highlightLayer(0);
+            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Input Layer</h4><p>Data: [${window.activeSignal.map(v => v.toFixed(2))}]</p>`;
+            currentStep++;
+            return;
+        }
+
+        // Step 1 to N: Handle Hidden and Output Layers
+        // layerIdx needs to be currentStep - 1 because network[0] is the FIRST connection (to hidden layer 1)
+        const layerIdx = currentStep - 1; 
+        
+        if (layerIdx < network.length) {
+            window.activeSignal = network[layerIdx].forward(window.activeSignal);
+            highlightLayer(currentStep); // This highlights the layer that just RECEIVED data
+
+            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Layer ${currentStep} (${network[layerIdx].activationType})</h4>
+                                   <p>Output: [${window.activeSignal.map(v => v.toFixed(4))}]</p>`;
+            
+            currentStep++;
+        }
+
+        // Check if we just finished the last layer
+        if (currentStep > network.length) {
+            isForwardPass = false; 
+            currentStep = network.length - 1; // Prepare for backprop starting at the last layer
+
+            const targetStr = document.getElementById('targetInput').value;
+            const targetVector = targetStr.split(',').map(v => parseFloat(v.trim()));
+
+            // Update loss display at end of forward pass
+            calculateLoss(window.activeSignal, targetVector);
+            inspector.innerHTML += `<p style="color:yellow">Forward Pass Complete. Ready for BACKWARD PASS.</p>`;
+        }
+    }
+    // --- BACKWARD PASS LOGIC ---
+    else {
+        // ... (Keep your existing backward logic, it works with the currentStep adjustment)
+        const layer = network[currentStep];
+        const isOutput = (currentStep === network.length - 1);
+        errorSignal = layer.backward(errorSignal, 0.1, isOutput);
+        highlightLayer(currentStep + 1, true); 
+
+        inspector.innerHTML = `<h4 style="color:#ff00ff">BACKWARD: Layer ${currentStep + 1}</h4>
+                               <p>Gradients calculated and weights updated.</p>`;
+
+        currentStep--;
+        if (currentStep < 0) {
+            inspector.innerHTML += `<h4 style="color:#00ff00">Full Cycle Complete!</h4>`;
+            resetDebugger();
+        }
+    }
+
+    draw();
+}
+        
+        
+        function resetDebugger() {
+            currentStep = 0;
+            isForwardPass = true;
+        }
+
+        function calculateLoss(output, target) {
+            let sumSqError = 0;
+            for (let i = 0; i < output.length; i++) {
+                sumSqError += Math.pow(output[i] - target[i], 2);
+            }
+            const mse = sumSqError / output.length;
+            document.getElementById('lossValue').innerText = mse.toFixed(6);
+        }
+
+        // --- 1. Math Dispatcher ---
+        const Activations = {
+            linear: (x) => x,
+            relu: (x) => Math.max(0, x),
+            sigmoid: (x) => 1 / (1 + Math.exp(-x)),
+            tanh: (x) => Math.tanh(x),
+            softmax: (arr) => {
+                const exponents = arr.map(v => Math.exp(v));
+                const sum = exponents.reduce((a, b) => a + b, 0);
+                return exponents.map(v => v / sum);
+            }
+        };
+
+        // --- 2. Layer Class Definition ---
+        class Layer {
+            constructor(inputSize, outputSize, activationType, layerIndex) {
+                this.inputSize = inputSize;
+                this.outputSize = outputSize;
+                this.activationType = activationType;
+                this.layerIndex = layerIndex;
+
+                // Weights: Rows = inputSize + 1 (Weight index 0 is the bias)
+                this.weights = Array.from({ length: inputSize + 1 }, () =>
+                    Array.from({ length: outputSize }, () => (Math.random() * 2 - 1))
+                );
+
+                this.lastInput = []; //
+                this.lastZ = new Array(outputSize).fill(0); //
+                this.lastA = new Array(outputSize).fill(0); //
+                this.deltas = new Array(outputSize).fill(0);
+            }
+
+            // --- Forward Pass (Existing) ---
+            forward(input) {
+                this.lastInput = [...input]; //
+                const biasedInput = [1.0, ...input]; //
+
+                const zValues = []; //
+                for (let j = 0; j < this.outputSize; j++) {
+                    let sum = 0;
+                    for (let i = 0; i < biasedInput.length; i++) {
+                        sum += biasedInput[i] * this.weights[i][j]; //
+                    }
+                    zValues.push(sum);
+                }
+
+                this.lastZ = zValues; //
+                this.lastA = this.activationType === 'softmax'  //
+                    ? Activations.softmax(this.lastZ)
+                    : this.lastZ.map(z => Activations[this.activationType](z));
+                return this.lastA;
+            }
+
+            // Inside the Layer class
+            // Replace the backward method in your Layer class
+            backward(targetOrNextError, learningRate, isOutputLayer = false) {
+                const newDeltas = new Array(this.outputSize);
+
+                // 1. Calculate Deltas
+                for (let j = 0; j < this.outputSize; j++) {
+                    let error = isOutputLayer
+                        ? this.lastA[j] - targetOrNextError[j]
+                        : targetOrNextError[j];
+
+                    let derivative = 1;
+                    if (this.activationType === 'relu') derivative = this.lastZ[j] > 0 ? 1 : 0;
+                    if (this.activationType === 'sigmoid') derivative = this.lastA[j] * (1 - this.lastA[j]);
+                    if (this.activationType === 'tanh') derivative = 1 - Math.pow(this.lastA[j], 2); // Fixed variable name
+
+                    newDeltas[j] = error * derivative;
+                }
+
+                // 2. Calculate error for PREVIOUS layer BEFORE updating weights
+                const prevLayerError = new Array(this.inputSize).fill(0);
+                for (let i = 1; i <= this.inputSize; i++) {
+                    for (let j = 0; j < this.outputSize; j++) {
+                        prevLayerError[i - 1] += this.weights[i][j] * newDeltas[j];
+                    }
+                }
+
+                // 3. Update Weights
+                const biasedInput = [1.0, ...this.lastInput];
+                for (let i = 0; i < biasedInput.length; i++) {
+                    for (let j = 0; j < this.outputSize; j++) {
+                        const gradient = newDeltas[j] * biasedInput[i];
+                        this.weights[i][j] -= learningRate * gradient;
+                    }
+                }
+
+                this.deltas = newDeltas;
+                return prevLayerError;
+            }
+        }
+
+        // --- 3. Network & UI State ---
+        let network = [];
+        let currentConfigs = [];
+
+        function initNetwork() {
+            const inputStr = document.getElementById('topoInput').value;
+            currentConfigs = inputStr.split(',').map(part => {
+                const [size, act] = part.trim().split(':');
+                return { size: parseInt(size), act: act.trim().toLowerCase() };
+            });
+
+            network = [];
+            for (let i = 1; i < currentConfigs.length; i++) {
+                network.push(new Layer(currentConfigs[i - 1].size, currentConfigs[i].size, currentConfigs[i].act, i));
+            }
+
+            draw();
+            document.getElementById('inspect-content').innerHTML = '<p style="color:#00ff00">Network Initialized with Random Weights.</p>';
+
+            resetDebugger();
+        }
+
+        function runInferenceUI() {
+            const inputData = document.getElementById('vectorInput').value.split(',').map(v => parseFloat(v.trim()));
+            if (inputData.length !== currentConfigs[0].size) {
+                alert(`Input size mismatch! Expected ${currentConfigs[0].size} numbers.`);
+                return;
+            }
+
+            let signal = inputData;
+            network.forEach(layer => {
+                signal = layer.forward(signal);
+            });
+
+            document.getElementById('inspect-content').innerHTML = `<p style="color:#88ccff">Forward Pass Complete.<br>Output: [${signal.map(v => v.toFixed(4)).join(', ')}]</p>`;
+        }
+
+        function draw() {
+            const svg = document.getElementById('mainSvg');
+            const nodesG = document.getElementById('nodesGroup');
+            const linksG = document.getElementById('linksGroup');
+
+            nodesG.innerHTML = '';
+            linksG.innerHTML = '';
+
+            const rect = svg.getBoundingClientRect();
+            const w = rect.width;
+            const h = rect.height;
+
+            if (w === 0 || h === 0) {
+                setTimeout(draw, 100);
+                return;
+            }
+
+            const margin = 80;
+
+            // 1. Calculate Coordinates for all nodes
+            const layerCoords = currentConfigs.map((config, lIdx) => {
+                const x = margin + (lIdx * (w - 2 * margin) / (currentConfigs.length - 1));
+                return Array.from({ length: config.size }, (_, nIdx) => ({
+                    x,
+                    y: config.size === 1 ? h / 2 : margin + (nIdx * (h - 2 * margin) / (config.size - 1)),
+                    lIdx, nIdx, act: config.act
+                }));
+            });
+
+
+            // 3. Draw Neurons
+            layerCoords.forEach((layer, lIdx) => {
+                layer.forEach((node, nIdx) => {
+                    const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+                    g.setAttribute("class", `layer-group-${lIdx}`);
+
+                    const shell = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                    shell.setAttribute("x", node.x - 25); shell.setAttribute("y", node.y - 15);
+                    shell.setAttribute("width", 50); shell.setAttribute("height", 30); shell.setAttribute("rx", 15);
+                    shell.setAttribute("class", "neuron-shell");
+
+                    // Highlight the active layer nodes
+                    if (currentStep === lIdx) {
+                        shell.classList.add('active-layer');
+                    }
+
+                    g.appendChild(shell);
+
+                    // Linear Stage (Blue)
+                    const cLin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    cLin.setAttribute("cx", node.x - 10); cLin.setAttribute("cy", node.y);
+                    cLin.setAttribute("r", 7); cLin.setAttribute("class", "stage-linear");
+                    cLin.onclick = () => inspectStage(lIdx, nIdx, 'linear');
+                    g.appendChild(cLin);
+
+                    // Activation Stage (Color based on type)
+                    const cAct = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                    cAct.setAttribute("cx", node.x + 10); cAct.setAttribute("cy", node.y);
+                    cAct.setAttribute("r", 7);
+                    cAct.setAttribute("class", `stage-activation act-${node.act}`);
+                    cAct.onclick = () => inspectStage(lIdx, nIdx, 'activation');
+                    g.appendChild(cAct);
+
+                    nodesG.appendChild(g);
+                });
+            });
+        }
+        function inspectStage(lIdx, nIdx, stage) {
+            const content = document.getElementById('inspect-content');
+            if (lIdx === 0) {
+                content.innerHTML = `<h4>Input Node ${nIdx}</h4><p>Value passed directly from input vector.</p>`;
+                return;
+            }
+
+            const layerObj = network[lIdx - 1];
+            const nodeWeights = layerObj.weights.map(row => row[nIdx]);
+            const biasWeight = nodeWeights[0];
+            const actualWeights = nodeWeights.slice(1);
+
+            content.innerHTML = `
+                <h4>L:${lIdx} Node:${nIdx}</h4>
+                <div style="color:${stage === 'linear' ? '#0088ff' : '#ff00ff'}">STAGE: ${stage.toUpperCase()}</div>
+                <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
+                
+                <b>Activation Type:</b>
+                <span class="data-val">${layerObj.activationType}</span>
+
+                <b style="margin-top:10px; display:block;">Bias Trick Weight (w0):</b>
+                <span class="data-val">${biasWeight}</span>
+
+                <b style="margin-top:10px; display:block;">Weights from Prev Layer:</b>
+                <span class="data-val">${actualWeights.join(' | ')}</span>
+
+                <b style="margin-top:10px; display:block;">Linear Sum (z):</b>
+                <span class="data-val" style="color:#0088ff">${layerObj.lastZ[nIdx].toFixed(6)}</span>
+
+                <b style="margin-top:10px; display:block;">Activated Output (a):</b>
+                <span class="data-val" style="color:#ff00ff">${layerObj.lastA[nIdx].toFixed(6)}</span>
+            `;
+        }
+
+        window.onload = initNetwork;
+    </script>
+</body>
+
+</html>

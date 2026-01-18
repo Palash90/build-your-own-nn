@@ -275,6 +275,11 @@
                 const layer = network[layerIdx];
                 const isOutput = (currentStep === network.length);
 
+                if (isOutput) {
+                    errorSignal = document.getElementById('targetInput').value
+                        .split(',').map(v => parseFloat(v.trim()));
+                }
+
                 // Calculate gradients and update weights
                 errorSignal = layer.backward(errorSignal, 0.1, isOutput);
 

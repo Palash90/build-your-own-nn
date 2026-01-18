@@ -31,9 +31,13 @@
             border: 1px solid #444;
         }
 
-        #chart {
-            flex: 2;
-            height: 500px;
+        #chart,
+        #lossChart {
+            width: 100%;
+        }
+
+        #lossChart {
+            height: 300px;
         }
 
         .layer-viz {
@@ -130,11 +134,13 @@
 
 <body>
 
-    <h1>Linear Layer: Internal Trace &nbsp; &nbsp; &nbsp;<span id="status" class="status-tag" style="display:none">TRAINING...</span></h1>
+    <h1>Linear Layer: Internal Trace &nbsp; &nbsp; &nbsp;<span id="status" class="status-tag"
+            style="display:none">TRAINING...</span></h1>
     <p>This tool accompanies the learning guide: <a href="/#linear-regression">Linear Regression</a></p>
 
     <div class="main-container">
         <div id="chart" class="panel"></div>
+        <div id="lossChart" class="panel"></div>
         <div class="layer-viz panel">
             <h3>Linear Layer Internals</h3>
             <div class="matrix-box">
@@ -143,13 +149,18 @@
             </div>
             <div style="text-align: center; font-size: 1.5em;">×</div>
             <div class="matrix-box">
-                <span class="matrix-label">Weights W (m and c)</span>
+                <span class="matrix-label">Model Weights W (m and c)</span>
                 <div id="matrixW" class="highlight"></div>
             </div>
             <div style="text-align: center; font-size: 1.5em;">=</div>
             <div class="matrix-box">
                 <span class="matrix-label">Output (Forward Pass)</span>
                 <div id="matrixOut"></div>
+            </div>
+            <hr style="width: 100%; border-color: #444;">
+            <div class="matrix-box">
+                <span class="matrix-label">True Weights W (m and c)</span>
+                <div id="trueWeights" class="highlight"></div>
             </div>
             <hr style="width: 100%; border-color: #444;">
             <div id="traceLog">
@@ -255,24 +266,18 @@
             }
         }
 
-        async function train() {
+        let lossHistory = []; // To store [epoch, loss] pairs
 
+        async function train() {
             if (isTraining) return;
 
             const { x: xRaw, y: yRaw } = getInputs();
-
-            // --- SAFETY CHECK ---
-            if (xRaw.some(v => Math.abs(v) > 50) || yRaw.some(v => Math.abs(v) > 300)) {
-                alert("Safety Limit: X <= 100, Y <= 500");
-                return;
-            }
-            if (xRaw.length !== yRaw.length) {
-                alert("Error: X and Y must have the same number of values.");
-                return;
-            }
+            // ... (Keep your existing safety checks here) ...
 
             isTraining = true;
             stopFlag = false;
+            lossHistory = []; // Reset history for new run
+
             document.getElementById('trainBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'block';
             document.getElementById('status').style.display = 'inline';
@@ -288,6 +293,9 @@
                 let preds = xRaw.map(x => (x * m) + c);
                 let loss = preds.reduce((acc, p, i) => acc + Math.pow(p - yRaw[i], 2), 0) / n;
 
+                // Save loss for the curve
+                lossHistory.push(loss);
+
                 let m_grad = 0, c_grad = 0;
                 for (let i = 0; i < n; i++) {
                     let err = preds[i] - yRaw[i];
@@ -295,9 +303,8 @@
                     c_grad += (2 / n) * err;
                 }
 
-                // Check for Exploding Gradient
                 if (isNaN(m_grad) || isNaN(c_grad)) {
-                    alert("Gradients Exploded (NaN). Try smaller X values or a lower learning rate.");
+                    alert("GRADIENT EXPLODED! LR is too high for this data scale.");
                     stopFlag = true;
                     break;
                 }
@@ -305,9 +312,9 @@
                 m -= lr * m_grad;
                 c -= lr * c_grad;
 
-                // Update UI every few frames to save performance
                 updateInternalViz(xRaw, preds, loss, m_grad, c_grad, e);
                 updateChart();
+                updateLossChart(); // Update the new curve
 
                 if (delay > 0) await new Promise(r => setTimeout(r, delay));
             }
@@ -316,6 +323,28 @@
             document.getElementById('trainBtn').style.display = 'block';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('status').style.display = 'none';
+        }
+
+        function updateLossChart() {
+            const trace = {
+                x: lossHistory.map((_, i) => i),
+                y: lossHistory,
+                type: 'scatter',
+                mode: 'lines',
+                name: 'MSE Loss',
+                line: { color: '#00ff00' }
+            };
+
+            const layout = {
+                title: { text: 'Epoch vs Loss (Error)', font: { color: '#aaa', size: 12 } },
+                paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a',
+                margin: { t: 30, b: 30, l: 40, r: 20 },
+                font: { color: '#00ff00' },
+                xaxis: { gridcolor: '#333', title: 'Epoch' },
+                yaxis: { gridcolor: '#333', title: 'Loss', type: 'log' } // Log scale helps see small improvements
+            };
+
+            Plotly.react('lossChart', [trace], layout);
         }
 
 
@@ -343,6 +372,8 @@
             document.getElementById('inputX').value = xVals.join(', ');
             document.getElementById('inputY').value = yVals.join(', ');
 
+            document.getElementById('trueWeights').innerHTML = `| ${Number(trueM).toFixed(4)} | (m)<br>| ${Number(trueC).toFixed(4)} | (c)`;
+
             // Refresh the visualizer with the new data
             resetWeights();
         }
@@ -354,7 +385,7 @@
         document.getElementById('resetBtn').addEventListener('click', resetWeights);
 
         randomizeData();
-        </script>
+    </script>
 </body>
 
 </html>

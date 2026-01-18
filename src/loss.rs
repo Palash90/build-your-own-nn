@@ -25,3 +25,10 @@ pub fn mse_loss(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorErr
         .sum(None)?
         .scale(&(1.0 / n))
 }
+
+pub fn mse_loss_gradient(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    // Gradient of MSE: 2/n * (predicted - actual)
+    let diff = predicted.sub(actual)?;
+    let n = predicted.shape()[0] as f32;
+    diff.scale(&(2.0 / n))
+}

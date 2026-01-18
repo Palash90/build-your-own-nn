@@ -95,6 +95,8 @@ impl Tensor {
         Ok(Tensor { data, shape })
     }
 
+    pub fn empty() -> Tensor { Tensor { data: vec![], shape: vec![] }}
+
     pub fn data(&self) -> &[f32] {
         &self.data
     }

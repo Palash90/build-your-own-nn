@@ -1749,7 +1749,373 @@ At this point, the computer can tell us how bad the prediction is, but it still 
 This is where the optimizer comes in.
 
 ## Optimizer
-An optimizer answers a very specific question:
+The loss value itself is not super useful. We just know that, the loss is high and we have to minimize the loss. Now, let's do a small experiment involving only these two parameters $m$ and $c$.
 
->Given how wrong we are, how should we change the model parameters to be less wrong next time?
+We start a methodical experiment and compute loss for each of the following steps:
 
+1. Increase the value of $m$ slightly
+2. Decrease the value of $m$ slightly
+3. Increase the value of $c$ slightly
+4. Decrease the value of $c$ slightly
+
+```rust
+let starting_weights = linear.weight().data().clone();
+
+    let mut decreased_m_weights = starting_weights.to_owned();
+    decreased_m_weights[0] -= 0.1;
+
+    let decreased_m_tensor = Tensor::new(decreased_m_weights.to_vec(), vec![2, 1])?;
+    let decreased_m_output = input.matmul(&decreased_m_tensor)?;
+    let decreased_m_loss = mse_loss(&decreased_m_output, &actual)?;
+    println!("Decreased m Loss:");
+    println!("{}", decreased_m_loss);
+
+    let mut increased_m_weights = starting_weights.to_owned();
+    increased_m_weights[0] += 0.1;
+    let increased_m_tensor = Tensor::new(increased_m_weights.to_vec(), vec![2, 1])?;
+    let increased_m_output = input.matmul(&increased_m_tensor)?;
+    let increased_m_loss = mse_loss(&increased_m_output, &actual)?;
+    println!("Increased m Loss:");
+    println!("{}", increased_m_loss);
+
+    let mut increased_b_weights = starting_weights.to_owned();
+    increased_b_weights[1] += 0.1;
+
+    let increased_b_tensor = Tensor::new(increased_b_weights.to_vec(), vec![2, 1])?;
+    let increased_b_output = input.matmul(&increased_b_tensor)?;
+    let increased_b_loss = mse_loss(&increased_b_output, &actual)?;
+    println!("Increased c Loss:");
+    println!("{}", increased_b_loss);
+
+    let mut decreased_b_weights = starting_weights.to_owned();
+    decreased_b_weights[1] -= 0.1;  
+    let decreased_b_tensor = Tensor::new(decreased_b_weights.to_vec(), vec![2, 1])?;
+    let decreased_b_output = input.matmul(&decreased_b_tensor)?;
+    let decreased_b_loss = mse_loss(&decreased_b_output, &actual)?;
+    println!("Decreased c Loss:");
+    println!("{}", decreased_b_loss);
+```
+
+Here is the output of 5 losses:
+
+```text
+MSE Loss:
+[67.713806]
+
+Decreased m Loss:
+[73.20436]
+
+Increased m Loss:
+[62.44325]
+
+Increased c Loss:
+[66.15295]
+
+Decreased c Loss:
+[69.29467]
+
+```
+
+By looking at the outpput of losses, we know that if we increase both $m$ and $c$, we decrease the loss and come closer to the data values.
+
+Now, let's increase both $m$ and $c$ by a small margin(0.01) for 5 times, 50 times and  500 times and let's see what happens.
+
+```text
+MSE Loss:
+[67.713806]
+Loss after 5 times
+Increased m Loss:
+[65.05103]
+Increased b Loss:
+[66.93087]
+
+
+Loss after 50 times
+Increased m Loss:
+[43.56106]
+Increased b Loss:
+[60.10951]
+
+Loss after 500 times
+Increased m Loss:
+[73.68774]
+Increased b Loss:
+[14.170615]
+
+```
+As we saw in our experiment, increasing the weights helped for a while, but eventually, the loss started increasing again. We encountered two major problems:
+
+- **Overshooting:** We didn't know when to stop increasing $m$. We eventually went past the "sweet spot" and made the model worse.
+
+- **Efficiency:** We increased $m$ and $c$ by the same amount (0.01), but the data suggests that $m$ might need to move faster or slower than $c$ to reach the minimum loss efficiently.
+
+- **Scalability:** We are dealing here with just two parameters. That itself involved a lot of guess work and code changes. Imaging doing this even for 100 parameters. Now imagine, in a real dataset we have thousands, millions or even billion parameters. Performing the same task would be humanly impossible.
+
+Luckily, mathematics comes to rescue us here. For this example, we are using L2 or Mean Squared Error function to calculate the loss which squares the loss.
+
+Let's visualize a square function:
+
+```plotly
+{
+  "title": "Shape of Square ",
+  "traces": [
+    {
+      "type": "line",
+      "x": [0.0, 0.2, 0.4, 0.6, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.2, 2.4, 2.6, 2.8, 3.0, 3.2, 3.4, 3.6, 3.8, 4.0, 4.2, 4.4, 4.6, 4.8, 5.0, 5.2, 5.4, 5.6, 5.8, 6.0, 6.2, 6.4, 6.6, 6.8, 7.0, 7.2, 7.4, 7.6, 7.8, 8.0],
+      "y": [21.0, 19.44, 17.96, 16.56, 15.24, 14.0, 12.84, 11.76, 10.76, 9.84, 9.0, 8.24, 7.56, 6.96, 6.44, 6.0, 5.64, 5.36, 5.16, 5.04, 5.0, 5.04, 5.16, 5.36, 5.64, 6.0, 6.44, 6.96, 7.56, 8.24, 9.0, 9.84, 10.76, 11.76, 12.84, 14.0, 15.24, 16.56, 17.96, 19.44, 21.0],
+      "name": "X^2"
+    }
+  ]
+}
+```
+
+By looking into this plot, we can understand, why our guess initially worked but eventually failed once we crossed the "sweet spot" at the bottom of the parabola. Somewhere between 50 iterations and 500 iterations lies the optimal value of $m$. For $c$ the loss was still decreasing at 500 iterations, we could have continued increasing the parameter to find a better fit.
+
+This is where **calculus** shines. In calculus, the minimum of a curve is found where the derivative is zero. This is the exact transition point where the function stops going down and starts going up. If the slope is zero, you have found the bottom, the minimum loss. When we work with multiple parameters, we don't work with a single slope, we work with gradient, a list of slopes. The Gradient gives us the steepest ascent, we walk in the opposite direction to reach the minimum. This is the **Gradient Descent** algorithm.
+
+To reach minimum loss by tweaking the weights, we need to perform a series of derivatives. The **chain rule** explains how to find the impact of the weights on the final error by multiplying the local slopes together:
+
+$$\frac{\partial \text{Loss}}{\partial W} = \frac{\partial \text{Loss}}{\partial \text{prediction}} \cdot \frac{\partial \text{prediction}}{\partial W} =  \frac{\partial}{\partial \text{prediction}} (\text{prediction} - \text{actual})^2 \cdot \frac{\partial (X \cdot W)}{\partial W} = 2\cdot (\text{prediction} - \text{actual}) \cdot X $$
+
+Now we got the direction and magnitude at the same time, which we performed manually in two different steps. Now, we are ready to reach the minimum by taking baby steps (a.k.a `learning_rate`):
+
+$$
+W = W - learning\_rate \cdot \frac{\partial \text{Loss}}{\partial W}
+$$
+
+This series of derivatives is known as **backpropagation** in Machine Learning world and that's why we'll name our method `backward` and that's why we named our prediction method as `forward` earlier.
+
+Looking back at our `forward` method, it seems, we need the `input` tensor in both the `forward` direction and `backward` direction. We'll store the input tensor in the struct itself. Not only it will help us here but for our next chapter as well. Let's rewrite the `Linear` module with the new `backward` method.
+
+```rust
+use crate::Rng;
+use crate::tensor::Tensor;
+use crate::tensor::TensorError;
+use std::vec;
+
+pub struct Linear {
+    weight: Tensor,
+    input: Tensor,
+}
+
+impl Linear {
+    pub fn new(in_features: usize, out_features: usize, rng: &mut dyn Rng) -> Self {
+        let weights = (0..in_features * out_features)
+            .map(|_| rng.next_f32())
+            .collect();
+
+        let weight = Tensor::new(weights, vec![in_features, out_features]).unwrap();
+
+        let empty = Tensor::empty();
+
+        Linear {
+            weight,
+            input: empty,
+        }
+    }
+
+    pub fn forward(&mut self, input: &Tensor) -> Result<Tensor, TensorError> {
+        // We store a copy of the input because the backward pass needs it
+        // to calculate the gradient: dL/dW = input.T * output_error
+        self.input = Tensor::new(input.data().to_vec(), input.shape().to_vec())?;
+
+        input.matmul(&self.weight)
+    }
+
+    pub fn backward(
+        &mut self,
+        output_error: &Tensor,
+        learning_rate: f32,
+    ) -> Result<Tensor, TensorError> {
+        let weight_t = self.weight.transpose()?;
+        let input_error = output_error.matmul(&weight_t)?;
+
+        let input_t = self.input.transpose()?;
+        let weights_grad = input_t.matmul(output_error)?;
+
+        let weight_step = weights_grad.scale(&learning_rate)?;
+        self.weight = self.weight.sub(&weight_step)?;
+
+        Ok(input_error)
+    }
+
+    pub fn weight(&self) -> &Tensor {
+        &self.weight
+    }
+}
+```
+
+And to satisy type safety, we add an empty method in our tensor implementation:
+
+```rust
+pub fn empty() -> Tensor { Tensor { data: vec![], shape: vec![] }}
+```
+
+We add the loss function gradient in the loss module:
+
+```rust
+pub fn mse_loss_gradient(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    // Gradient of MSE: 2/n * (predicted - actual)
+    let diff = predicted.sub(actual)?;
+    let n = predicted.shape()[0] as f32;
+    diff.scale(&(2.0 / n))
+}
+```
+
+Now, the final step remaining is to update the driver code:
+
+```rust
+use build_your_own_nn::Rng;
+use build_your_own_nn::linear::Linear;
+use build_your_own_nn::loss::{l1_loss, mse_loss, mse_loss_gradient};
+use build_your_own_nn::tensor::{Tensor, TensorError};
+
+struct SimpleRng {
+    state: u64,
+}
+
+impl Rng for SimpleRng {
+    fn next_u32(&mut self) -> i32 {
+        self.state = self.state.wrapping_mul(6364136223846793005).wrapping_add(1);
+        (self.state >> 32) as u32 as i32
+    }
+}
+
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let mut linear = Linear::new(2, 1, &mut rng);
+
+    println!("Intial Weights:");
+    println!("{}", linear.weight());
+
+    let input = Tensor::new(vec![1.0, 1.0_f32, 2.0, 1.0_f32, 3.0, 1.0_f32, 4.0, 1.0_f32, 5.0, 1.0_f32], vec![5, 2])?;
+
+    println!("Input:");
+    println!("{}", input);
+
+    let output = linear.forward(&input).unwrap();
+    println!("Initial Output:");
+    println!("{}", output);
+
+
+    let actual = Tensor::new(vec![5.6, 6.6, 9.5, 10.2, 14.0], vec![5, 1])?;
+
+    println!("Actual:");
+    println!("{}", actual);
+
+    let loss = mse_loss(&output, &actual)?;
+
+    println!("Initial MSE Loss:");
+    println!("{}", loss);
+
+    println!();
+    println!();
+
+    let epochs = 5000;
+
+    for _ in 0..epochs {
+        let predicted = linear.forward(&input)?;
+
+        let grad = mse_loss_gradient(&predicted, &actual)?;
+
+        linear.backward(&grad, 0.01)?;
+
+    }
+
+    let output = linear.forward(&input)?;
+    let loss = mse_loss(&output, &actual)?;
+
+    println!("Final MSE Loss after {epochs} iterations:");
+    println!("{}", loss);
+
+    println!("Final weights");
+    println!("{}", linear.weight());
+
+    
+    println!("Final Output");
+    println!("{}", output);
+
+
+    Ok(())
+}
+
+```
+
+And the output is:
+
+```text
+$ target/release/build-your-own-nn 
+Weights:
+  |  0.3701|
+  |  0.2155|
+
+Input:
+  |  1.0000,   1.0000|
+  |  2.0000,   1.0000|
+  |  3.0000,   1.0000|
+  |  4.0000,   1.0000|
+  |  5.0000,   1.0000|
+
+Initial Output:
+  |  0.5855|
+  |  0.9556|
+  |  1.3257|
+  |  1.6958|
+  |  2.0658|
+
+Actual:
+  |  5.6000|
+  |  6.6000|
+  |  9.5000|
+  | 10.2000|
+  | 14.0000|
+
+Initial MSE Loss:
+[67.713806]
+
+
+Final MSE Loss after 5000 iterations:
+[0.4463997]
+Final weights
+  |  2.0400|
+  |  3.0600|
+
+Final Output
+  |  5.1000|
+  |  7.1400|
+  |  9.1800|
+  | 11.2200|
+  | 13.2600|
+```
+
+
+## Success: The Machine Learns
+After 5000 iterations, the transformation is undeniable. We started with a random guess and a high loss, but through the power of **Gradient Descent** and our `backward` method, the model "discovered" the underlying pattern in our data. We started with $m=2$ and $c=3$, added with some noise. Our model derived at it.
+
+```text
+Final MSE Loss: 0.4463997
+Final Weights: [2.0400, 3.0600]
+```
+
+Now, let's verify our predicted line along with data:
+
+```plotly
+{
+  "title": "Final Prediction",
+  "traces": [
+    {
+      "type": "scatter",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.6, 6.6, 9.5, 10.2, 14],
+      "name": "Actual Data"
+    },
+    {
+      "type": "line",
+      "x": [1, 2, 3, 4, 5],
+      "y": [5.1, 7.14, 9.18, 11.22, 13.26],
+      "name": "Model Prediction"
+    }
+  ]
+}
+```

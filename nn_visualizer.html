@@ -217,21 +217,16 @@
         let stepperInput = []; // To remember the original input for backprop
 
         function highlightLayer(idx, isBackward = false) {
-            // 1. Clear existing highlights and shadows from all layers
-            document.querySelectorAll('.neuron-shell').forEach(el => {
-                el.classList.remove('active-layer');
-                el.style.filter = '';
-                el.style.stroke = '';
-            });
+
 
             // 2. Target the specific layer group
             const color = isBackward ? "#ff00ff" : "#00ff00";
             const nodes = document.querySelectorAll(`.layer-group-${idx} .neuron-shell`);
 
             nodes.forEach(n => {
-                n.classList.add('active-layer');
+               // n.classList.add('active-layer');
                 // Apply inline styles to override default green CSS if backward
-                n.style.stroke = color;
+               // n.style.stroke = color;
                 n.style.filter = `drop-shadow(0 0 8px ${color})`;
             });
         }
@@ -304,6 +299,12 @@
         function resetDebugger() {
             currentStep = 0;
             isForwardPass = true;
+
+            document.querySelectorAll('.neuron-shell').forEach(el => {
+                el.classList.remove('active-layer');
+                el.style.filter = '';
+                el.style.stroke = '';
+            });
         }
 
         function calculateLoss(output, target) {
@@ -425,10 +426,11 @@
                 network.push(new Layer(currentConfigs[i - 1].size, currentConfigs[i].size, currentConfigs[i].act, i));
             }
 
-            draw();
+
             document.getElementById('inspect-content').innerHTML = '<p style="color:#00ff00">Network Initialized with Random Weights.</p>';
 
             resetDebugger();
+            draw();
         }
 
         function runInferenceUI() {

@@ -2119,3 +2119,8 @@ Now, let's verify our predicted line along with data:
   ]
 }
 ```
+
+# Neural Network
+In our last chapter, we have seen how we machines learn to extract the building blocks of an linear equation and we can use it various applications. However, real world is not always linear in nature.
+
+For example, 

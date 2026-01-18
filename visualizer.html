@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Linear Layer Internals Visualizer</title>
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <style>
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #1a1a1a;
+            color: #00ff00;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+        }
+
+        .panel {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+
+        #chart {
+            flex: 2;
+            height: 500px;
+        }
+
+        .layer-viz {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            font-size: 0.85em;
+        }
+
+        .matrix-box {
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin: 5px 0;
+            background: #000;
+            position: relative;
+        }
+
+        .matrix-label {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            background: #2d2d2d;
+            padding: 0 5px;
+            font-size: 0.7em;
+            color: #aaa;
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 1160px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        input,
+        button {
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        #trainBtn {
+            background: #004400;
+        }
+
+        #stopBtn {
+            background: #440000;
+            color: #ff5555;
+            border-color: #ff5555;
+            display: none;
+        }
+
+        #resetBtn {
+            background: #444;
+            color: #fff;
+            border-color: #888;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .highlight {
+            color: #fff;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        label {
+            font-size: 0.8em;
+            color: #ccc;
+        }
+
+        .status-tag {
+            font-size: 0.7em;
+            padding: 2px 5px;
+            border-radius: 3px;
+            float: right;
+            background: #00ff00;
+            color: #000;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Linear Layer: Internal Trace &nbsp; &nbsp; &nbsp;<span id="status" class="status-tag" style="display:none">TRAINING...</span></h1>
+
+    <div class="main-container">
+        <div id="chart" class="panel"></div>
+        <div class="layer-viz panel">
+            <h3>Linear Layer Internals</h3>
+            <div class="matrix-box">
+                <span class="matrix-label">Input X (with Bias Trick)</span>
+                <div id="matrixX"></div>
+            </div>
+            <div style="text-align: center; font-size: 1.5em;">×</div>
+            <div class="matrix-box">
+                <span class="matrix-label">Weights W (m and c)</span>
+                <div id="matrixW" class="highlight"></div>
+            </div>
+            <div style="text-align: center; font-size: 1.5em;">=</div>
+            <div class="matrix-box">
+                <span class="matrix-label">Output (Forward Pass)</span>
+                <div id="matrixOut"></div>
+            </div>
+            <hr style="width: 100%; border-color: #444;">
+            <div id="traceLog">
+                <strong>Computation Trace:</strong><br>
+                1. $X \cdot W$ (Matmul) ✅<br>
+                2. Current Epoch: <span id="currentEpoch" class="highlight">0.00</span><br>
+                2. MSE Loss: <span id="valLoss" class="highlight">0.00</span><br>
+                3. Gradient: <span id="valGrad" class="highlight">m:0, c:0</span><br>
+                4. $W = W - \eta \cdot \nabla L$ ✅
+            </div>
+        </div>
+    </div>
+
+    <div class="controls panel">
+        <div style="display:flex; flex-direction:column">
+            <label>Data X</label>
+            <input type="text" id="inputX" value="1, 2, 3, 4, 5">
+        </div>
+        <div style="display:flex; flex-direction:column">
+            <label>Data Y</label>
+            <input type="text" id="inputY" value="5.6, 6.6, 9.5, 10.2, 14">
+        </div>
+        <div style="display:flex; flex-direction:column">
+            <label>Epochs, learning Rate & Delay(ms)</label>
+            <div style="display:flex; gap:5px">
+                <input type="number" id="epochsInput" value="100" style="width:50%">
+                <input type="number" id="learningRate" value="0.01" style="width:25%" step="0.01">
+                <input type="number" id="speedInput" value="50" style="width:25%">
+            </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap: 5px;">
+            <button id="randomDataBtn" style="background: #444; color: #00ff00;">RANDOMIZE DATA</button>
+            <button id="trainBtn">START TRAINING</button>
+            <button id="stopBtn">STOP</button>
+            <button id="resetBtn">RESET WEIGHTS</button>
+        </div>
+    </div>
+
+    <script>
+        let m, c;
+        let isTraining = false;
+        let stopFlag = false;
+
+        function getInputs() {
+            const x = document.getElementById('inputX').value.split(',').map(v => v.trim()).filter(v => v !== "").map(Number);
+            const y = document.getElementById('inputY').value.split(',').map(v => v.trim()).filter(v => v !== "").map(Number);
+            return { x, y };
+        }
+
+        // Updated internal viz to handle cases where math might break
+        function updateInternalViz(x, predictions, loss, m_grad, c_grad, currentEpoch) {
+            document.getElementById('matrixX').innerHTML = x.slice(0, 5).map(val => `| ${val.toFixed(1)}, 1.0 |`).join('<br>') + (x.length > 5 ? '<br>...' : '');
+            document.getElementById('matrixW').innerHTML = `| ${Number(m).toFixed(4)} | (m)<br>| ${Number(c).toFixed(4)} | (c)`;
+            document.getElementById('matrixOut').innerHTML = predictions.slice(0, 5).map(val => `| ${val.toFixed(2)} |`).join('<br>') + (predictions.length > 5 ? '<br>...' : '');
+
+            document.getElementById('currentEpoch').innerText = currentEpoch;
+            document.getElementById('valLoss').innerText = isNaN(loss) ? "EXPLODED" : loss.toFixed(6);
+            document.getElementById('valGrad').innerText = `m:${m_grad.toFixed(4)}, c:${c_grad.toFixed(4)}`;
+        }
+
+        function updateChart() {
+            const { x: xInput, y: yInput } = getInputs();
+            if (xInput.length === 0 || yInput.length === 0) return;
+
+            const minX = Math.min(...xInput);
+            const maxX = Math.max(...xInput);
+            const xRange = maxX - minX || 2;
+            const xPad = xRange * 0.2;
+
+            const xLine = [minX - xPad, maxX + xPad];
+            const yLine = xLine.map(val => (m * val) + c);
+
+            const allVisibleY = [...yInput, ...yLine].filter(v => !isNaN(v));
+            const minY = Math.min(...allVisibleY);
+            const maxY = Math.max(...allVisibleY);
+            const yRange = (maxY - minY) || 10;
+            const yPad = yRange * 0.2;
+
+            const data = [
+                { x: xInput, y: yInput, mode: 'markers', name: 'Data', marker: { color: '#00ff00', size: 10 } },
+                { x: xLine, y: yLine, mode: 'lines', name: 'Model', line: { color: '#ff00ff', width: 3 } }
+            ];
+
+            const layout = {
+                paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a', font: { color: '#00ff00' },
+                showlegend: false, margin: { t: 40, b: 40, l: 40, r: 40 },
+                xaxis: { gridcolor: '#333', range: [xLine[0], xLine[1]], zerolinecolor: '#444' },
+                yaxis: { gridcolor: '#333', range: [minY - yPad, maxY + yPad], zerolinecolor: '#444' }
+            };
+
+            Plotly.react('chart', data, layout);
+        }
+
+        function resetWeights() {
+            stopFlag = true;
+            m = (Math.random() - 0.5) * 2; // Randomize between -1 and 1
+            c = (Math.random() - 0.5) * 2;
+            const { x } = getInputs();
+            if (x.length > 0) {
+                const preds = x.map(val => (val * m) + c);
+                updateInternalViz(x, preds, 0, 0, 0, 0);
+                updateChart();
+            }
+        }
+
+        async function train() {
+
+            if (isTraining) return;
+
+            const { x: xRaw, y: yRaw } = getInputs();
+
+            // --- SAFETY CHECK ---
+            if (xRaw.some(v => Math.abs(v) > 50) || yRaw.some(v => Math.abs(v) > 300)) {
+                alert("Safety Limit: X <= 100, Y <= 500");
+                return;
+            }
+            if (xRaw.length !== yRaw.length) {
+                alert("Error: X and Y must have the same number of values.");
+                return;
+            }
+
+            isTraining = true;
+            stopFlag = false;
+            document.getElementById('trainBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'block';
+            document.getElementById('status').style.display = 'inline';
+
+            const epochs = parseInt(document.getElementById('epochsInput').value);
+            const delay = parseInt(document.getElementById('speedInput').value);
+            const lr = parseFloat(document.getElementById('learningRate').value);
+            const n = xRaw.length;
+
+            for (let e = 0; e < epochs; e++) {
+                if (stopFlag) break;
+
+                let preds = xRaw.map(x => (x * m) + c);
+                let loss = preds.reduce((acc, p, i) => acc + Math.pow(p - yRaw[i], 2), 0) / n;
+
+                let m_grad = 0, c_grad = 0;
+                for (let i = 0; i < n; i++) {
+                    let err = preds[i] - yRaw[i];
+                    m_grad += (2 / n) * err * xRaw[i];
+                    c_grad += (2 / n) * err;
+                }
+
+                // Check for Exploding Gradient
+                if (isNaN(m_grad) || isNaN(c_grad)) {
+                    alert("Gradients Exploded (NaN). Try smaller X values or a lower learning rate.");
+                    stopFlag = true;
+                    break;
+                }
+
+                m -= lr * m_grad;
+                c -= lr * c_grad;
+
+                // Update UI every few frames to save performance
+                updateInternalViz(xRaw, preds, loss, m_grad, c_grad, e);
+                updateChart();
+
+                if (delay > 0) await new Promise(r => setTimeout(r, delay));
+            }
+
+            isTraining = false;
+            document.getElementById('trainBtn').style.display = 'block';
+            document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('status').style.display = 'none';
+        }
+
+
+        function randomizeData() {
+            stopFlag = true; // Stop training if it's running
+
+            const numPoints = 5;
+            const trueM = (Math.random() - 0.5) * 5; // Target slope
+            const trueC = (Math.random() - 0.5) * 10; // Target intercept
+
+            let xVals = [];
+            let yVals = [];
+
+            for (let i = 1; i <= numPoints; i++) {
+                const x = i;
+                // Generate Y with some random noise so it's not a perfect line
+                const noise = (Math.random() - 0.5) * 2;
+                const y = (trueM * x) + trueC + noise;
+
+                xVals.push(x.toFixed(1));
+                yVals.push(y.toFixed(1));
+            }
+
+            // Update the input fields in the UI
+            document.getElementById('inputX').value = xVals.join(', ');
+            document.getElementById('inputY').value = yVals.join(', ');
+
+            // Refresh the visualizer with the new data
+            resetWeights();
+        }
+
+        // Add the click listener
+        document.getElementById('randomDataBtn').addEventListener('click', randomizeData);
+        document.getElementById('trainBtn').addEventListener('click', train);
+        document.getElementById('stopBtn').addEventListener('click', () => stopFlag = true);
+        document.getElementById('resetBtn').addEventListener('click', resetWeights);
+
+        randomizeData();
+        </script>
+</body>
+
+</html>

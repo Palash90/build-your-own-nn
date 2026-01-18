@@ -33,6 +33,7 @@
             gap: 20px;
             flex: 1.5;
             /* Takes up more width than the internals panel */
+            min-width: 0;
         }
 
         .charts-stack {
@@ -51,6 +52,7 @@
             width: 100%;
             /* Ensure panels take full width of container */
             box-sizing: border-box;
+            overflow: hidden;
         }
 
         .panel {
@@ -60,17 +62,23 @@
             border: 1px solid #444;
             width: 100%;
             box-sizing: border-box;
+            padding: 10px;
         }
 
+
         #chart {
-            height: 400px;
+            height: 450px;
             /* Specific height for main chart */
         }
 
         #lossChart {
-            height: 250px;
+            height: 450px;
             /* Specific height for loss chart */
         }
+
+        
+
+      
 
         .layer-viz {
             flex: 1;
@@ -172,43 +180,43 @@
     <p>This tool accompanies the learning guide: <a href="/#linear-regression">Linear Regression</a></p>
 
     <div class="main-container">
-    <div class="charts-column">
-        <div id="chart" class="panel"></div>
-        <div id="lossChart" class="panel"></div>
-    </div>
+        <div class="charts-column">
+            <div id="chart" class="panel"></div>
+            <div id="lossChart" class="panel"></div>
+        </div>
 
-    <div class="layer-viz panel">
-        <h3>Linear Layer Internals</h3>
-        <div class="matrix-box">
-            <span class="matrix-label">Input X (with Bias Trick)</span>
-            <div id="matrixX"></div>
-        </div>
-        <div style="text-align: center; font-size: 1.5em;">×</div>
-        <div class="matrix-box">
-            <span class="matrix-label">Model Weights W (m and c)</span>
-            <div id="matrixW" class="highlight"></div>
-        </div>
-        <div style="text-align: center; font-size: 1.5em;">=</div>
-        <div class="matrix-box">
-            <span class="matrix-label">Output (Forward Pass)</span>
-            <div id="matrixOut"></div>
-        </div>
-        <hr style="width: 100%; border-color: #444;">
-        <div class="matrix-box">
-            <span class="matrix-label">True Weights W (m and c)</span>
-            <div id="trueWeights" class="highlight"></div>
-        </div>
-        <hr style="width: 100%; border-color: #444;">
-        <div id="traceLog">
-            <strong>Computation Trace:</strong><br>
-            1. $X \cdot W$ (Matmul) ✅<br>
-            2. Current Epoch: <span id="currentEpoch" class="highlight">0.00</span><br>
-            2. MSE Loss: <span id="valLoss" class="highlight">0.00</span><br>
-            3. Gradient: <span id="valGrad" class="highlight">m:0, c:0</span><br>
-            4. $W = W - \eta \cdot \nabla L$ ✅
+        <div class="layer-viz panel">
+            <h3>Linear Layer Internals</h3>
+            <div class="matrix-box">
+                <span class="matrix-label">Input X (with Bias Trick)</span>
+                <div id="matrixX"></div>
+            </div>
+            <div style="text-align: center; font-size: 1.5em;">×</div>
+            <div class="matrix-box">
+                <span class="matrix-label">Model Weights W (m and c)</span>
+                <div id="matrixW" class="highlight"></div>
+            </div>
+            <div style="text-align: center; font-size: 1.5em;">=</div>
+            <div class="matrix-box">
+                <span class="matrix-label">Output (Forward Pass)</span>
+                <div id="matrixOut"></div>
+            </div>
+            <hr style="width: 100%; border-color: #444;">
+            <div class="matrix-box">
+                <span class="matrix-label">True Weights W (m and c)</span>
+                <div id="trueWeights" class="highlight"></div>
+            </div>
+            <hr style="width: 100%; border-color: #444;">
+            <div id="traceLog">
+                <strong>Computation Trace:</strong><br>
+                1. $X \cdot W$ (Matmul) ✅<br>
+                2. Current Epoch: <span id="currentEpoch" class="highlight">0.00</span><br>
+                2. MSE Loss: <span id="valLoss" class="highlight">0.00</span><br>
+                3. Gradient: <span id="valGrad" class="highlight">m:0, c:0</span><br>
+                4. $W = W - \eta \cdot \nabla L$ ✅
+            </div>
         </div>
     </div>
-</div>
     <div class="controls panel">
         <div style="display:flex; flex-direction:column">
             <label>Data X</label>
@@ -280,13 +288,14 @@
             ];
 
             const layout = {
+                autosize: true,
                 paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a', font: { color: '#00ff00' },
                 showlegend: false, margin: { t: 40, b: 40, l: 40, r: 40 },
                 xaxis: { gridcolor: '#333', range: [xLine[0], xLine[1]], zerolinecolor: '#444' },
                 yaxis: { gridcolor: '#333', range: [minY - yPad, maxY + yPad], zerolinecolor: '#444' }
             };
 
-            Plotly.react('chart', data, layout);
+            Plotly.react('chart', data, layout, { responsive: true });
         }
 
         function resetWeights() {
@@ -367,10 +376,11 @@
                 type: 'scatter',
                 mode: 'lines',
                 name: 'MSE Loss',
-                line: { color: '#00ff00' }
+                line: { color: '#FF0000' }
             };
 
             const layout = {
+                autosize: true,
                 title: { text: 'Epoch vs Loss (Error)', font: { color: '#aaa', size: 12 } },
                 paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a',
                 margin: { t: 30, b: 30, l: 40, r: 20 },
@@ -379,7 +389,7 @@
                 yaxis: { gridcolor: '#333', title: 'Loss', type: 'log' } // Log scale helps see small improvements
             };
 
-            Plotly.react('lossChart', [trace], layout);
+            Plotly.react('lossChart', [trace], layout, { responsive: true });
         }
 
 

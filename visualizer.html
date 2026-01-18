@@ -19,9 +19,28 @@
 
         .main-container {
             display: flex;
+            flex-direction: row;
+            /* Horizontal layout for the two columns */
             gap: 20px;
             width: 100%;
             max-width: 1200px;
+            align-items: flex-start;
+        }
+
+        .charts-column {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 1.5;
+            /* Takes up more width than the internals panel */
+        }
+
+        .charts-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            flex: 2;
+            /* Takes up more space compared to the viz panel */
         }
 
         .panel {
@@ -29,19 +48,33 @@
             padding: 20px;
             border-radius: 8px;
             border: 1px solid #444;
-        }
-
-        #chart,
-        #lossChart {
             width: 100%;
+            /* Ensure panels take full width of container */
+            box-sizing: border-box;
+        }
+
+        .panel {
+            background: #2d2d2d;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #444;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        #chart {
+            height: 400px;
+            /* Specific height for main chart */
         }
 
         #lossChart {
-            height: 300px;
+            height: 250px;
+            /* Specific height for loss chart */
         }
 
         .layer-viz {
             flex: 1;
+            /* Narrower than the charts column */
             display: flex;
             flex-direction: column;
             gap: 10px;
@@ -139,41 +172,43 @@
     <p>This tool accompanies the learning guide: <a href="/#linear-regression">Linear Regression</a></p>
 
     <div class="main-container">
+    <div class="charts-column">
         <div id="chart" class="panel"></div>
         <div id="lossChart" class="panel"></div>
-        <div class="layer-viz panel">
-            <h3>Linear Layer Internals</h3>
-            <div class="matrix-box">
-                <span class="matrix-label">Input X (with Bias Trick)</span>
-                <div id="matrixX"></div>
-            </div>
-            <div style="text-align: center; font-size: 1.5em;">×</div>
-            <div class="matrix-box">
-                <span class="matrix-label">Model Weights W (m and c)</span>
-                <div id="matrixW" class="highlight"></div>
-            </div>
-            <div style="text-align: center; font-size: 1.5em;">=</div>
-            <div class="matrix-box">
-                <span class="matrix-label">Output (Forward Pass)</span>
-                <div id="matrixOut"></div>
-            </div>
-            <hr style="width: 100%; border-color: #444;">
-            <div class="matrix-box">
-                <span class="matrix-label">True Weights W (m and c)</span>
-                <div id="trueWeights" class="highlight"></div>
-            </div>
-            <hr style="width: 100%; border-color: #444;">
-            <div id="traceLog">
-                <strong>Computation Trace:</strong><br>
-                1. $X \cdot W$ (Matmul) ✅<br>
-                2. Current Epoch: <span id="currentEpoch" class="highlight">0.00</span><br>
-                2. MSE Loss: <span id="valLoss" class="highlight">0.00</span><br>
-                3. Gradient: <span id="valGrad" class="highlight">m:0, c:0</span><br>
-                4. $W = W - \eta \cdot \nabla L$ ✅
-            </div>
-        </div>
     </div>
 
+    <div class="layer-viz panel">
+        <h3>Linear Layer Internals</h3>
+        <div class="matrix-box">
+            <span class="matrix-label">Input X (with Bias Trick)</span>
+            <div id="matrixX"></div>
+        </div>
+        <div style="text-align: center; font-size: 1.5em;">×</div>
+        <div class="matrix-box">
+            <span class="matrix-label">Model Weights W (m and c)</span>
+            <div id="matrixW" class="highlight"></div>
+        </div>
+        <div style="text-align: center; font-size: 1.5em;">=</div>
+        <div class="matrix-box">
+            <span class="matrix-label">Output (Forward Pass)</span>
+            <div id="matrixOut"></div>
+        </div>
+        <hr style="width: 100%; border-color: #444;">
+        <div class="matrix-box">
+            <span class="matrix-label">True Weights W (m and c)</span>
+            <div id="trueWeights" class="highlight"></div>
+        </div>
+        <hr style="width: 100%; border-color: #444;">
+        <div id="traceLog">
+            <strong>Computation Trace:</strong><br>
+            1. $X \cdot W$ (Matmul) ✅<br>
+            2. Current Epoch: <span id="currentEpoch" class="highlight">0.00</span><br>
+            2. MSE Loss: <span id="valLoss" class="highlight">0.00</span><br>
+            3. Gradient: <span id="valGrad" class="highlight">m:0, c:0</span><br>
+            4. $W = W - \eta \cdot \nabla L$ ✅
+        </div>
+    </div>
+</div>
     <div class="controls panel">
         <div style="display:flex; flex-direction:column">
             <label>Data X</label>

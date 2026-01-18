@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Neural Network Visualizer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            background: #121212;
+            color: #e0e0e0;
+            margin: 20px;
+        }
+
+        .panel {
+            background: #1e1e1e;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .layer-ctrl {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #252525;
+            padding: 10px;
+            border-radius: 4px;
+            min-width: 100px;
+            border-top: 4px solid #555;
+        }
+
+        .neuron-count {
+            font-size: 24px;
+            font-weight: bold;
+            color: #00ff00;
+            margin: 10px 0;
+        }
+
+        .controls-row {
+            display: flex;
+            gap: 15px;
+            overflow-x: auto;
+            padding-bottom: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            background: #333;
+            color: #00ff00;
+            border: 1px solid #00ff00;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+
+        button:hover {
+            background: #00ff00;
+            color: #000;
+        }
+
+        .inspector-label {
+            color: #888;
+            font-size: 0.8em;
+            display: block;
+            margin-top: 10px;
+        }
+
+        .weight-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 5px;
+            margin-top: 5px;
+        }
+
+        .weight-item {
+            background: #000;
+            border: 1px solid #444;
+            padding: 4px;
+            text-align: center;
+            font-family: monospace;
+            font-size: 0.85em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2>Network Architecture Designer</h2>
+
+    <div class="panel">
+        <div id="topology-row" class="controls-row"></div>
+        <div style="margin-top:20px;">
+            <button id="addLayerBtn">+ Add Hidden Layer</button>
+        </div>
+    </div>
+
+    <div id="inspector-panel" class="panel"
+        style="display:none; position: fixed; right: 20px; top: 20px; width: 320px; background: #1e1e1e; border: 2px solid #00ff00; z-index: 1000; box-shadow: 0 0 15px rgba(0,0,0,0.5);">
+        <div
+            style="display:flex; justify-content: space-between; align-items: center; padding: 10px; background: #252525;">
+            <h4 id="inspect-title" style="margin:0; color: #00ff00;">Neuron Inspector</h4>
+            <button onclick="document.getElementById('inspector-panel').style.display='none'"
+                style="background:none; border:none; color:#ff4444; font-size: 1.2em;">&times;</button>
+        </div>
+        <div id="inspect-content" style="padding: 15px; font-size: 0.9em; max-height: 80vh; overflow-y: auto;"></div>
+    </div>
+
+    <div class="panel" style="background: #000; text-align: center;">
+        <svg id="network-svg" width="900" height="500"></svg>
+    </div>
+
+    <script src="nn.js"></script>
+    <script src="visualizer.js"></script>
+</body>
+
+</html>

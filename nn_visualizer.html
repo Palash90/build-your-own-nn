@@ -1,58 +1,48 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Neural Network: Demystified</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Neural Network SVG Visualizer</title>
+    <script src="nn.js"></script>
     <style>
-        /* Highlight for the layer currently being processed */
-        .active-layer {
-            stroke: #fff !important;
-            stroke-width: 3px !important;
-            filter: drop-shadow(0 0 8px #00ff00);
-        }
-
-        .active-link {
-            stroke: #00ff00 !important;
-            stroke-width: 2px !important;
-            opacity: 1.0 !important;
+        :root {
+            --bg-color: #0b0e14;
+            --panel-color: #161b22;
+            --accent-color: #58a6ff;
+            --text-color: #c9d1d9;
+            --neuron-color: #238636;
         }
 
         body {
-            background: #1a1a1a;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            display: flex;
-            gap: 20px;
-            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             margin: 0;
+            display: flex;
             height: 100vh;
-            box-sizing: border-box;
+            overflow: hidden;
         }
 
-        /* Sidebar & Inspector */
-        .sidebar {
-            width: 380px;
+        /* Sidebar for Controls */
+        #controls {
+            width: 300px;
+            background-color: var(--panel-color);
+            border-right: 1px solid #30363d;
+            padding: 20px;
             display: flex;
             flex-direction: column;
             gap: 15px;
-            overflow-y: auto;
+            z-index: 10;
         }
 
-        .panel {
-            background: #2d2d2d;
-            border: 1px solid #444;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        /* SVG Display */
-        #svg-container {
-            flex: 1;
-            background: #000;
-            border: 1px solid #444;
-            border-radius: 8px;
+        /* The SVG Workspace */
+        #visualizer-container {
+            flex-grow: 1;
             position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         svg {
@@ -60,154 +50,63 @@
             height: 100%;
         }
 
-        /* Neuron Styling */
-        .neuron-shell {
-            fill: #222;
-            stroke: #444;
-        }
-
-        .stage-linear {
-            fill: #111;
-            stroke: #0088ff;
+        /* Styling for SVG elements */
+        .neuron {
+            fill: var(--neuron-color);
+            stroke: #fff;
             stroke-width: 2;
-            cursor: pointer;
-            transition: 0.2s;
+            transition: r 0.3s ease;
         }
 
-        .stage-linear:hover {
-            fill: #004466;
-            r: 9;
-        }
-
-        .stage-activation {
-            fill: #111;
-            stroke: #ff00ff;
-            stroke-width: 2;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-
-        .stage-activation:hover {
-            fill: #660066;
-            r: 9;
-        }
-
-        /* Activation Colors */
-        .act-relu {
-            stroke: #ff00ff;
-        }
-
-        .act-sigmoid {
-            stroke: #ffff00;
-        }
-
-        .act-tanh {
-            stroke: #00ffff;
-        }
-
-        .act-softmax {
-            stroke: #ffffff;
-        }
-
-        .act-linear {
-            stroke: #888888;
-        }
-
-        .link {
+        .connection {
+            stroke: rgba(255, 255, 255, 0.2);
             stroke-width: 1;
         }
 
-        /* Inspector Text */
-        h4 {
-            margin: 0 0 10px 0;
-            color: #aaa;
-            text-transform: uppercase;
-            font-size: 0.8em;
-        }
-
-        .data-val {
-            color: #fff;
-            font-family: monospace;
-            font-size: 0.85em;
-            word-break: break-all;
-            background: #1a1a1a;
-            padding: 8px;
-            display: block;
-            margin-top: 5px;
+        h1 { font-size: 1.2rem; margin-bottom: 20px; color: var(--accent-color); }
+        label { font-size: 0.8rem; opacity: 0.8; }
+        input { 
+            background: #0d1117; 
+            border: 1px solid #30363d; 
+            color: white; 
+            padding: 8px; 
             border-radius: 4px;
-            border-left: 3px solid #444;
         }
-
         button {
-            width: 100%;
-            background: #004400;
-            color: #00ff00;
-            border: 1px solid #00ff00;
+            background: var(--accent-color);
+            color: white;
+            border: none;
             padding: 10px;
+            border-radius: 4px;
             cursor: pointer;
             font-weight: bold;
-            margin-top: 10px;
         }
-
-        button:hover {
-            background: #00ff00;
-            color: #000;
-        }
+        button:hover { filter: brightness(1.1); }
     </style>
 </head>
-
 <body>
 
-    <div class="sidebar">
-        <div class="panel">
-            <h4>Architecture Definition</h4>
-            <p style="font-size: 0.7em; color: #888;">Format: nodes:type, nodes:type...</p>
-            <input type="text" id="topoInput" value="2:linear, 4:relu, 2:tanh, 4:relu, 5:tanh, 3:softmax"
-                style="width:100%; background:#111; color:#00ff00; border:1px solid #00ff00; padding:8px; box-sizing: border-box;">
-            <button onclick="initNetwork()">REBUILD & INITIALIZE</button>
-        </div>
-
-        <div class="panel">
-            <div class="panel">
-                <h4>Inference Test</h4>
-                <p style="font-size: 0.7em; color: #888;">Input Vector (comma separated):</p>
-                <input type="text" id="vectorInput" value="0.5, -0.2"
-                    style="width:100%; background:#111; color:#00ff00; border:1px solid #444; padding:8px; box-sizing: border-box;">
-
-                <p style="font-size: 0.7em; color: #888; margin-top: 10px;">Target Vector (for Backprop):</p>
-                <input type="text" id="targetInput" value="1.0, 0.0, 0.0"
-                    style="width:100%; background:#111; color:#ff00ff; border:1px solid #444; padding:8px; box-sizing: border-box;">
-
-                <button onclick="runInferenceUI()"
-                    style="background: #003366; border-color: #0088ff; color: #88ccff;">RUN FULL PASS</button>
-
-                <button onclick="stepDebugger()"
-                    style="background: #443300; border-color: #ffaa00; color: #ffaa00;">STEP
-                    THROUGH LAYERS</button>
-            </div>
-        </div>
-        <div class="panel">
-            <h4>Performance</h4>
-            <p>Current Loss: <span id="lossValue" style="color: #ff00ff;">0.0000</span></p>
-        </div>
-
-        <div class="panel" id="inspector">
-            <h3 style="margin-top:0; color:#00ff00; border-bottom: 1px solid #444; padding-bottom: 10px;">Inspector</h3>
-            <div id="inspect-content">
-                <p style="color:#666">Click any Blue (Linear) or Pink/Yellow (Activation) circle to see the math
-                    buffers.</p>
-            </div>
+    <div id="controls">
+        <h1>NN Visualizer</h1>
+        
+        <label>Network Architecture (e.g., 4,2,1)</label>
+        <input type="text" id="architectureInput" value="4, 3, 2">
+        
+        <button id="buildBtn">Generate Network</button>
+        
+        <hr style="width:100%; border: 0.5px solid #30363d; margin: 10px 0;">
+        
+        <div id="stats">
+            <p>Neurons: <span id="neuronCount">0</span></p>
+            <p>Weights: <span id="weightCount">0</span></p>
         </div>
     </div>
 
-    <div id="svg-container">
-        <svg id="mainSvg">
-            <g id="linksGroup"></g>
-            <g id="nodesGroup"></g>
+    <div id="visualizer-container">
+        <svg id="networkSvg">
+            <g id="connectionsLayer"></g>
+            <g id="neuronsLayer"></g>
         </svg>
     </div>
-
-    <script src="nn.js"></script>
 </body>
-
 </html>

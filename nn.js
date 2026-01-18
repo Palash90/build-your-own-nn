@@ -1,417 +1,441 @@
-let currentStep = 0;
-let isForwardPass = true;
-let errorSignal = [];
-let stepperInput = []; // To remember the original input for backprop
-
-function highlightLayer(idx, isBackward = false) {
-    const color = isBackward ? "#ff00ff" : "#00ff00";
-    const nodes = document.querySelectorAll(`.layer-group-${idx} .neuron-shell`);
-
-    nodes.forEach(n => {
-        n.style.filter = `drop-shadow(0 0 8px ${color})`;
-    });
-}
-
-function stepDebugger() {
-    const inspector = document.getElementById('inspect-content');
-
-    if (isForwardPass) {
-        if (currentStep === 0) {
-            stepperInput = document.getElementById('vectorInput').value
-                .split(',').map(v => parseFloat(v.trim()));
-            window.activeSignal = [...stepperInput];
-            highlightLayer(0);
-            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Input Layer</h4>
-                                   <p>Data: [${window.activeSignal.map(v => v.toFixed(2))}]</p>`;
-            currentStep = 1;
-            return;
-        }
-
-        const layerIdx = currentStep - 1;
-        if (layerIdx < network.length) {
-            highlightLayer(currentStep);
-            window.activeSignal = network[layerIdx].forward(window.activeSignal);
-            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Layer ${currentStep} (${network[layerIdx].activationType})</h4>
-                                   <p>Output: [${window.activeSignal.map(v => v.toFixed(4))}]</p>`;
-            currentStep++;
-
-            if (currentStep === currentConfigs.length) {
-                isForwardPass = false;
-                // Set currentStep to the index of the very last layer (Output Layer)
-                currentStep = network.length;
-                const targetVector = document.getElementById('targetInput').value
-                    .split(',').map(v => parseFloat(v.trim()));
-                calculateLoss(window.activeSignal, targetVector);
-                inspector.innerHTML += `<p style="color:yellow">Forward Pass Complete. Ready for BACKWARD PASS.</p>`;
-            }
-        }
-        return;
-    }
-
-    if (!isForwardPass) {
-        highlightLayer(currentStep, true);
-
-        const layerIdx = currentStep - 1; // network array is 0-indexed starting from first hidden layer
-        const layer = network[layerIdx];
-        const isOutput = (currentStep === network.length);
-
-        if (isOutput) {
-            errorSignal = document.getElementById('targetInput').value
-                .split(',').map(v => parseFloat(v.trim()));
-        }
-
-        // Calculate gradients and update weights
-        errorSignal = layer.backward(errorSignal, 0.1, isOutput);
-
-        inspector.innerHTML = `<h4 style="color:#ff00ff">BACKWARD: Layer ${currentStep}</h4>
-                               <p>Gradients calculated and weights updated.</p>`;
-
-        // Move to the previous layer
-        currentStep--;
-
-        // If we've reached the input layer (0), the cycle is done
-        if (currentStep < 1) {
-            setTimeout(() => {
-                inspector.innerHTML += `<h4 style="color:#00ff00">Full Cycle Complete!</h4>`;
-                resetDebugger();
-                draw(); // Redraw to clear highlights
-            }, 500);
-        }
-    }
-}
-function resetDebugger() {
-    currentStep = 0;
-    isForwardPass = true;
-
-
-    document.querySelectorAll('.neuron-shell').forEach(el => {
-        el.classList.remove('active-layer');
-        el.style.filter = '';
-        el.style.stroke = '';
-    });
-
-}
-
-function calculateLoss(output, target) {
-    // 1. Identify the last layer's activation type
-    const lastLayer = network[network.length - 1];
-    const type = lastLayer.activationType;
-    let loss = 0;
-
-    try {
-        if (type === 'softmax') {
-            // --- Categorical Cross-Entropy (CCE) ---
-            // Formula: -Sum(target * log(output))
-            // Added 1e-15 to prevent log(0) which results in Infinity
-            for (let i = 0; i < output.length; i++) {
-                loss -= target[i] * Math.log(output[i] + 1e-15);
-            }
-        }
-        else if (type === 'sigmoid') {
-            // --- Binary Cross-Entropy (BCE) ---
-            // Formula: -avg(target * log(output) + (1-target) * log(1-output))
-            let sum = 0;
-            for (let i = 0; i < output.length; i++) {
-                sum += target[i] * Math.log(output[i] + 1e-15) +
-                    (1 - target[i]) * Math.log(1 - output[i] + 1e-15);
-            }
-            loss = -sum / output.length;
-        }
-        else {
-            // --- Mean Squared Error (MSE) ---
-            // Default for 'linear', 'relu', 'tanh'
-            let sumSqError = 0;
-            for (let i = 0; i < output.length; i++) {
-                sumSqError += Math.pow(output[i] - target[i], 2);
-            }
-            loss = sumSqError / output.length;
-        }
-    } catch (e) {
-        console.error(e)
-    }
-
-
-    // 2. Update the UI
-    const lossLabel = type === 'softmax' ? 'CCE' : (type === 'sigmoid' ? 'BCE' : 'MSE');
-    document.getElementById('lossValue').innerHTML =
-        `${loss.toFixed(6)} <small style="color:#666">(${lossLabel})</small>`;
-}
-
 const Activations = {
-    linear: (x) => x,
-    relu: (x) => Math.max(0, x),
-    sigmoid: (x) => 1 / (1 + Math.exp(-x)),
-    tanh: (x) => Math.tanh(x),
-    softmax: (arr) => {
-        const exponents = arr.map(v => Math.exp(v));
-        const sum = exponents.reduce((a, b) => a + b, 0);
-        return exponents.map(v => v / sum);
+    sigmoid: {
+        func: x => 1 / (1 + Math.exp(-x)),
+        prime: x => {
+            const s = 1 / (1 + Math.exp(-x));
+            return s * (1 - s);
+        }
+    },
+    tanh: {
+        func: x => Math.tanh(x),
+        prime: x => 1 - Math.pow(Math.tanh(x), 2)
+    },
+    relu: {
+        func: x => Math.max(0, x),
+        prime: x => (x > 0 ? 1 : 0)
+    },
+    leakyRelu: {
+        func: x => (x > 0 ? x : 0.01 * x),
+        prime: x => (x > 0 ? 1 : 0.01)
+    },
+    linear: {
+        func: x => x,
+        prime: x => 1
+    },
+    // Softmax is unique as it depends on the whole vector
+    softmax: {
+        func: (arr) => {
+            const maxVal = Math.max(...arr); // for numerical stability
+            const exps = arr.map(x => Math.exp(x - maxVal));
+            const sum = exps.reduce((a, b) => a + b);
+            return exps.map(x => x / sum);
+        }
     }
 };
 
+const Losses = {
+    // Mean Squared Error: (Target - Output)^2
+    // Used mainly for regression
+    mse: {
+        func: (target, output) => {
+            return target.reduce((acc, t, i) => acc + Math.pow(t - output[i], 2), 0) / target.length;
+        },
+        prime: (target, output) => {
+            // Derivative: 2 * (Output - Target)
+            return output.map((o, i) => 2 * (o - target[i]));
+        }
+    },
+
+    // Binary Cross-Entropy
+    // Used for binary classification (0 or 1)
+    bce: {
+        func: (target, output) => {
+            return -target.reduce((acc, t, i) => {
+                return acc + (t * Math.log(output[i] + 1e-15) + (1 - t) * Math.log(1 - output[i] + 1e-15));
+            }, 0) / target.length;
+        },
+        prime: (target, output) => {
+            return output.map((o, i) => (o - target[i]) / ((o * (1 - o)) + 1e-15));
+        }
+    },
+
+    // Categorical Cross-Entropy
+    // Used for multi-class classification (with Softmax)
+    cce: {
+        func: (target, output) => {
+            return -target.reduce((acc, t, i) => acc + t * Math.log(output[i] + 1e-15), 0);
+        },
+        prime: (target, output) => {
+            // Note: CCE + Softmax simplifies beautifully to (Output - Target)
+            return output.map((o, i) => o - target[i]);
+        }
+    }
+};
+
+class Matrix {
+    constructor(rows, cols) {
+        this.rows = rows;
+        this.cols = cols;
+        // Initialize with a 2D array of zeros
+        this.data = Array.from({ length: rows }, () => new Array(cols).fill(0));
+    }
+
+    // Fill the matrix with random values between -1 and 1
+    randomize() {
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                this.data[i][j] = Math.random() * 2 - 1;
+            }
+        }
+        return this; // Return 'this' for method chaining
+    }
+
+    // Matrix Multiplication: (A x B) * (B x C) = (A x C)
+    static multiply(a, b) {
+        if (a.cols !== b.rows) {
+            console.error("Columns of A must match Rows of B.");
+            return null;
+        }
+
+        let result = new Matrix(a.rows, b.cols);
+        for (let i = 0; i < result.rows; i++) {
+            for (let j = 0; j < result.cols; j++) {
+                let sum = 0;
+                for (let k = 0; k < a.cols; k++) {
+                    sum += a.data[i][k] * b.data[k][j];
+                }
+                result.data[i][j] = sum;
+            }
+        }
+        return result;
+    }
+
+    clone() {
+        let copy = new Matrix(this.rows, this.cols);
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                copy.data[i][j] = this.data[i][j];
+            }
+        }
+        return copy;
+    }
+
+    // Helper to create a Matrix from a flat array (useful for inputs)
+    static fromArray(arr) {
+        let m = new Matrix(arr.length, 1);
+        for (let i = 0; i < arr.length; i++) {
+            m.data[i][0] = arr[i];
+        }
+        return m;
+    }
+
+    // Helper to turn Matrix back into a flat array (useful for SVG drawing)
+    toArray() {
+        let arr = [];
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                arr.push(this.data[i][j]);
+            }
+        }
+        return arr;
+    }
+
+    // Inside Matrix class in nn.js
+    map(fn) {
+        if (typeof fn !== 'function') {
+            console.error("Matrix.map received a non-function:", fn);
+            return this;
+        }
+        for (let i = 0; i < this.rows; i++) {
+            for (let j = 0; j < this.cols; j++) {
+                let val = this.data[i][j];
+                this.data[i][j] = fn(val);
+            }
+        }
+        return this;
+    }
+
+    static add(a, b) {
+        let result = new Matrix(a.rows, a.cols);
+        for (let i = 0; i < a.rows; i++) {
+            for (let j = 0; j < a.cols; j++) {
+                result.data[i][j] = a.data[i][j] + b.data[i][j];
+            }
+        }
+        return result;
+    }
+
+    // Inside Matrix class
+    static transpose(matrix) {
+        let result = new Matrix(matrix.cols, matrix.rows);
+        for (let i = 0; i < matrix.rows; i++) {
+            for (let j = 0; j < matrix.cols; j++) {
+                result.data[j][i] = matrix.data[i][j];
+            }
+        }
+        return result;
+    }
+
+    static multiplyElementwise(a, b) {
+        let result = new Matrix(a.rows, a.cols);
+        for (let i = 0; i < a.rows; i++) {
+            for (let j = 0; j < a.cols; j++) {
+                result.data[i][j] = a.data[i][j] * b.data[i][j];
+            }
+        }
+        return result;
+    }
+
+    // Simple subtraction for error calculation (Target - Output)
+    static subtract(a, b) {
+        let result = new Matrix(a.rows, a.cols);
+        for (let i = 0; i < a.rows; i++) {
+            for (let j = 0; j < a.cols; j++) {
+                result.data[i][j] = a.data[i][j] - b.data[i][j];
+            }
+        }
+        return result;
+    }
+}
+
+
+
 class Layer {
-    constructor(inputSize, outputSize, activationType, layerIndex) {
-        this.inputSize = inputSize;
-        this.outputSize = outputSize;
-        this.activationType = activationType;
-        this.layerIndex = layerIndex;
+    constructor(inputCount, outputCount, activationKey = 'sigmoid') {
+        this.weights = new Matrix(outputCount, inputCount).randomize();
+        this.biases = new Matrix(outputCount, 1).randomize();
 
-        // Weights: Rows = inputSize + 1 (Weight index 0 is the bias)
-        this.weights = Array.from({ length: inputSize + 1 }, () =>
-            Array.from({ length: outputSize }, () => (Math.random() * 2 - 1))
-        );
+        // Ensure we grab the object, not just the string
+        this.activationName = activationKey;
+        this.activation = Activations[activationKey];
 
-        this.lastInput = []; //
-        this.lastZ = new Array(outputSize).fill(0); //
-        this.lastA = new Array(outputSize).fill(0); //
-        this.deltas = new Array(outputSize).fill(0);
+        if (!this.activation) {
+            console.error(`Activation '${activationKey}' not found! Defaulting to linear.`);
+            this.activation = Activations.linear;
+        }
     }
 
-    // --- Forward Pass (Existing) ---
-    forward(input) {
-        this.lastInput = [...input]; //
-        const biasedInput = [1.0, ...input]; //
+    feedForward(inputMatrix) {
+        // Z = W * I + B
+        let z = Matrix.multiply(this.weights, inputMatrix);
+        z = Matrix.add(z, this.biases);
 
-        const zValues = []; //
-        for (let j = 0; j < this.outputSize; j++) {
-            let sum = 0;
-            for (let i = 0; i < biasedInput.length; i++) {
-                sum += biasedInput[i] * this.weights[i][j]; //
-            }
-            zValues.push(sum);
+        // Softmax check
+        if (this.activationName === 'softmax') {
+            const arr = z.toArray();
+            const softRes = Activations.softmax.func(arr);
+            return Matrix.fromArray(softRes);
         }
 
-        this.lastZ = zValues; //
-        this.lastA = this.activationType === 'softmax'  //
-            ? Activations.softmax(this.lastZ)
-            : this.lastZ.map(z => Activations[this.activationType](z));
-        return this.lastA;
-    }
-
-    // Inside the Layer class
-    // Replace the backward method in your Layer class
-    backward(targetOrNextError, learningRate, isOutputLayer = false) {
-        const newDeltas = new Array(this.outputSize);
-
-        // 1. Calculate Deltas
-        for (let j = 0; j < this.outputSize; j++) {
-            let error = isOutputLayer
-                ? this.lastA[j] - targetOrNextError[j]
-                : targetOrNextError[j];
-
-            let derivative = 1;
-            if (this.activationType === 'relu') derivative = this.lastZ[j] > 0 ? 1 : 0;
-            if (this.activationType === 'sigmoid') derivative = this.lastA[j] * (1 - this.lastA[j]);
-            if (this.activationType === 'tanh') derivative = 1 - Math.pow(this.lastA[j], 2); // Fixed variable name
-
-            newDeltas[j] = error * derivative;
-        }
-
-        // 2. Calculate error for PREVIOUS layer BEFORE updating weights
-        const prevLayerError = new Array(this.inputSize).fill(0);
-        for (let i = 1; i <= this.inputSize; i++) {
-            for (let j = 0; j < this.outputSize; j++) {
-                prevLayerError[i - 1] += this.weights[i][j] * newDeltas[j];
-            }
-        }
-
-        // 3. Update Weights
-        const biasedInput = [1.0, ...this.lastInput];
-        for (let i = 0; i < biasedInput.length; i++) {
-            for (let j = 0; j < this.outputSize; j++) {
-                const gradient = newDeltas[j] * biasedInput[i];
-                this.weights[i][j] -= learningRate * gradient;
-            }
-        }
-
-        this.deltas = newDeltas;
-        return prevLayerError;
+        // Standard element-wise activation
+        return z.clone().map(this.activation.func);
     }
 }
 
-let network = [];
-let currentConfigs = [];
-
-function initNetwork() {
-    const inputStr = document.getElementById('topoInput').value;
-    currentConfigs = inputStr.split(',').map(part => {
-        const [size, act] = part.trim().split(':');
-        return { size: parseInt(size), act: act.trim().toLowerCase() };
-    });
-
-    network = [];
-    for (let i = 1; i < currentConfigs.length; i++) {
-        network.push(new Layer(currentConfigs[i - 1].size, currentConfigs[i].size, currentConfigs[i].act, i));
+class NeuralNetwork {
+    constructor(neuronCounts, activationTypes = [], lossType = 'mse') {
+        this.levels = [];
+        this.loss = Losses[lossType];
+        for (let i = 0; i < neuronCounts.length - 1; i++) {
+            const act = activationTypes[i] || 'sigmoid';
+            this.levels.push(new Layer(neuronCounts[i], neuronCounts[i + 1], act));
+        }
     }
 
+    // Helper to run forward pass while saving intermediate states for backprop
+    forwardPassInternal(inputArray) {
+        let inputs = Matrix.fromArray(inputArray);
+        let layerData = [];
 
-    document.getElementById('inspect-content').innerHTML = '<p style="color:#00ff00">Network Initialized with Random Weights.</p>';
+        let currentInput = inputs;
+        for (let layer of this.levels) {
+            let z = Matrix.multiply(layer.weights, currentInput);
+            z = Matrix.add(z, layer.biases);
 
-    calculateLoss();
-    resetDebugger();
-    draw();
-}
-
-function draw() {
-    const svg = document.getElementById('mainSvg');
-    const nodesG = document.getElementById('nodesGroup');
-    const linksG = document.getElementById('linksGroup');
-
-    nodesG.innerHTML = '';
-    linksG.innerHTML = '';
-
-    const rect = svg.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-
-    if (w === 0 || h === 0) {
-        setTimeout(draw, 100);
-        return;
-    }
-
-    const margin = 80;
-    const nodeSpacing = 50;
-
-    // 1. Calculate Coordinates for all nodes
-    const layerCoords = currentConfigs.map((config, lIdx) => {
-        const x = margin + (lIdx * (w - 2 * margin) / (currentConfigs.length - 1));
-
-        const layerHeight = (config.size - 1) * nodeSpacing;
-
-        const startY = (h - layerHeight) / 2;
-
-        return Array.from({ length: config.size }, (_, nIdx) => ({
-            x,
-            y: config.size === 1 ? h / 2 : startY + (nIdx * nodeSpacing),
-            lIdx,
-            nIdx,
-            act: config.act
-        }));
-    });
-
-    layerCoords.forEach((layer, lIdx) => {
-        if (lIdx === 0) return; // Skip input layer
-
-        const prevLayer = layerCoords[lIdx - 1];
-        const layerObj = network[lIdx - 1];
-
-        layer.forEach((node, nIdx) => {
-            prevLayer.forEach((prevNode, pIdx) => {
-                // 1. Get the weight first!
-                const weight = layerObj.weights[pIdx + 1][nIdx];
-
-                let color, opacity, thickness;
-
-                if (isNaN(weight) || !isFinite(weight)) {
-                    // High visibility for errors
-                    color = "#ffff00"; // Bright Yellow for NaN/Inf
-                    opacity = 1.0;
-                    thickness = 4;
-                } else {
-                    // Normal weight visualization
-                    color = weight > 0 ? "#0088ff" : "#ff4444";
-                    opacity = Math.max(Math.abs(weight), 0.15);
-                    thickness = Math.max(Math.abs(weight) * 3, 0.5);
-                }
-
-                const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-                line.setAttribute("x1", prevNode.x + 25);
-                line.setAttribute("y1", prevNode.y);
-                line.setAttribute("x2", node.x - 25);
-                line.setAttribute("y2", node.y);
-
-                if (currentStep === lIdx) {
-                    line.setAttribute("stroke", "#00ff00"); // Bright green for active layer
-                    line.setAttribute("stroke-width", thickness + 2);
-                    line.style.opacity = 1.0;
-                } else {
-                    line.setAttribute("stroke", color);
-                    line.setAttribute("stroke-width", thickness);
-                    line.style.opacity = opacity;
-                }
-
-                // 3. Apply the styles
-                line.setAttribute("stroke", color);
-                line.setAttribute("stroke-width", thickness);
-                line.style.opacity = opacity;
-                line.setAttribute("class", "link");
-
-                linksG.appendChild(line);
-            });
-        });
-    });
-
-    // 3. Draw Neurons
-    layerCoords.forEach((layer, lIdx) => {
-        layer.forEach((node, nIdx) => {
-            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
-            g.setAttribute("class", `layer-group-${lIdx}`);
-
-            const shell = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-            shell.setAttribute("x", node.x - 25); shell.setAttribute("y", node.y - 15);
-            shell.setAttribute("width", 50); shell.setAttribute("height", 30); shell.setAttribute("rx", 15);
-            shell.setAttribute("class", "neuron-shell");
-
-            // Highlight the active layer nodes
-            if (currentStep === lIdx) {
-                shell.classList.add('active-layer');
+            let output;
+            if (layer.activation === Activations.softmax) {
+                // Softmax needs the whole array at once
+                let rawValues = z.toArray();
+                let softValues = layer.activation.func(rawValues);
+                output = Matrix.fromArray(softValues);
+            } else {
+                output = z.clone().map(layer.activation.func);
             }
 
-            g.appendChild(shell);
-
-            // Linear Stage (Blue)
-            const cLin = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            cLin.setAttribute("cx", node.x - 10); cLin.setAttribute("cy", node.y);
-            cLin.setAttribute("r", 7); cLin.setAttribute("class", "stage-linear");
-            cLin.onclick = () => inspectStage(lIdx, nIdx, 'linear');
-            g.appendChild(cLin);
-
-            // Activation Stage (Color based on type)
-            const cAct = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-            cAct.setAttribute("cx", node.x + 10); cAct.setAttribute("cy", node.y);
-            cAct.setAttribute("r", 7);
-            cAct.setAttribute("class", `stage-activation act-${node.act}`);
-            cAct.onclick = () => inspectStage(lIdx, nIdx, 'activation');
-            g.appendChild(cAct);
-
-            nodesG.appendChild(g);
-        });
-    });
-}
-
-
-function inspectStage(lIdx, nIdx, stage) {
-    const content = document.getElementById('inspect-content');
-    if (lIdx === 0) {
-        content.innerHTML = `<h4>Input Node ${nIdx}</h4><p>Value passed directly from input vector.</p>`;
-        return;
+            layerData.push({ input: currentInput, z: z, output: output });
+            currentInput = output;
+        }
+        return { layerData, finalOutput: currentInput.toArray() };
     }
 
-    const layerObj = network[lIdx - 1];
-    const nodeWeights = layerObj.weights.map(row => row[nIdx]);
-    const biasWeight = nodeWeights[0];
-    const actualWeights = nodeWeights.slice(1);
+    predict(inputArray) {
+        return this.forwardPassInternal(inputArray).finalOutput;
+    }
 
-    content.innerHTML = `
-                <h4>L:${lIdx} Node:${nIdx}</h4>
-                <div style="color:${stage === 'linear' ? '#0088ff' : '#ff00ff'}">STAGE: ${stage.toUpperCase()}</div>
-                <hr style="border:0; border-top:1px solid #444; margin:10px 0;">
-                
-                <b>Activation Type:</b>
-                <span class="data-val">${layerObj.activationType}</span>
+    train(inputArray, targetArray, learningRate = 0.1) {
+    const { layerData, finalOutput } = this.forwardPassInternal(inputArray);
 
-                <b style="margin-top:10px; display:block;">Bias Trick Weight (w0):</b>
-                <span class="data-val">${biasWeight}</span>
+    // 1. Initial Error: Derivative of Loss w.r.t Output
+    let errorGrads = this.loss.prime(targetArray, finalOutput);
+    let error = Matrix.fromArray(errorGrads);
 
-                <b style="margin-top:10px; display:block;">Weights from Prev Layer:</b>
-                <span class="data-val">${actualWeights.join(' | ')}</span>
+    // 2. Backward Pass
+    for (let i = this.levels.length - 1; i >= 0; i--) {
+        let layer = this.levels[i];
+        let data = layerData[i];
 
-                <b style="margin-top:10px; display:block;">Linear Sum (z):</b>
-                <span class="data-val" style="color:#0088ff">${layerObj.lastZ[nIdx].toFixed(6)}</span>
+        // f'(z)
+        let actDeriv;
+        if (layer.activationName === 'softmax') {
+            actDeriv = data.z.clone().map(x => 1); 
+        } else {
+            actDeriv = data.z.clone().map(layer.activation.prime);
+        }
 
-                <b style="margin-top:10px; display:block;">Activated Output (a):</b>
-                <span class="data-val" style="color:#ff00ff">${layerObj.lastA[nIdx].toFixed(6)}</span>
-            `;
+        // Delta = error * f'(z)
+        let delta = Matrix.multiplyElementwise(error, actDeriv);
+
+        // Calculate Weight Gradients: Delta * Input^T
+        let inputT = Matrix.transpose(data.input);
+        let weightGradients = Matrix.multiply(delta, inputT);
+
+        // --- UPDATE WEIGHTS & BIASES ---
+        // Scale gradients by learning rate
+        weightGradients.map(x => x * learningRate);
+        delta.map(x => x * learningRate);
+
+        // Subtract gradients from weights/biases (Gradient Descent)
+        layer.weights = Matrix.subtract(layer.weights, weightGradients);
+        layer.biases = Matrix.subtract(layer.biases, delta);
+
+        // Propagate error back to previous layer: W^T * Delta
+        let weightsT = Matrix.transpose(layer.weights);
+        error = Matrix.multiply(weightsT, delta);
+    }
+}
+}
+console.group("Component Test: Matrix");
+
+const A = new Matrix(2, 3); // 2 rows, 3 cols
+A.data = [[1, 2, 3], [4, 5, 6]];
+
+const B = new Matrix(3, 2); // 3 rows, 2 cols
+B.data = [[7, 8], [9, 10], [11, 12]];
+
+const C = Matrix.multiply(A, B);
+
+if (C && C.rows === 2 && C.cols === 2 && C.data[0][0] === 58) {
+    console.log("✅ Matrix Multiplication: Success (58 computed correctly)");
+} else {
+    console.error("❌ Matrix Multiplication: Failed");
 }
 
-window.onload = initNetwork; W
+const mapTest = new Matrix(2, 2);
+mapTest.data = [[1, 2], [3, 4]];
+mapTest.map(x => x * 2);
+if (mapTest.data[0][0] === 2 && mapTest.data[1][1] === 8) {
+    console.log("✅ Matrix Map: Success");
+} else {
+    console.error("❌ Matrix Map: Failed");
+}
+
+console.groupEnd();
+
+console.group("Component Test: Activations");
+
+const testVal = 0;
+const results = {
+    sigmoid: Activations.sigmoid.func(testVal) === 0.5,
+    tanh: Activations.tanh.func(testVal) === 0,
+    relu: Activations.relu.func(-5) === 0 && Activations.relu.func(5) === 5,
+    leaky: Activations.leakyRelu.func(-1) === -0.01,
+    linear: Activations.linear.func(10) === 10
+};
+
+Object.entries(results).forEach(([name, passed]) => {
+    console.log(`${passed ? '✅' : '❌'} ${name.toUpperCase()}: ${passed ? 'Passed' : 'Failed'}`);
+});
+
+// Softmax special check
+const sm = Activations.softmax.func([1, 1, 1]); // Should be [0.33, 0.33, 0.33]
+const smSum = sm.reduce((a, b) => a + b);
+console.log(Math.abs(smSum - 1) < 0.0001 ? "✅ SOFTMAX: Probability sums to 1" : "❌ SOFTMAX: Sum failed");
+
+console.groupEnd();
+
+console.group("Component Test: Neural Network");
+
+const architecture = [3, 5, 2]; // 3 inputs -> 5 hidden -> 2 outputs
+const net = new NeuralNetwork(architecture, ['relu', 'softmax']);
+
+const input = [1, 0.5, -1];
+const output = net.predict(input);
+
+console.log("Input:", input);
+console.log("Output:", output);
+
+if (output.length === 2) {
+    console.log("✅ Feed Forward: Correct output dimensions");
+} else {
+    console.error("❌ Feed Forward: Dimension mismatch");
+}
+
+console.groupEnd();
+
+function finalMathCheck() {
+    console.group("Final Math Integrity Check");
+
+    try {
+        // 1. Check Matrix
+        const m = new Matrix(2, 2).randomize();
+        m.map(x => x * 2);
+        console.log("✅ Matrix Map works");
+
+        // 2. Check Activation Access
+        if (typeof Activations.sigmoid.func === 'function') {
+            console.log("✅ Activations Object is accessible");
+        }
+
+        // 3. Check Network with Softmax (The tricky one)
+        const net = new NeuralNetwork([2, 3, 2], ['relu', 'softmax'], 'cce');
+        const output = net.predict([1, 0.5]);
+
+        console.log("Output values:", output);
+        const sum = output.reduce((a, b) => a + b, 0);
+        if (Math.abs(sum - 1) < 0.001) {
+            console.log("✅ Softmax Math: Correct (Sums to 1)");
+        }
+
+        // 4. Check Training Step
+        net.train([1, 0.5], [0, 1], 0.1);
+        console.log("✅ Training Epoch: Executed without errors");
+
+    } catch (e) {
+        console.error("❌ Math Test Failed:", e.message);
+    }
+
+    console.groupEnd();
+}
+
+finalMathCheck();
+
+
+// Example: Training the network to solve XOR
+const xorNet = new NeuralNetwork([2, 4, 1], ['sigmoid', 'sigmoid'], 'bce');
+
+const trainingData = [
+    { input: [0, 0], target: [0] },
+    { input: [0, 1], target: [1] },
+    { input: [1, 0], target: [1] },
+    { input: [1, 1], target: [0] }
+];
+
+// Training loop (10,000 iterations)
+for (let i = 0; i < 10000; i++) {
+    const data = trainingData[Math.floor(Math.random() * trainingData.length)];
+    xorNet.train(data.input, data.target, 0.1);
+}
+
+// Test results
+console.log("0,0 ->", xorNet.predict([0, 0]));
+console.log("0,1 ->", xorNet.predict([0, 1]));

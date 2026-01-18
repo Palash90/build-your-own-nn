@@ -149,13 +149,19 @@
         </div>
         <div id="data-status" style="margin-top: 10px; font-size: 0.9em; color: #888;">0 / 50 rows used.</div>
     </div>
-    <div class="panel">
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0;">Data Distribution & Network Output</h3>
-        <div id="plot-status" style="font-size: 0.8em; color: #888;"></div>
+    <div style="margin-top:10px; display: flex; gap: 10px; align-items: center;">
+        <button id="trainBtn" style="background: #00ff00; color: #000;">▶ Start Training</button>
+        <span>Epochs: <input type="number" id="epochInput" value="100"
+                style="width:60px; background:#333; color:#00ff00; border:1px solid #00ff00;"></span>
+        <div id="training-progress" style="font-size: 0.9em; color: #888;"></div>
     </div>
-    <div id="data-plot-container" style="width: 100%; height: 400px; background: #111; border-radius: 4px;"></div>
-</div>
+    <div class="panel">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <h3 style="margin: 0;">Data Distribution & Network Output</h3>
+            <div id="plot-status" style="font-size: 0.8em; color: #888;"></div>
+        </div>
+        <div id="data-plot-container" style="width: 100%; height: 400px; background: #111; border-radius: 4px;"></div>
+    </div>
     <div id="inspector-panel" class="panel"
         style="display:none; position: fixed; right: 20px; top: 20px; width: 320px; background: #1e1e1e; border: 2px solid #00ff00; z-index: 1000; box-shadow: 0 0 15px rgba(0,0,0,0.5);">
         <div

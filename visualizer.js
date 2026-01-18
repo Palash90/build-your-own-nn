@@ -258,10 +258,10 @@ const getTrainingData = () => {
     for (let row of tableBody.rows) {
         const inputs = [];
         const outputs = [];
-        
+
         // Get all input elements in this row
         const rowInputs = row.querySelectorAll('input[type="number"]');
-        
+
         if (rowInputs.length >= (inputLen + outputLen)) {
             // Extract Input values
             for (let i = 0; i < inputLen; i++) {
@@ -294,74 +294,132 @@ function drawDataPlot() {
     const dataset = getTrainingData();
     const inCount = topology[0].count;
     const container = 'data-plot-container';
-
     let traces = [];
+    
     let layout = { 
         paper_bgcolor: 'rgba(0,0,0,0)', 
-        plot_bgcolor: 'rgba(0,0,0,0)', 
-        margin: { t: 30, r: 20, b: 40, l: 40 },
+        plot_bgcolor: 'rgba(0,0,0,0)',
         font: { color: '#888' },
-        xaxis: { title: "Input 0", gridcolor: '#222' },
-        yaxis: { title: inCount === 1 ? "Output 0" : "Input 1", gridcolor: '#222' }
+        margin: { t: 0, r: 0, b: 0, l: 0 },
+        scene: {
+            xaxis: { title: 'In 0', gridcolor: '#333', backgroundcolor: '#111' },
+            yaxis: { title: 'In 1', gridcolor: '#333', backgroundcolor: '#111' },
+            zaxis: { title: 'Output', gridcolor: '#333', backgroundcolor: '#111' }
+        }
     };
 
-    if (window.network) {
-        // --- 1D and Multi-D Logic ---
-        if (inCount === 1) {
-            // Standard Regression Line
-            const lx = [], ly = [];
-            for (let i = 0; i <= 50; i++) {
-                const x = i / 50;
-                lx.push(x);
-                ly.push(window.network.predict([x])[0]);
-            }
-            traces.push({ x: lx, y: ly, mode: 'lines', line: { color: '#3498db' } });
-        } 
-        else {
-            // 2D OR MORE: Draw a 2D slice of the decision surface
-            const res = 20, gx = [], gy = [], gz = [];
-            for (let i = 0; i < res; i++) { gx.push(i/(res-1)); gy.push(i/(res-1)); }
-
-            for (let yVal of gy) {
-                let row = [];
-                for (let xVal of gx) {
-                    // Create an input vector: [x, y, 0.5, 0.5, ...]
-                    const inputVector = [xVal, yVal];
-                    for(let k = 2; k < inCount; k++) {
-                        inputVector.push(0.5); // "Freeze" extra dimensions at midpoint
-                    }
-                    row.push(window.network.predict(inputVector)[0]);
-                }
-                gz.push(row);
-            }
-            
-            traces.push({
-                z: gz, x: gx, y: gy,
-                type: 'contour',
-                showscale: false,
-                colorscale: [[0, 'rgba(255,0,0,0.2)'], [1, 'rgba(0,255,0,0.2)']],
-                hoverinfo: 'none'
-            });
+    if (inCount === 1) {
+        // 1D Case: Standard 2D Line Chart (X vs Output)
+        const lx = [], ly = [];
+        for (let i = 0; i <= 50; i++) {
+            const val = i / 50;
+            lx.push(val);
+            ly.push(window.network.predict([val])[0]);
         }
-    }
-
-    // --- Data Points Overlay ---
-    if (dataset.length > 0) {
-        // We always plot based on the first two dimensions available
-        const xVals = dataset.map(p => p.x[0]);
-        const yVals = inCount === 1 ? dataset.map(p => p.y[0]) : dataset.map(p => p.x[1]);
-        const colors = dataset.map(p => p.y[0] > 0.5 ? '#00ff00' : '#ff4444');
-
+        traces.push({ x: lx, y: ly, mode: 'lines', line: { color: '#00ff00', width: 3 }, name: 'Network' });
         traces.push({
-            x: xVals, y: yVals,
-            mode: 'markers',
-            marker: { color: colors, size: 10, line: { color: '#fff', width: 1 } }
+            x: dataset.map(p => p.x[0]), y: dataset.map(p => p.y[0]),
+            mode: 'markers', marker: { color: '#ff4444', size: 10, line: { color: '#fff', width: 1 } }, name: 'Data'
         });
+
+    } else if (inCount === 2) {
+        // 2-Input Case: 3D Surface (X, Y are inputs, Z is output)
+        const res = 20;
+        let zMatrix = [];
+        let xRange = [], yRange = [];
+        for (let i = 0; i < res; i++) {
+            xRange.push(i / (res - 1));
+            yRange.push(i / (res - 1));
+        }
+
+        for (let i = 0; i < res; i++) {
+            let row = [];
+            for (let j = 0; j < res; j++) {
+                row.push(window.network.predict([xRange[j], yRange[i]])[0]);
+            }
+            zMatrix.push(row);
+        }
+
+        // The "Plane" (Network Prediction)
+        traces.push({
+            z: zMatrix, x: xRange, y: yRange,
+            type: 'surface', colorscale: 'Viridis', opacity: 0.8, showscale: false
+        });
+
+        // The "Scatters" (Training Data)
+        traces.push({
+            x: dataset.map(p => p.x[0]),
+            y: dataset.map(p => p.x[1]),
+            z: dataset.map(p => p.y[0]),
+            mode: 'markers', type: 'scatter3d',
+            marker: { size: 6, color: '#ff4444', symbol: 'circle', line: { color: '#000', width: 1 } }
+        });
+
+    } else if (inCount === 3) {
+        // 3-Input Case: "Cool" 3D Color Clusters
+        traces.push({
+            x: dataset.map(p => p.x[0]),
+            y: dataset.map(p => p.x[1]),
+            z: dataset.map(p => p.x[2]),
+            mode: 'markers', type: 'scatter3d',
+            marker: {
+                size: 8,
+                color: dataset.map(p => p.y[0]), // Output determines color
+                colorscale: 'Portland',
+                showscale: true
+            }
+        });
+        layout.scene.zaxis.title = "In 2";
+
+    } else {
+        // High-D Case: Scatter Plot Matrix (SPLOM)
+        const dims = [];
+        for(let i=0; i < inCount; i++) {
+            dims.push({ label: `In ${i}`, values: dataset.map(p => p.x[i]) });
+        }
+        traces.push({
+            type: 'splom', dimensions: dims,
+            marker: { color: dataset.map(p => p.y[0]), colorscale: 'Viridis', size: 5 }
+        });
+        layout.dragmode = 'select';
     }
 
-    Plotly.react(container, traces, layout, { responsive: true, displayModeBar: false });
+    Plotly.react(container, traces, layout);
 }
 
+document.getElementById('trainBtn').onclick = async () => {
+    const trainingData = getTrainingData();
+    if (trainingData.length === 0) return alert("Please add training data to the table first!");
+
+    const epochs = parseInt(document.getElementById('epochInput').value) || 50;
+    const lr = 0.1;
+    const status = document.getElementById('training-status');
+    const btn = document.getElementById('trainBtn');
+
+    btn.disabled = true;
+    btn.style.opacity = 0.5;
+
+    for (let e = 1; e <= epochs; e++) {
+        // Shuffle for Stochastic Gradient Descent
+        const shuffled = [...trainingData].sort(() => Math.random() - 0.5);
+        
+        for (let sample of shuffled) {
+            window.network.train(sample.x, sample.y, lr);
+        }
+
+        status.innerText = `Epoch: ${e}/${epochs}`;
+        
+        // Change 1: Redraw after each epoch
+        drawDataPlot();
+        
+        // Allow the browser to render the frame
+        await new Promise(r => requestAnimationFrame(r));
+    }
+
+    status.innerText = "Training Complete!";
+    btn.disabled = false;
+    btn.style.opacity = 1;
+};
 
 // Start
 syncAndDraw();

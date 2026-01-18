@@ -46,7 +46,6 @@
 
         .panel {
             background: #2d2d2d;
-            padding: 20px;
             border-radius: 8px;
             border: 1px solid #444;
             width: 100%;
@@ -57,12 +56,10 @@
 
         .panel {
             background: #2d2d2d;
-            padding: 20px;
             border-radius: 8px;
             border: 1px solid #444;
             width: 100%;
             box-sizing: border-box;
-            padding: 10px;
         }
 
 
@@ -76,9 +73,15 @@
             /* Specific height for loss chart */
         }
 
-        
-
-      
+        #chart,
+        #lossChart {
+            height: 500px;
+            width: 100%;
+            /* Force 80% width */
+            margin: 0 auto;
+            /* Center within the .charts-column */
+            box-sizing: border-box;
+        }
 
         .layer-viz {
             flex: 1;
@@ -289,10 +292,10 @@
 
             const layout = {
                 autosize: true,
+                title: { text: 'Data vs Estimated Function', font: { color: '#aaa', size: 12 } },
                 paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a', font: { color: '#00ff00' },
-                showlegend: false, margin: { t: 40, b: 40, l: 40, r: 40 },
-                xaxis: { gridcolor: '#333', range: [xLine[0], xLine[1]], zerolinecolor: '#444' },
-                yaxis: { gridcolor: '#333', range: [minY - yPad, maxY + yPad], zerolinecolor: '#444' }
+                xaxis: { gridcolor: '#333', range: [xLine[0], xLine[1]], zerolinecolor: '#444', title: "Y" },
+                yaxis: { gridcolor: '#333', range: [minY - yPad, maxY + yPad], zerolinecolor: '#444', title: "X" }
             };
 
             Plotly.react('chart', data, layout, { responsive: true });
@@ -307,6 +310,7 @@
                 const preds = x.map(val => (val * m) + c);
                 updateInternalViz(x, preds, 0, 0, 0, 0);
                 updateChart();
+                updateLossChart();
             }
         }
 
@@ -383,7 +387,6 @@
                 autosize: true,
                 title: { text: 'Epoch vs Loss (Error)', font: { color: '#aaa', size: 12 } },
                 paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a',
-                margin: { t: 30, b: 30, l: 40, r: 20 },
                 font: { color: '#00ff00' },
                 xaxis: { gridcolor: '#333', title: 'Epoch' },
                 yaxis: { gridcolor: '#333', title: 'Loss', type: 'log' } // Log scale helps see small improvements

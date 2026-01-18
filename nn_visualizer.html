@@ -164,7 +164,7 @@
         <div class="panel">
             <h4>Architecture Definition</h4>
             <p style="font-size: 0.7em; color: #888;">Format: nodes:type, nodes:type...</p>
-            <input type="text" id="topoInput" value="2:linear, 4:relu, 3:softmax"
+            <input type="text" id="topoInput" value="2:linear, 4:relu, 2:tanh, 4:relu, 5:tanh, 3:softmax"
                 style="width:100%; background:#111; color:#00ff00; border:1px solid #00ff00; padding:8px; box-sizing: border-box;">
             <button onclick="initNetwork()">REBUILD & INITIALIZE</button>
         </div>
@@ -217,83 +217,90 @@
         let stepperInput = []; // To remember the original input for backprop
 
         function highlightLayer(idx, isBackward = false) {
-            // Clear existing
-            document.querySelectorAll('.active-layer, .active-link').forEach(el => el.classList.remove('active-layer', 'active-link'));
+            // 1. Clear existing highlights and shadows from all layers
+            document.querySelectorAll('.neuron-shell').forEach(el => {
+                el.classList.remove('active-layer');
+                el.style.filter = '';
+                el.style.stroke = '';
+            });
 
+            // 2. Target the specific layer group
             const color = isBackward ? "#ff00ff" : "#00ff00";
             const nodes = document.querySelectorAll(`.layer-group-${idx} .neuron-shell`);
 
             nodes.forEach(n => {
                 n.classList.add('active-layer');
-                n.style.filter = `drop-shadow(0 0 8px ${color})`;
+                // Apply inline styles to override default green CSS if backward
                 n.style.stroke = color;
+                n.style.filter = `drop-shadow(0 0 8px ${color})`;
             });
         }
 
         function stepDebugger() {
-    const inspector = document.getElementById('inspect-content');
+            const inspector = document.getElementById('inspect-content');
 
-    // --- FORWARD PASS LOGIC ---
-    if (isForwardPass) {
-        // Step 0: Handle Initial Input
-        if (currentStep === 0) {
-            stepperInput = document.getElementById('vectorInput').value.split(',').map(v => parseFloat(v.trim()));
-            window.activeSignal = [...stepperInput];
-            highlightLayer(0);
-            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Input Layer</h4><p>Data: [${window.activeSignal.map(v => v.toFixed(2))}]</p>`;
-            currentStep++;
-            return;
-        }
+            // ---------- FORWARD PASS ----------
+            if (isForwardPass) {
+                if (currentStep === 0) {
+                    stepperInput = document.getElementById('vectorInput').value
+                        .split(',').map(v => parseFloat(v.trim()));
+                    window.activeSignal = [...stepperInput];
+                    highlightLayer(0);
+                    inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Input Layer</h4>
+                                   <p>Data: [${window.activeSignal.map(v => v.toFixed(2))}]</p>`;
+                    currentStep = 1;
+                    return;
+                }
 
-        // Step 1 to N: Handle Hidden and Output Layers
-        // layerIdx needs to be currentStep - 1 because network[0] is the FIRST connection (to hidden layer 1)
-        const layerIdx = currentStep - 1; 
-        
-        if (layerIdx < network.length) {
-            window.activeSignal = network[layerIdx].forward(window.activeSignal);
-            highlightLayer(currentStep); // This highlights the layer that just RECEIVED data
-
-            inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Layer ${currentStep} (${network[layerIdx].activationType})</h4>
+                const layerIdx = currentStep - 1;
+                if (layerIdx < network.length) {
+                    highlightLayer(currentStep);
+                    window.activeSignal = network[layerIdx].forward(window.activeSignal);
+                    inspector.innerHTML = `<h4 style="color:#0088ff">FORWARD: Layer ${currentStep} (${network[layerIdx].activationType})</h4>
                                    <p>Output: [${window.activeSignal.map(v => v.toFixed(4))}]</p>`;
-            
-            currentStep++;
-        }
+                    currentStep++;
 
-        // Check if we just finished the last layer
-        if (currentStep > network.length) {
-            isForwardPass = false; 
-            currentStep = network.length - 1; // Prepare for backprop starting at the last layer
+                    if (currentStep === currentConfigs.length) {
+                        isForwardPass = false;
+                        // Set currentStep to the index of the very last layer (Output Layer)
+                        currentStep = network.length;
+                        const targetVector = document.getElementById('targetInput').value
+                            .split(',').map(v => parseFloat(v.trim()));
+                        calculateLoss(window.activeSignal, targetVector);
+                        inspector.innerHTML += `<p style="color:yellow">Forward Pass Complete. Ready for BACKWARD PASS.</p>`;
+                    }
+                }
+                return;
+            }
 
-            const targetStr = document.getElementById('targetInput').value;
-            const targetVector = targetStr.split(',').map(v => parseFloat(v.trim()));
+            // ---------- BACKWARD PASS ----------
+            if (!isForwardPass) {
+                // Highlight the layer we are currently processing (currentStep)
+                highlightLayer(currentStep, true);
 
-            // Update loss display at end of forward pass
-            calculateLoss(window.activeSignal, targetVector);
-            inspector.innerHTML += `<p style="color:yellow">Forward Pass Complete. Ready for BACKWARD PASS.</p>`;
-        }
-    }
-    // --- BACKWARD PASS LOGIC ---
-    else {
-        // ... (Keep your existing backward logic, it works with the currentStep adjustment)
-        const layer = network[currentStep];
-        const isOutput = (currentStep === network.length - 1);
-        errorSignal = layer.backward(errorSignal, 0.1, isOutput);
-        highlightLayer(currentStep + 1, true); 
+                const layerIdx = currentStep - 1; // network array is 0-indexed starting from first hidden layer
+                const layer = network[layerIdx];
+                const isOutput = (currentStep === network.length);
 
-        inspector.innerHTML = `<h4 style="color:#ff00ff">BACKWARD: Layer ${currentStep + 1}</h4>
+                // Calculate gradients and update weights
+                errorSignal = layer.backward(errorSignal, 0.1, isOutput);
+
+                inspector.innerHTML = `<h4 style="color:#ff00ff">BACKWARD: Layer ${currentStep}</h4>
                                <p>Gradients calculated and weights updated.</p>`;
 
-        currentStep--;
-        if (currentStep < 0) {
-            inspector.innerHTML += `<h4 style="color:#00ff00">Full Cycle Complete!</h4>`;
-            resetDebugger();
-        }
-    }
+                // Move to the previous layer
+                currentStep--;
 
-    draw();
-}
-        
-        
+                // If we've reached the input layer (0), the cycle is done
+                if (currentStep < 1) {
+                    setTimeout(() => {
+                        inspector.innerHTML += `<h4 style="color:#00ff00">Full Cycle Complete!</h4>`;
+                        resetDebugger();
+                        draw(); // Redraw to clear highlights
+                    }, 500);
+                }
+            }
+        }
         function resetDebugger() {
             currentStep = 0;
             isForwardPass = true;

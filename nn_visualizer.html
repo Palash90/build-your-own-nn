@@ -114,9 +114,7 @@
         }
 
         .link {
-            stroke: #333;
             stroke-width: 1;
-            opacity: 0.5;
         }
 
         /* Inspector Text */
@@ -515,6 +513,44 @@
                 }));
             });
 
+            layerCoords.forEach((layer, lIdx) => {
+                if (lIdx === 0) return; // Skip input layer
+
+                if (currentStep === lIdx) {
+                    line.setAttribute("stroke", "#00ff00"); // Bright green for active signal
+                    line.setAttribute("stroke-width", thickness + 2);
+                    line.style.opacity = 1.0;
+                }
+
+                const prevLayer = layerCoords[lIdx - 1];
+                const layerObj = network[lIdx - 1];
+
+                layer.forEach((node, nIdx) => {
+                    prevLayer.forEach((prevNode, pIdx) => {
+                        // 1. Get the weight first!
+                        const weight = layerObj.weights[pIdx + 1][nIdx];
+
+                        // 2. Now calculate the visuals based on that specific weight
+                        const color = weight > 0 ? "#0088ff" : "#ff4444";
+                        const opacity = Math.max(Math.abs(weight), 0.15);
+                        const thickness = Math.max(Math.abs(weight) * 3, 0.5);
+
+                        const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                        line.setAttribute("x1", prevNode.x + 25);
+                        line.setAttribute("y1", prevNode.y);
+                        line.setAttribute("x2", node.x - 25);
+                        line.setAttribute("y2", node.y);
+
+                        // 3. Apply the styles
+                        line.setAttribute("stroke", color);
+                        line.setAttribute("stroke-width", thickness);
+                        line.style.opacity = opacity;
+                        line.setAttribute("class", "link");
+
+                        linksG.appendChild(line);
+                    });
+                });
+            });
 
             // 3. Draw Neurons
             layerCoords.forEach((layer, lIdx) => {
@@ -553,6 +589,8 @@
                 });
             });
         }
+
+
         function inspectStage(lIdx, nIdx, stage) {
             const content = document.getElementById('inspect-content');
             if (lIdx === 0) {

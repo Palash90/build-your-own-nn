@@ -305,7 +305,6 @@
                 el.style.stroke = '';
             });
 
-            calculateLoss();
         }
 
         function calculateLoss(output, target) {
@@ -465,6 +464,7 @@
 
             document.getElementById('inspect-content').innerHTML = '<p style="color:#00ff00">Network Initialized with Random Weights.</p>';
 
+            calculateLoss();
             resetDebugger();
             draw();
         }
@@ -502,14 +502,22 @@
             }
 
             const margin = 80;
+            const nodeSpacing = 50;
 
             // 1. Calculate Coordinates for all nodes
             const layerCoords = currentConfigs.map((config, lIdx) => {
                 const x = margin + (lIdx * (w - 2 * margin) / (currentConfigs.length - 1));
+
+                const layerHeight = (config.size - 1) * nodeSpacing;
+
+                const startY = (h - layerHeight) / 2;
+
                 return Array.from({ length: config.size }, (_, nIdx) => ({
                     x,
-                    y: config.size === 1 ? h / 2 : margin + (nIdx * (h - 2 * margin) / (config.size - 1)),
-                    lIdx, nIdx, act: config.act
+                    y: config.size === 1 ? h / 2 : startY + (nIdx * nodeSpacing),
+                    lIdx,
+                    nIdx,
+                    act: config.act
                 }));
             });
 
@@ -530,10 +538,19 @@
                         // 1. Get the weight first!
                         const weight = layerObj.weights[pIdx + 1][nIdx];
 
-                        // 2. Now calculate the visuals based on that specific weight
-                        const color = weight > 0 ? "#0088ff" : "#ff4444";
-                        const opacity = Math.max(Math.abs(weight), 0.15);
-                        const thickness = Math.max(Math.abs(weight) * 3, 0.5);
+                        let color, opacity, thickness;
+
+                        if (isNaN(weight) || !isFinite(weight)) {
+                            // High visibility for errors
+                            color = "#ffff00"; // Bright Yellow for NaN/Inf
+                            opacity = 1.0;
+                            thickness = 4;
+                        } else {
+                            // Normal weight visualization
+                            color = weight > 0 ? "#0088ff" : "#ff4444";
+                            opacity = Math.max(Math.abs(weight), 0.15);
+                            thickness = Math.max(Math.abs(weight) * 3, 0.5);
+                        }
 
                         const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
                         line.setAttribute("x1", prevNode.x + 25);

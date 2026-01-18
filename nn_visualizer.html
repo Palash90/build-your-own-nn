@@ -190,7 +190,7 @@
         </div>
         <div class="panel">
             <h4>Performance</h4>
-            <p>Current Loss (MSE): <span id="lossValue" style="color: #ff00ff;">0.0000</span></p>
+            <p>Current Loss: <span id="lossValue" style="color: #ff00ff;">0.0000</span></p>
         </div>
 
         <div class="panel" id="inspector">
@@ -224,9 +224,9 @@
             const nodes = document.querySelectorAll(`.layer-group-${idx} .neuron-shell`);
 
             nodes.forEach(n => {
-               // n.classList.add('active-layer');
+                // n.classList.add('active-layer');
                 // Apply inline styles to override default green CSS if backward
-               // n.style.stroke = color;
+                // n.style.stroke = color;
                 n.style.filter = `drop-shadow(0 0 8px ${color})`;
             });
         }
@@ -300,22 +300,60 @@
             currentStep = 0;
             isForwardPass = true;
 
+
             document.querySelectorAll('.neuron-shell').forEach(el => {
                 el.classList.remove('active-layer');
                 el.style.filter = '';
                 el.style.stroke = '';
             });
+
+            calculateLoss();
         }
 
         function calculateLoss(output, target) {
-            let sumSqError = 0;
-            for (let i = 0; i < output.length; i++) {
-                sumSqError += Math.pow(output[i] - target[i], 2);
-            }
-            const mse = sumSqError / output.length;
-            document.getElementById('lossValue').innerText = mse.toFixed(6);
-        }
+            // 1. Identify the last layer's activation type
+            const lastLayer = network[network.length - 1];
+            const type = lastLayer.activationType;
+            let loss = 0;
 
+            try {
+                if (type === 'softmax') {
+                    // --- Categorical Cross-Entropy (CCE) ---
+                    // Formula: -Sum(target * log(output))
+                    // Added 1e-15 to prevent log(0) which results in Infinity
+                    for (let i = 0; i < output.length; i++) {
+                        loss -= target[i] * Math.log(output[i] + 1e-15);
+                    }
+                }
+                else if (type === 'sigmoid') {
+                    // --- Binary Cross-Entropy (BCE) ---
+                    // Formula: -avg(target * log(output) + (1-target) * log(1-output))
+                    let sum = 0;
+                    for (let i = 0; i < output.length; i++) {
+                        sum += target[i] * Math.log(output[i] + 1e-15) +
+                            (1 - target[i]) * Math.log(1 - output[i] + 1e-15);
+                    }
+                    loss = -sum / output.length;
+                }
+                else {
+                    // --- Mean Squared Error (MSE) ---
+                    // Default for 'linear', 'relu', 'tanh'
+                    let sumSqError = 0;
+                    for (let i = 0; i < output.length; i++) {
+                        sumSqError += Math.pow(output[i] - target[i], 2);
+                    }
+                    loss = sumSqError / output.length;
+                }
+            } catch (e) {
+                console.error(e)
+            }
+
+
+            // 2. Update the UI
+            const lossLabel = type === 'softmax' ? 'CCE' : (type === 'sigmoid' ? 'BCE' : 'MSE');
+            document.getElementById('lossValue').innerHTML =
+                `${loss.toFixed(6)} <small style="color:#666">(${lossLabel})</small>`;
+        }
         // --- 1. Math Dispatcher ---
         const Activations = {
             linear: (x) => x,

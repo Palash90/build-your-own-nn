@@ -3,47 +3,47 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Neural Network Demystified</title>
+    <title>Neural Network Visualizer | Interactive Machine Learning Lab - Palash Kanti Kundu</title>
+    <meta name="title" content="Neural Network Visualizer | Interactive Machine Learning Lab">
+    <meta name="description"
+        content="A real-time, from-scratch neural network engine. Build architectures, tune hyperparameters, and visualize weight traces and decision boundaries in your browser.">
+    <meta name="keywords"
+        content="Neural Network, Machine Learning, JavaScript, AI Visualization, Deep Learning Tutorial, XOR Problem, Backpropagation Visualizer">
+
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://palashkantikundu.in">
+    <meta property="og:title" content="Neural Network Demystified: Interactive Trace Engine">
+    <meta property="og:description"
+        content="Explore the math behind AI. Watch synapses fire and weights adjust in real-time with this browser-based neural network architect.">
+
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:title" content="Neural Network Demystified: Interactive Trace Engine">
+    <meta property="twitter:description"
+        content="Real-time neural network training and weight tracing in pure JavaScript. Build, train, and demystify AI architecture.">
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        .active-dataset {
-            background: #00441b !important;
-            border-color: #fff !important;
-            box-shadow: 0 0 10px var(--neon);
-            color: #fff !important;
-        }
-
         :root {
-            --neon: #cbd5e1;
-            --bg: #020617;
-            --panel: #0f172a;
+            --bg: #1c2225;
+            --panel: #1f2124;
+            --border: #222222;
+            --neon-cyan: #00F0FF;
+            --neon-purple: #7000FF;
+            --neon-pink: #FF0055;
+            --text: #c9c1bc;
+            --sub-text: #848c97;
         }
 
         body {
-            font-family: 'Consolas', monospace;
+            font-family: 'Inter', 'Consolas', monospace;
             background: var(--bg);
-            color: var(--neon);
+            color: var(--text);
             padding: 20px;
             margin: 0;
-        }
-
-        /* Add this to your CSS */
-        .controls>div {
-            border-bottom: 1px solid #2d3748;
-            padding-bottom: 15px;
-            margin-bottom: 5px;
-        }
-
-        .controls input,
-        .controls select {
-            height: 32px;
-            /* Forces consistent height across all input types */
-            box-sizing: border-box;
+            letter-spacing: 0.5px;
         }
 
         .dashboard {
             display: grid;
-            /* Move controls to a narrow left column, plots to a wide right column */
             grid-template-columns: 320px 1fr 1fr;
             grid-template-rows: auto auto;
             gap: 20px;
@@ -52,69 +52,98 @@
             margin: auto;
         }
 
-        .panel {
-            background: var(--panel);
-            border: 1px solid #334155;
-            padding: 15px;
-            border-radius: 8px;
-        }
-
-        /* Make the Network Topology span across both plot columns */
-        .panel[style*="grid-column: span 2"] {
-            grid-column: 2 / span 2 !important;
-        }
-
+        /* Fixed Sidebar Vibe */
         .controls {
-            /* Set controls to stay in the first column and span downward */
             grid-column: 1;
             grid-row: 1 / span 3;
             display: flex;
             flex-direction: column;
             gap: 12px;
-            background: #0f172a;
-            padding: 15px;
-            border: 1px solid #334155;
+            background: var(--panel);
+            padding: 20px;
+            border: 1px solid var(--border);
+            border-radius: 12px;
             height: fit-content;
-            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .controls>div {
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 15px;
+            margin-bottom: 5px;
+        }
+
+        .panel {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+        }
+
+        /* High-Visibility Training Button */
+        #trainBtn {
+            background: transparent;
+            border: 1px solid var(--neon-cyan);
+            color: var(--neon-cyan);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: bold;
+            height: 60px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        #trainBtn:hover {
+            background: var(--neon-cyan);
+            color: #000;
+            box-shadow: 0 0 20px var(--neon-cyan);
+        }
+
+        .active-dataset {
+            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)) !important;
+            color: #000 !important;
+            font-weight: 800 !important;
+            border: none !important;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
         }
 
         canvas {
-            background: #00070a;
+            background: #05031b;
             width: 100%;
             height: 400px;
-            /* Increased from 250px to 400px for better vertical spread */
-            border: 1px solid #222;
+            border: 1px solid var(--border);
+            border-radius: 8px;
             margin-top: 10px;
         }
 
         input,
         select,
         button {
-            background: #000;
-            color: var(--neon);
-            border: 1px solid var(--neon);
+            background: #272c30;
+            border: 1px solid var(--border);
+            color: var(--text);
             padding: 8px;
-            width: 100%;
-            margin-top: 5px;
-            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s ease;
         }
 
-        button:hover {
-            background: #003311;
+        input:focus,
+        select:focus {
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 8px rgba(0, 240, 255, 0.2);
+            outline: none;
         }
 
-        /* Weight Grid Styling */
+        /* Numerical Matrix Styling */
         #weightInspector {
             grid-column: 2 / span 2;
-            /* Align it under the plots */
-            max-height: 200px;
-            /* Set a strict height */
+            max-height: 250px;
             overflow-x: auto;
-            /* Allow horizontal scrolling for many layers */
             white-space: nowrap;
-            /* Keep layers side-by-side */
-            border-top: 2px solid #334155;
-            padding-top: 10px;
+            border-top: 2px solid var(--border);
+            padding-top: 15px;
         }
 
         .matrix-table {
@@ -122,63 +151,48 @@
             margin: 5px;
             display: inline-block;
             vertical-align: top;
-            border: 1px solid #334155;
-            background: #020617;
-            /* Darker contrast for the table itself */
-            font-size: 0.65rem;
-            /* Smaller font for high-density data */
+            border: 1px solid var(--border);
+            background: #0c0c0b;
+            font-size: 0.7rem;
         }
 
         .matrix-table td {
-            border: 1px solid #1e293b;
-            padding: 2px 6px;
-            min-width: 45px;
+            border: 1px solid #111;
+            padding: 4px 8px;
+            min-width: 50px;
+            font-family: 'Consolas', monospace;
         }
 
         .layer-title {
-            color: #fff;
+            color: var(--neon-cyan);
             text-transform: uppercase;
-            font-size: 0.8rem;
-            border-bottom: 1px solid var(--neon);
-            margin-bottom: 5px;
-        }
-
-        .btn-group {
-            display: flex;
-            flex-wrap: wrap;
-            /* Allows buttons to drop to a new line */
-            gap: 4px;
-            /* Tighter gap to save space */
-            margin-top: 5px;
-        }
-
-        .btn-group button {
-            flex: 1 1 calc(33% - 4px);
-            /* Fits roughly 3 buttons per row */
-            min-width: 60px;
-            /* Prevents buttons from getting too tiny */
-            font-size: 0.7rem;
-            /* Slightly smaller text for better fit */
-            padding: 6px 2px;
-            /* Vertical padding, minimal horizontal */
-            white-space: nowrap;
-            /* Prevents text from breaking mid-word */
-            overflow: hidden;
-            text-overflow: ellipsis;
-            /* Adds '...' if text is still too long */
+            font-size: 0.75rem;
+            padding: 5px;
+            background: #0a0a0a;
+            border-bottom: 1px solid var(--border);
         }
 
         label {
             font-size: 0.7rem;
-            color: #888;
+            color: var(--sub-text);
             text-transform: uppercase;
+            font-weight: 600;
+            display: block;
+            margin-bottom: 4px;
+        }
+
+        .btn-group button {
+            flex: 1 1 calc(33% - 4px);
+            font-size: 0.65rem;
+            padding: 6px 2px;
+            cursor: pointer;
         }
     </style>
 </head>
 
 <body>
 
-    <h2 style="text-align: center;">NEURAL ARCHITECT & TRACE ENGINE</h2>
+    <h2 style="text-align: center;">Neural Network Visualizer</h2>
 
     <div class="dashboard">
         <div class="controls">
@@ -245,12 +259,7 @@
             </div>
 
             <div>
-                <label>Execution</label>
-                <select id="plotMode">
-                    <option value="auto">Auto (Adaptive)</option>
-                    <option value="pca">Force PCA</option>
-                    <option value="2d">Force 2D</option>
-                </select>
+                <label>&nbsp;</label>
                 <button id="trainBtn" onclick="toggleTraining()"
                     style="background:#334155; font-size: 1.1rem; height: 60px;">START TRAINING</button>
                 <div class="btn-group">
@@ -933,13 +942,13 @@
 
         function drawNet() {
             const actColors = {
-                input: '#ffffff',   // White for input
-                relu: '#fbbf24',    // Amber
-                tanh: '#8b5cf6',    // Purple
-                sigmoid: '#ec4899', // Pink
-                lrelu: '#f97316',   // Orange
-                softmax: '#06b6d4', // Cyan
-                linear: '#94a3b8'   // Slate
+                input: '#ffffff',
+                relu: '#7000FF',    // Neon Purple
+                tanh: '#00F0FF',    // Neon Cyan
+                sigmoid: '#FF0055', // Neon Pink
+                lrelu: '#f97316',
+                softmax: '#00ff41',
+                linear: '#94a3b8'
             };
 
 
@@ -975,6 +984,23 @@
                 });
             });
         }
+
+        function initPlots() {
+            const emptyLayout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                xaxis: { visible: false },
+                yaxis: { visible: false }
+            };
+            Plotly.newPlot('plot', [], emptyLayout);
+            Plotly.newPlot('lossPlot', [], emptyLayout);
+        }
+
+        // Automatically build the initial network and UI on load
+        window.onload = () => {
+            initPlots();
+            setDataset('XOR'); // This will trigger buildNetwork() and updateTestUI()
+        };
     </script>
 </body>
 

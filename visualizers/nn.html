@@ -134,6 +134,18 @@
                     <button onclick="setDataset('MOON')">MOONS</button>
                     <button onclick="setColorDataset()">Color Data Set</button>
                 </div>
+
+                <br />
+
+                <label>Model Inference</label>
+                <div style="display:flex; gap:5px;">
+                    <input id="testInput" placeholder="Enter test value (e.g. 1,0,1)">
+                    <button onclick="predictUniversal()" style="width: 120px; background: #00441b;">RUN TEST</button>
+                </div>
+                <div id="predictionResult"
+                    style="margin-top: 10px; font-family: 'Consolas', monospace; font-size: 0.85rem; line-height: 1.4;">
+                    Result: awaiting input...
+                </div>
             </div>
 
             <div>
@@ -175,6 +187,7 @@
                     <button onclick="stopFlag=true" style="background:#440000">STOP</button>
                     <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
                 </div>
+                <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
             </div>
         </div>
         <div class="panel"><label>Prediction Plot</label>
@@ -182,18 +195,23 @@
         </div>
         <div class="panel"><label>Loss History</label>
             <div id="lossPlot" style="height: 350px;"></div>
+
+
+
         </div>
+
 
         <div class="panel" style="grid-column: span 2;">
             <label>Topology & Weight Magnitude (Live)</label>
             <canvas id="netCanvas"></canvas>
-            <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
+
         </div>
 
         <div id="weightInspector" class="panel">
             <label>Numerical Weight & Bias Matrices (Trace)</label>
             <div id="matrixDisplay"></div>
         </div>
+
 
 
     </div>
@@ -305,6 +323,55 @@
             document.getElementById('status').innerText = "Status: Network Built. Ready to Train.";
         }
 
+
+        function predictUniversal() {
+            if (layers.length === 0) {
+                document.getElementById('predictionResult').innerText = "Error: Build and train the network first.";
+                return;
+            }
+
+            // 1. Parse the input string
+            const inputStr = document.getElementById('testInput').value;
+            const inputVector = inputStr.split(',').map(v => parseFloat(v.trim()));
+
+            // Validation: Ensure input length matches the first layer's weights
+            if (inputVector.length !== layers[0].w.length) {
+                document.getElementById('predictionResult').innerText =
+                    `Error: Expected ${layers[0].w.length} inputs, but got ${inputVector.length}.`;
+                return;
+            }
+
+            // 2. Forward Pass: Pass the input through all layers
+            let currentA = [inputVector];
+            for (let L of layers) {
+                currentA = L.forward(currentA);
+            }
+
+            // 3. Display Results
+            const outputs = currentA[0];
+            let html = `<div style="color: #fff; margin-bottom: 5px;">Output Activations:</div>`;
+
+            outputs.forEach((val, i) => {
+                const percentage = (val * 100).toFixed(2);
+                // Create a simple visual bar for each output
+                html += `
+            <div style="margin-bottom: 4px;">
+                <span style="display:inline-block; width: 80px;">Out[${i}]:</span>
+                <span style="color: #00ff41;">${percentage}%</span>
+                <div style="background: #333; width: 100%; height: 4px; margin-top: 2px;">
+                    <div style="background: #00ff41; width: ${val * 100}%; height: 100%;"></div>
+                </div>
+            </div>`;
+            });
+
+            // For classification: Highlight the winner
+            const maxIdx = outputs.indexOf(Math.max(...outputs));
+            html += `<div style="margin-top: 8px; border-top: 1px solid #444; padding-top: 5px;">
+                Primary Class: <strong style="color:#00ff41;">Index ${maxIdx}</strong>
+             </div>`;
+
+            document.getElementById('predictionResult').innerHTML = html;
+        }
 
         function setColorDataset() {
             const data = [

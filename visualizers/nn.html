@@ -145,6 +145,8 @@
                 <div class="btn-group">
                     <button onclick="setDataset('XOR')">XOR</button>
                     <button onclick="setDataset('XNOR')">XNOR</button>
+                    <button onclick="setDataset('XOR3')">3 Input XOR</button>
+                    <button onclick="setDataset('XNOR3')">3 Input XNOR</button>
                     <button onclick="setDataset('SIN')">SIN</button>
                     <button onclick="setDataset('COS')">COS</button>
                     <button onclick="setDataset('MOON')">MOONS</button>
@@ -225,6 +227,12 @@
             } else if (type === 'XNOR') {
                 document.getElementById('inputX').value = "0,0; 0,1; 1,0; 1,1";
                 document.getElementById('inputY').value = "1; 0; 0; 1";
+            }else if (type === 'XOR3') {
+                document.getElementById('inputX').value = "0,0,0; 0,0,1; 0,1,0; 0,1,1; 1,0,0; 1,0,1; 1,1,0; 1,1,1";
+                document.getElementById('inputY').value = "1; 0; 0; 1; 0; 1; 1; 0";
+            }else if (type === 'XNOR3') {0
+                document.getElementById('inputX').value = "0,0,0; 0,0,1; 0,1,0; 0,1,1; 1,0,0; 1,0,1; 1,1,0; 1,1,1";
+                document.getElementById('inputY').value = "1; 0; 0; 1; 0; 1; 1; 0";
             } else if (type === 'COS') {
                 let x = [], y = [];
                 for (let i = 0; i <= 20; i++) { x.push(i / 5); y.push((Math.cos(i / 5 * Math.PI) + 1) / 2); }
@@ -363,7 +371,7 @@
                     html += "<tr>";
                     row.forEach(v => {
                         // Color coding: Green for positive, Red for negative
-                        const color = v > 0 ? '#00ff41' : '#ff3131';
+                        const color = isNaN(v) ? '#ffff00' : v > 0 ? '#00ff41' : '#ff3131';
                         const opacity = Math.min(1, Math.abs(v));
                         html += `<td style="color:${color}; opacity:${0.3 + opacity}">${v.toFixed(4)}</td>`;
                     });
@@ -391,7 +399,7 @@
             layers.forEach((L, lIdx) => {
                 L.w.forEach((row, i) => row.forEach((w, j) => {
                     ctx.beginPath(); ctx.moveTo(pos[lIdx][i].x, pos[lIdx][i].y); ctx.lineTo(pos[lIdx + 1][j].x, pos[lIdx + 1][j].y);
-                    ctx.strokeStyle = w > 0 ? `rgba(0,255,65,${Math.abs(w)})` : `rgba(255,0,0,${Math.abs(w)})`;
+                    ctx.strokeStyle = isNaN(w) ? '#ffff00' : w > 0 ? `rgba(0,255,65,${Math.abs(w)})` : `rgba(255,0,0,${Math.abs(w)})`;
                     ctx.lineWidth = Math.min(5, Math.abs(w) * 2); ctx.stroke();
                 }));
             });

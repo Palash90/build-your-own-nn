@@ -132,6 +132,7 @@
                     <button onclick="setDataset('SIN')">SIN</button>
                     <button onclick="setDataset('COS')">COS</button>
                     <button onclick="setDataset('MOON')">MOONS</button>
+                    <button onclick="setColorDataset()">Color Data Set</button>
                 </div>
             </div>
 
@@ -212,7 +213,8 @@
                     const exps = arr.map(v => Math.exp(v - max));
                     const sum = exps.reduce((a, b) => a + b);
                     return exps.map(v => v / sum);
-                }
+                },
+                df: x => 1
             }
         };
 
@@ -282,20 +284,64 @@
 
         function buildNetwork() {
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
-            const yRaw = document.getElementById('inputY').value.split(';').map(r => [parseFloat(r.trim())]);
+            const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
+
             layers = [];
             let curIn = xRaw[0].length;
+
             document.querySelectorAll('#layersConfig > div').forEach(el => {
                 let s = parseInt(el.querySelector('.l-size').value);
                 let a = el.querySelector('.l-act').value;
                 layers.push(new Layer(curIn, s, a));
                 curIn = s;
             });
+
+            const outputDim = yRaw[0].length;
             const finalAct = yRaw[0].length > 1 ? 'softmax' : 'sigmoid';
-            layers.push(new Layer(curIn, yRaw[0].length, finalAct));
+            layers.push(new Layer(curIn, outputDim, finalAct));
+
             renderWeights();
             drawNet();
             document.getElementById('status').innerText = "Status: Network Built. Ready to Train.";
+        }
+
+
+        function setColorDataset() {
+            const data = [
+                // --- WARM COLORS (Output: 1,0,0) ---
+                { x: "1,0,0", y: "1,0,0" }, { x: "1,0.1,0.1", y: "1,0,0" }, { x: "0.8,0.2,0", y: "1,0,0" },
+                { x: "1,0.5,0", y: "1,0,0" }, { x: "0.9,0.4,0.1", y: "1,0,0" }, { x: "1,0.8,0", y: "1,0,0" },
+                { x: "0.7,0,0", y: "1,0,0" }, { x: "0.6,0.2,0.1", y: "1,0,0" }, { x: "1,0.3,0.3", y: "1,0,0" },
+                { x: "0.9,0.6,0.2", y: "1,0,0" }, { x: "0.8,0.1,0.2", y: "1,0,0" }, { x: "1,0.2,0", y: "1,0,0" },
+                { x: "0.5,0.1,0", y: "1,0,0" }, { x: "1,0.4,0.4", y: "1,0,0" }, { x: "0.8,0.5,0", y: "1,0,0" },
+
+                // --- COOL COLORS (Output: 0,1,0) ---
+                { x: "0,0,1", y: "0,1,0" }, { x: "0.1,0.1,0.9", y: "0,1,0" }, { x: "0,0.5,1", y: "0,1,0" },
+                { x: "0,1,1", y: "0,1,0" }, { x: "0.2,0.8,0.8", y: "0,1,0" }, { x: "0,0.3,0.7", y: "0,1,0" },
+                { x: "0.1,0.4,0.9", y: "0,1,0" }, { x: "0,0,0.6", y: "0,1,0" }, { x: "0.3,0.5,0.8", y: "0,1,0" },
+                { x: "0,0.7,0.7", y: "0,1,0" }, { x: "0.1,0.2,0.6", y: "0,1,0" }, { x: "0.4,0.7,1", y: "0,1,0" },
+                { x: "0,0.5,0.5", y: "0,1,0" }, { x: "0.2,0.3,0.9", y: "0,1,0" }, { x: "0.1,0.6,0.6", y: "0,1,0" },
+
+                // --- NEUTRAL/MUTED (Output: 0,0,1) ---
+                { x: "0.5,0.5,0.5", y: "0,0,1" }, { x: "0.2,0.2,0.2", y: "0,0,1" }, { x: "0.8,0.8,0.8", y: "0,0,1" },
+                { x: "1,1,1", y: "0,0,1" }, { x: "0,0,0", y: "0,0,1" }, { x: "0.4,0.4,0.4", y: "0,0,1" },
+                { x: "0.6,0.6,0.6", y: "0,0,1" }, { x: "0.3,0.3,0.3", y: "0,0,1" }, { x: "0.9,0.9,0.9", y: "0,0,1" },
+                { x: "0.5,0.5,0.6", y: "0,0,1" }, { x: "0.4,0.5,0.4", y: "0,0,1" }, { x: "0.5,0.4,0.4", y: "0,0,1" },
+                { x: "0.1,0.1,0.1", y: "0,0,1" }, { x: "0.7,0.7,0.7", y: "0,0,1" }, { x: "0.2,0.2,0.25", y: "0,0,1" },
+
+                // --- CHALLENGING GRADIENTS ---
+                { x: "0.5,0.2,0.2", y: "1,0,0" }, // Muddy Red (Warm)
+                { x: "0.2,0.2,0.5", y: "0,1,0" }, // Muddy Blue (Cool)
+                { x: "0.6,0.6,0.5", y: "0,0,1" }, // Off-Grey (Neutral)
+                { x: "0.5,0.4,0.3", y: "1,0,0" }, // Brownish (Warm)
+                { x: "0.3,0.4,0.5", y: "0,1,0" }  // Slate (Cool)
+            ];
+
+            document.getElementById('inputX').value = data.map(d => d.x).join('; ');
+            document.getElementById('inputY').value = data.map(d => d.y).join('; ');
+
+            buildNetwork();
+
         }
 
         async function toggleTraining() {
@@ -306,7 +352,8 @@
             document.getElementById('trainBtn').innerText = "TRAINING...";
 
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
-            const yRaw = document.getElementById('inputY').value.split(';').map(r => [parseFloat(r.trim())]);
+            const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').filter(v => v.trim() !== "").map(v => parseFloat(v.trim())));
+
             const maxEpochs = parseInt(document.getElementById('epochs').value);
             const delay = parseInt(document.getElementById('delay').value);
             const lr = parseFloat(document.getElementById('lr').value);

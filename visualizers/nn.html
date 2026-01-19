@@ -658,69 +658,69 @@
         }
 
         function updateViz(x, y, preds, loss, ep) {
-    document.getElementById('status').innerText = `Epoch: ${ep} | Loss: ${loss.toFixed(4)}`;
-    const dim = x[0].length;
-    let traces = [];
-    
-    // 1. Plot the Decision Boundary (Background)
-    if (dim === 2) {
-        const resolution = 30; // 30x30 grid
-        let gridX = [], gridY = [], gridZ = [];
-        
-        // Create a range for the grid based on data bounds
-        for (let i = 0; i <= resolution; i++) {
-            let rowZ = [];
-            let px = -1.5 + (i / resolution) * 3; // range from -1.5 to 1.5
-            gridX.push(px);
-            for (let j = 0; j <= resolution; j++) {
-                let py = -1 + (j / resolution) * 2; // range from -1 to 1
-                if (i === 0) gridY.push(py);
-                
-                // Forward pass for this specific grid point
-                let out = [px, py];
-                for (let L of layers) out = L.forward([out])[0];
-                rowZ.push(out[0]); // Binary probability
+            document.getElementById('status').innerText = `Epoch: ${ep} | Loss: ${loss.toFixed(4)}`;
+            const dim = x[0].length;
+            let traces = [];
+
+            // 1. Plot the Decision Boundary (Background)
+            if (dim === 2) {
+                const resolution = 30; // 30x30 grid
+                let gridX = [], gridY = [], gridZ = [];
+
+                // Create a range for the grid based on data bounds
+                for (let i = 0; i <= resolution; i++) {
+                    let rowZ = [];
+                    let px = -1.5 + (i / resolution) * 3; // range from -1.5 to 1.5
+                    gridX.push(px);
+                    for (let j = 0; j <= resolution; j++) {
+                        let py = -1 + (j / resolution) * 2; // range from -1 to 1
+                        if (i === 0) gridY.push(py);
+
+                        // Forward pass for this specific grid point
+                        let out = [px, py];
+                        for (let L of layers) out = L.forward([out])[0];
+                        rowZ.push(out[0]); // Binary probability
+                    }
+                    gridZ.push(rowZ);
+                }
+
+                traces.push({
+                    x: gridX, y: gridY, z: gridZ,
+                    type: 'heatmap',
+                    colorscale: [[0, '#440000'], [0.5, '#1a1a1a'], [1, '#00441b']],
+                    showscale: false,
+                    opacity: 0.6,
+                    transpose: true
+                });
             }
-            gridZ.push(rowZ);
+
+            // 2. Plot the Actual Data Points (Foreground)
+            traces.push({
+                x: x.map(r => r[0]),
+                y: x.map(r => r[1]),
+                mode: 'markers',
+                name: 'Data',
+                marker: {
+                    color: y.map(r => r[0] > 0.5 ? '#00ff41' : '#ff3131'),
+                    size: 8,
+                    line: { color: '#000', width: 1 }
+                }
+            });
+
+            const layout = {
+                paper_bgcolor: '#1a1a1a',
+                plot_bgcolor: '#1a1a1a',
+                font: { color: '#0f0' },
+                margin: { t: 10, b: 30, l: 30, r: 10 },
+                xaxis: { range: [-1.5, 2.5] },
+                yaxis: { range: [-1.5, 1.5] }
+            };
+
+            Plotly.react('plot', traces, layout);
+            Plotly.react('lossPlot', [{ y: lossHistory, type: 'scatter', line: { color: 'red' } }],
+                { ...layout, yaxis: { type: 'log' } });
+            drawNet();
         }
-
-        traces.push({
-            x: gridX, y: gridY, z: gridZ,
-            type: 'heatmap',
-            colorscale: [[0, '#440000'], [0.5, '#1a1a1a'], [1, '#00441b']],
-            showscale: false,
-            opacity: 0.6,
-            transpose: true
-        });
-    }
-
-    // 2. Plot the Actual Data Points (Foreground)
-    traces.push({
-        x: x.map(r => r[0]),
-        y: x.map(r => r[1]),
-        mode: 'markers',
-        name: 'Data',
-        marker: {
-            color: y.map(r => r[0] > 0.5 ? '#00ff41' : '#ff3131'),
-            size: 8,
-            line: { color: '#000', width: 1 }
-        }
-    });
-
-    const layout = {
-        paper_bgcolor: '#1a1a1a',
-        plot_bgcolor: '#1a1a1a',
-        font: { color: '#0f0' },
-        margin: { t: 10, b: 30, l: 30, r: 10 },
-        xaxis: { range: [-1.5, 2.5] },
-        yaxis: { range: [-1.5, 1.5] }
-    };
-
-    Plotly.react('plot', traces, layout);
-    Plotly.react('lossPlot', [{ y: lossHistory, type: 'scatter', line: { color: 'red' } }], 
-                 { ...layout, yaxis: { type: 'log' } });
-    drawNet();
-}
 
         function renderWeights() {
             let html = "";

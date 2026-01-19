@@ -2119,7 +2119,7 @@ Now, let's verify our predicted line along with data:
   ]
 }
 ```
->**TIP**: If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizer.html).
+>**TIP**: If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
 
 # Neural Network
 In our last chapter, we have seen how we machines learn to extract the building blocks of an linear equation and we can use it various applications. However, real world is not always linear in nature.

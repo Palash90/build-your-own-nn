@@ -395,26 +395,35 @@
             Plotly.react('lossChart', [trace], layout, { responsive: true });
         }
 
+        function generateUniformDistribution(min, max, count, isInteger = false) {
+            const list = [];
+            for (let i = 0; i < count; i++) {
+                if (isInteger) {
+                    // For inclusive integers between min and max
+                    const minCeiled = Math.ceil(min);
+                    const maxFloored = Math.floor(max);
+                    list.push(Math.floor(Math.random() * (maxFloored - minCeiled + 1)) + minCeiled);
+                } else {
+                    // For inclusive min, exclusive max floats
+                    list.push(Math.random() * (max - min) + min);
+                }
+            }
+            return list;
+        }
 
         function randomizeData() {
             stopFlag = true; // Stop training if it's running
 
-            const numPoints = 10;
+            const numPoints = 15;
             const trueM = (Math.random() - 0.5) * 5; // Target slope
             const trueC = (Math.random() - 0.5) * 10; // Target intercept
 
-            let xVals = [];
-            let yVals = [];
-
-            for (let i = 1; i <= numPoints; i++) {
-                const x = i;
-                // Generate Y with some random noise so it's not a perfect line
+            let xVals = generateUniformDistribution(1, 20, numPoints, true);
+            let yVals = xVals.map(x => {
                 const noise = (Math.random() - 0.5) * 2;
-                const y = (trueM * x) + trueC + noise;
+                return (trueM * x) + trueC + noise;
+            });
 
-                xVals.push(x.toFixed(1));
-                yVals.push(y.toFixed(1));
-            }
 
             // Update the input fields in the UI
             document.getElementById('inputX').value = xVals.join(', ');

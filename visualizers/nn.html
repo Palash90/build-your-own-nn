@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <title>Advanced Neural Engine</title>
+    <title>Neural Network Demystified</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
@@ -119,24 +119,6 @@
     <h2 style="text-align: center;">NEURAL ARCHITECT & TRACE ENGINE</h2>
 
     <div class="dashboard">
-        <div class="panel"><label>Prediction Plot</label>
-            <div id="plot" style="height: 350px;"></div>
-        </div>
-        <div class="panel"><label>Loss History</label>
-            <div id="lossPlot" style="height: 350px;"></div>
-        </div>
-
-        <div class="panel" style="grid-column: span 2;">
-            <label>Topology & Weight Magnitude (Live)</label>
-            <canvas id="netCanvas"></canvas>
-            <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
-        </div>
-
-        <div id="weightInspector" class="panel">
-            <label>Numerical Weight & Bias Matrices (Trace)</label>
-            <div id="matrixDisplay"></div>
-        </div>
-
         <div class="controls">
             <div>
                 <label>Data Management</label>
@@ -161,6 +143,7 @@
                         <select class="l-act">
                             <option value="tanh">Tanh</option>
                             <option value="relu">ReLU</option>
+                            <option value="lrelu">Leaky ReLU</option>
                         </select>
                     </div>
                 </div>
@@ -193,6 +176,25 @@
                 </div>
             </div>
         </div>
+        <div class="panel"><label>Prediction Plot</label>
+            <div id="plot" style="height: 350px;"></div>
+        </div>
+        <div class="panel"><label>Loss History</label>
+            <div id="lossPlot" style="height: 350px;"></div>
+        </div>
+
+        <div class="panel" style="grid-column: span 2;">
+            <label>Topology & Weight Magnitude (Live)</label>
+            <canvas id="netCanvas"></canvas>
+            <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
+        </div>
+
+        <div id="weightInspector" class="panel">
+            <label>Numerical Weight & Bias Matrices (Trace)</label>
+            <div id="matrixDisplay"></div>
+        </div>
+
+
     </div>
 
     <script>
@@ -201,7 +203,8 @@
         const Act = {
             relu: { f: x => Math.max(0, x), df: x => x > 0 ? 1 : 0 },
             tanh: { f: x => Math.tanh(x), df: x => 1 - Math.pow(Math.tanh(x), 2) },
-            sigmoid: { f: x => 1 / (1 + Math.exp(-x)), df: x => { let s = 1 / (1 + Math.exp(-x)); return s * (1 - s); } }
+            sigmoid: { f: x => 1 / (1 + Math.exp(-x)), df: x => { let s = 1 / (1 + Math.exp(-x)); return s * (1 - s); } },
+            lrelu: { f: x => x > 0 ? x : 0.01 * x, df: x => x > 0 ? 1 : 0.01 },
         };
 
         class Layer {
@@ -227,10 +230,11 @@
             } else if (type === 'XNOR') {
                 document.getElementById('inputX').value = "0,0; 0,1; 1,0; 1,1";
                 document.getElementById('inputY').value = "1; 0; 0; 1";
-            }else if (type === 'XOR3') {
+            } else if (type === 'XOR3') {
                 document.getElementById('inputX').value = "0,0,0; 0,0,1; 0,1,0; 0,1,1; 1,0,0; 1,0,1; 1,1,0; 1,1,1";
                 document.getElementById('inputY').value = "1; 0; 0; 1; 0; 1; 1; 0";
-            }else if (type === 'XNOR3') {0
+            } else if (type === 'XNOR3') {
+                0
                 document.getElementById('inputX').value = "0,0,0; 0,0,1; 0,1,0; 0,1,1; 1,0,0; 1,0,1; 1,1,0; 1,1,1";
                 document.getElementById('inputY').value = "1; 0; 0; 1; 0; 1; 1; 0";
             } else if (type === 'COS') {
@@ -256,7 +260,7 @@
         function addLayerUI() {
             const div = document.createElement('div');
             div.style = "display:flex; gap:2px; margin-top:2px;";
-            div.innerHTML = `<input type="number" class="l-size" value="4"> <select class="l-act"><option value="tanh">Tanh</option><option value="relu">ReLU</option></select> <button onclick="this.parentElement.remove()" style="width:30px">x</button>`;
+            div.innerHTML = `<input type="number" class="l-size" value="4"> <select class="l-act"><option value="tanh">Tanh</option><option value="relu">ReLU</option><option value="lrelu">Leaky ReLU</option></select> <button onclick="this.parentElement.remove()" style="width:30px">x</button>`;
             document.getElementById('layersConfig').appendChild(div);
         }
 

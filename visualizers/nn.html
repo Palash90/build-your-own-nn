@@ -1,22 +1,100 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Deep Neural Network: The Robust Solver</title>
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f0f0f; color: #00ff41; padding: 20px; margin: 0; display: flex; flex-direction: column; align-items: center; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; width: 100%; max-width: 1400px; height: 80vh; }
-        .panel { background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 15px; display: flex; flex-direction: column; position: relative; }
-        canvas { background: #000; border: 1px solid #00ff41; width: 100%; height: 250px; border-radius: 4px; }
-        .controls { width: 100%; max-width: 1360px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; background: #1a1a1a; padding: 20px; margin-top: 20px; border-radius: 8px; border: 1px solid #333; }
-        input, select, button { background: #000; color: #00ff41; border: 1px solid #00ff41; padding: 10px; border-radius: 4px; font-family: monospace; }
-        button { cursor: pointer; font-weight: bold; transition: 0.2s; }
-        button:hover { background: #00441b; }
-        label { font-size: 0.75rem; color: #888; margin-bottom: 5px; display: block; text-transform: uppercase; }
-        #status { font-family: monospace; font-size: 0.8rem; margin-top: 10px; color: #fff; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f0f;
+            color: #00ff41;
+            padding: 20px;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            width: 100%;
+            max-width: 1400px;
+            height: 80vh;
+        }
+
+        .panel {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 8px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        canvas {
+            background: #000;
+            border: 1px solid #00ff41;
+            width: 100%;
+            height: 250px;
+            border-radius: 4px;
+        }
+
+        .controls {
+            width: 100%;
+            max-width: 1360px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 15px;
+            background: #1a1a1a;
+            padding: 20px;
+            margin-top: 20px;
+            border-radius: 8px;
+            border: 1px solid #333;
+        }
+
+        input,
+        select,
+        button {
+            background: #000;
+            color: #00ff41;
+            border: 1px solid #00ff41;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+        }
+
+        button {
+            cursor: pointer;
+            font-weight: bold;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            background: #00441b;
+        }
+
+        label {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 5px;
+            display: block;
+            text-transform: uppercase;
+        }
+
+        #status {
+            font-family: monospace;
+            font-size: 0.8rem;
+            margin-top: 10px;
+            color: #fff;
+        }
     </style>
 </head>
+
 <body>
 
     <h2 style="margin-bottom: 20px; letter-spacing: 2px;">NEURAL ENGINE: MULTI-LAYER TRACE</h2>
@@ -53,7 +131,10 @@
             <div id="layersList">
                 <div style="display:flex; gap:5px; margin-bottom:5px;">
                     <input type="number" class="l-size" value="4" style="width:50px">
-                    <select class="l-act"><option value="tanh">Tanh</option><option value="relu">ReLU</option></select>
+                    <select class="l-act">
+                        <option value="tanh">Tanh</option>
+                        <option value="relu">ReLU</option>
+                    </select>
                 </div>
             </div>
             <button onclick="addLayerUI()" style="width:100%; font-size:0.7rem">+ ADD LAYER</button>
@@ -62,156 +143,161 @@
             <label>Training Config</label>
             <div style="display:flex; gap:5px">
                 <input type="number" id="lr" value="0.1" step="0.01" style="width:50%">
-                <select id="outAct" style="width:50%"><option value="sigmoid">Sigmoid</option><option value="relu">ReLU</option></select>
+                <select id="outAct" style="width:50%">
+                    <option value="sigmoid">Sigmoid</option>
+                    <option value="relu">ReLU</option>
+                </select>
             </div>
-            <button id="trainBtn" onclick="toggleTraining()" style="background:#00441b; height:100%">START TRAINING</button>
+            <button id="trainBtn" onclick="toggleTraining()" style="background:#00441b; height:100%">START
+                TRAINING</button>
         </div>
     </div>
 
-<script>
-let isTraining = false, stopFlag = false, lossHistory = [], layers = [];
+    <script>
+        let isTraining = false, stopFlag = false, lossHistory = [], layers = [];
 
-// --- MATH & UTILS ---
-const Act = {
-    relu: { f: x => Math.max(0, x), df: x => x > 0 ? 1 : 0 },
-    tanh: { f: x => Math.tanh(x), df: x => 1 - Math.pow(Math.tanh(x), 2) },
-    sigmoid: { f: x => 1 / (1 + Math.exp(-x)), df: x => { let s = 1/(1+Math.exp(-x)); return s * (1-s); } }
-};
+        // --- MATH & UTILS ---
+        const Act = {
+            relu: { f: x => Math.max(0, x), df: x => x > 0 ? 1 : 0 },
+            tanh: { f: x => Math.tanh(x), df: x => 1 - Math.pow(Math.tanh(x), 2) },
+            sigmoid: { f: x => 1 / (1 + Math.exp(-x)), df: x => { let s = 1 / (1 + Math.exp(-x)); return s * (1 - s); } }
+        };
 
-class Layer {
-    constructor(inD, outD, act) {
-        this.act = act;
-        // Xavier initialization for stability
-        let s = Math.sqrt(2 / (inD + outD));
-        this.w = Array.from({length: inD}, () => Array.from({length: outD}, () => (Math.random()*2-1)*s));
-        this.b = new Array(outD).fill(0);
-        this.lastX = []; this.lastZ = [];
-    }
-    forward(X) {
-        this.lastX = X;
-        this.lastZ = X.map(row => this.b.map((b, j) => row.reduce((sum, v, i) => sum + v * this.w[i][j], 0) + b));
-        return this.lastZ.map(row => row.map(v => Act[this.act].f(v)));
-    }
-}
-
-// --- DATA PRESETS ---
-function setXOR() { document.getElementById('inputX').value="0,0; 0,1; 1,0; 1,1"; document.getElementById('inputY').value="0; 1; 1; 0"; }
-function setSine() { 
-    let x = [], y = [];
-    for(let i=0; i<20; i++) { let v = (i/10); x.push(v); y.push((Math.sin(v*Math.PI)+1)/2); }
-    document.getElementById('inputX').value = x.join('; '); document.getElementById('inputY').value = y.join('; ');
-}
-
-function addLayerUI() {
-    const div = document.createElement('div');
-    div.style = "display:flex; gap:5px; margin-bottom:5px;";
-    div.innerHTML = `<input type="number" class="l-size" value="4" style="width:50px"> <select class="l-act"><option value="tanh">Tanh</option><option value="relu">ReLU</option></select> <button onclick="this.parentElement.remove()" style="color:red; border-color:red; padding:2px 5px">x</button>`;
-    document.getElementById('layersList').appendChild(div);
-}
-
-// --- ENGINE ---
-async function toggleTraining() {
-    if(isTraining) { stopFlag = true; return; }
-    isTraining = true; stopFlag = false;
-    document.getElementById('trainBtn').innerText = "STOP TRAINING";
-    document.getElementById('trainBtn').style.background = "#440000";
-
-    const xRaw = document.getElementById('inputX').value.split(';').map(r=>r.split(',').map(v=>parseFloat(v.trim())));
-    const yRaw = document.getElementById('inputY').value.split(';').map(r=>[parseFloat(r.trim())]);
-    const lr = parseFloat(document.getElementById('lr').value);
-
-    // Build Network
-    layers = [];
-    let curIn = xRaw[0].length;
-    document.querySelectorAll('#layersList > div').forEach(el => {
-        let s = parseInt(el.querySelector('.l-size').value);
-        let a = el.querySelector('.l-act').value;
-        layers.push(new Layer(curIn, s, a));
-        curIn = s;
-    });
-    layers.push(new Layer(curIn, yRaw[0].length, document.getElementById('outAct').value));
-
-    lossHistory = [];
-    for(let epoch=0; epoch<=5000; epoch++) {
-        if(stopFlag) break;
-
-        // Forward
-        let activations = [xRaw];
-        for(let L of layers) activations.push(L.forward(activations[activations.length-1]));
-
-        // Loss
-        let out = activations[activations.length-1];
-        let error = out.map((row, i) => row.map((v, j) => v - yRaw[i][j]));
-        let mse = error.flat().reduce((a,b)=>a+b*b,0) / xRaw.length;
-        lossHistory.push(mse);
-
-        // Backward
-        let dZ = error.map((row, i) => row.map((err, j) => err * (2/xRaw.length) * Act[layers[layers.length-1].act].df(layers[layers.length-1].lastZ[i][j])));
-
-        for(let i=layers.length-1; i>=0; i--) {
-            let L = layers[i], prevA = activations[i];
-            let dW = L.w.map((row, rI) => row.map((_, cI) => dZ.reduce((s, dzR, rI2) => s + dzR[cI] * prevA[rI2][rI], 0)));
-            let dB = dZ[0].map((_, cI) => dZ.reduce((s, dzR) => s + dzR[cI], 0));
-
-            if(i > 0) {
-                let prevL = layers[i-1];
-                dZ = dZ.map((dzR, rI) => prevL.w[0].map((_, cI) => {
-                    let da = dzR.reduce((s, dzV, curCI) => s + dzV * L.w[cI][curCI], 0);
-                    return da * Act[prevL.act].df(prevL.lastZ[rI][cI]);
-                }));
+        class Layer {
+            constructor(inD, outD, act) {
+                this.act = act;
+                // Xavier initialization for stability
+                let s = Math.sqrt(2 / (inD + outD));
+                this.w = Array.from({ length: inD }, () => Array.from({ length: outD }, () => (Math.random() * 2 - 1) * s));
+                this.b = new Array(outD).fill(0);
+                this.lastX = []; this.lastZ = [];
             }
-            L.w = L.w.map((row, r) => row.map((v, c) => v - lr * dW[r][c]));
-            L.b = L.b.map((v, c) => v - lr * dB[c]);
+            forward(X) {
+                this.lastX = X;
+                this.lastZ = X.map(row => this.b.map((b, j) => row.reduce((sum, v, i) => sum + v * this.w[i][j], 0) + b));
+                return this.lastZ.map(row => row.map(v => Act[this.act].f(v)));
+            }
         }
 
-        if(epoch % 100 === 0) {
-            updateViz(xRaw, yRaw, out, mse, epoch);
-            await new Promise(r => setTimeout(r, 1));
+        // --- DATA PRESETS ---
+        function setXOR() { document.getElementById('inputX').value = "0,0; 0,1; 1,0; 1,1"; document.getElementById('inputY').value = "0; 1; 1; 0"; }
+        function setSine() {
+            let x = [], y = [];
+            for (let i = 0; i < 20; i++) { let v = (i / 10); x.push(v); y.push((Math.sin(v * Math.PI) + 1) / 2); }
+            document.getElementById('inputX').value = x.join('; '); document.getElementById('inputY').value = y.join('; ');
         }
-    }
-    isTraining = false;
-    document.getElementById('trainBtn').innerText = "START TRAINING";
-    document.getElementById('trainBtn').style.background = "#00441b";
-}
 
-function updateViz(x, y, preds, loss, ep) {
-    document.getElementById('status').innerText = `Status: Training | Epoch: ${ep} | Loss: ${loss.toFixed(8)}`;
-    const dim = x[0].length;
-    let traces = [{ x: x.map(r=>r[0]), y: y.map(r=>r[0]), mode:'markers', name:'Target', marker:{color:'#0f0'} }];
-    let layout = { paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a', font:{color:'#0f0'}, margin:{t:10,b:30,l:30,r:10} };
+        function addLayerUI() {
+            const div = document.createElement('div');
+            div.style = "display:flex; gap:5px; margin-bottom:5px;";
+            div.innerHTML = `<input type="number" class="l-size" value="4" style="width:50px"> <select class="l-act"><option value="tanh">Tanh</option><option value="relu">ReLU</option></select> <button onclick="this.parentElement.remove()" style="color:red; border-color:red; padding:2px 5px">x</button>`;
+            document.getElementById('layersList').appendChild(div);
+        }
 
-    if(dim === 1) {
-        traces.push({ x: x.map(r=>r[0]), y: preds.map(r=>r[0]), mode:'lines+markers', name:'Net', line:{color:'#f0f'} });
-    } else if (dim === 2) {
-        traces = [
-            { x: x.map(r=>r[0]), y: x.map(r=>r[1]), z: y.map(r=>r[0]), type:'scatter3d', mode:'markers', marker:{color:'#0f0'} },
-            { x: x.map(r=>r[0]), y: x.map(r=>r[1]), z: preds.map(r=>r[0]), type:'scatter3d', mode:'markers', marker:{color:'#f0f', symbol:'x'} }
-        ];
-        layout.scene = { xaxis:{title:'X1'}, yaxis:{title:'X2'}, zaxis:{title:'Y'} };
-    }
-    
-    Plotly.react('plot', traces, layout);
-    Plotly.react('lossPlot', [{y:lossHistory, type:'scatter', line:{color:'red'}}], {...layout, yaxis:{type:'log'}});
-    drawNet();
-}
+        // --- ENGINE ---
+        async function toggleTraining() {
+            if (isTraining) { stopFlag = true; return; }
+            isTraining = true; stopFlag = false;
+            document.getElementById('trainBtn').innerText = "STOP TRAINING";
+            document.getElementById('trainBtn').style.background = "#440000";
 
-function drawNet() {
-    const canvas = document.getElementById('netCanvas');
-    const ctx = canvas.getContext('2d');
-    canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
-    const counts = [layers[0].w.length, ...layers.map(l => l.w[0].length)];
-    const xStep = canvas.width / (counts.length + 1);
-    const pos = counts.map((c, i) => Array.from({length:c}, (_, j) => ({ x: xStep*(i+1), y: (canvas.height/(c+1))*(j+1) })));
+            const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
+            const yRaw = document.getElementById('inputY').value.split(';').map(r => [parseFloat(r.trim())]);
+            const lr = parseFloat(document.getElementById('lr').value);
 
-    layers.forEach((L, lIdx) => {
-        L.w.forEach((row, i) => row.forEach((w, j) => {
-            ctx.beginPath(); ctx.moveTo(pos[lIdx][i].x, pos[lIdx][i].y); ctx.lineTo(pos[lIdx+1][j].x, pos[lIdx+1][j].y);
-            ctx.strokeStyle = w > 0 ? `rgba(0,255,65,${Math.min(1, Math.abs(w))})` : `rgba(255,0,0,${Math.min(1, Math.abs(w))})`;
-            ctx.lineWidth = Math.abs(w) * 2; ctx.stroke();
-        }));
-    });
-    pos.flat().forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 7); ctx.fillStyle="#00ff41"; ctx.fill(); });
-}
-</script>
+            // Build Network
+            layers = [];
+            let curIn = xRaw[0].length;
+            document.querySelectorAll('#layersList > div').forEach(el => {
+                let s = parseInt(el.querySelector('.l-size').value);
+                let a = el.querySelector('.l-act').value;
+                layers.push(new Layer(curIn, s, a));
+                curIn = s;
+            });
+            layers.push(new Layer(curIn, yRaw[0].length, document.getElementById('outAct').value));
+
+            lossHistory = [];
+            for (let epoch = 0; epoch <= 5000; epoch++) {
+                if (stopFlag) break;
+
+                // Forward
+                let activations = [xRaw];
+                for (let L of layers) activations.push(L.forward(activations[activations.length - 1]));
+
+                // Loss
+                let out = activations[activations.length - 1];
+                let error = out.map((row, i) => row.map((v, j) => v - yRaw[i][j]));
+                let mse = error.flat().reduce((a, b) => a + b * b, 0) / xRaw.length;
+                lossHistory.push(mse);
+
+                // Backward
+                let dZ = error.map((row, i) => row.map((err, j) => err * (2 / xRaw.length) * Act[layers[layers.length - 1].act].df(layers[layers.length - 1].lastZ[i][j])));
+
+                for (let i = layers.length - 1; i >= 0; i--) {
+                    let L = layers[i], prevA = activations[i];
+                    let dW = L.w.map((row, rI) => row.map((_, cI) => dZ.reduce((s, dzR, rI2) => s + dzR[cI] * prevA[rI2][rI], 0)));
+                    let dB = dZ[0].map((_, cI) => dZ.reduce((s, dzR) => s + dzR[cI], 0));
+
+                    if (i > 0) {
+                        let prevL = layers[i - 1];
+                        dZ = dZ.map((dzR, rI) => prevL.w[0].map((_, cI) => {
+                            let da = dzR.reduce((s, dzV, curCI) => s + dzV * L.w[cI][curCI], 0);
+                            return da * Act[prevL.act].df(prevL.lastZ[rI][cI]);
+                        }));
+                    }
+                    L.w = L.w.map((row, r) => row.map((v, c) => v - lr * dW[r][c]));
+                    L.b = L.b.map((v, c) => v - lr * dB[c]);
+                }
+
+                if (epoch % 100 === 0) {
+                    updateViz(xRaw, yRaw, out, mse, epoch);
+                    await new Promise(r => setTimeout(r, 1));
+                }
+            }
+            isTraining = false;
+            document.getElementById('trainBtn').innerText = "START TRAINING";
+            document.getElementById('trainBtn').style.background = "#00441b";
+        }
+
+        function updateViz(x, y, preds, loss, ep) {
+            document.getElementById('status').innerText = `Status: Training | Epoch: ${ep} | Loss: ${loss.toFixed(8)}`;
+            const dim = x[0].length;
+            let traces = [{ x: x.map(r => r[0]), y: y.map(r => r[0]), mode: 'markers', name: 'Target', marker: { color: '#0f0' } }];
+            let layout = { paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a', font: { color: '#0f0' }, margin: { t: 10, b: 30, l: 30, r: 10 } };
+
+            if (dim === 1) {
+                traces.push({ x: x.map(r => r[0]), y: preds.map(r => r[0]), mode: 'lines+markers', name: 'Net', line: { color: '#f0f' } });
+            } else if (dim === 2) {
+                traces = [
+                    { x: x.map(r => r[0]), y: x.map(r => r[1]), z: y.map(r => r[0]), type: 'scatter3d', mode: 'markers', marker: { color: '#0f0' } },
+                    { x: x.map(r => r[0]), y: x.map(r => r[1]), z: preds.map(r => r[0]), type: 'scatter3d', mode: 'markers', marker: { color: '#f0f', symbol: 'x' } }
+                ];
+                layout.scene = { xaxis: { title: 'X1' }, yaxis: { title: 'X2' }, zaxis: { title: 'Y' } };
+            }
+
+            Plotly.react('plot', traces, layout);
+            Plotly.react('lossPlot', [{ y: lossHistory, type: 'scatter', line: { color: 'red' } }], { ...layout, yaxis: { type: 'log' } });
+            drawNet();
+        }
+
+        function drawNet() {
+            const canvas = document.getElementById('netCanvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
+            const counts = [layers[0].w.length, ...layers.map(l => l.w[0].length)];
+            const xStep = canvas.width / (counts.length + 1);
+            const pos = counts.map((c, i) => Array.from({ length: c }, (_, j) => ({ x: xStep * (i + 1), y: (canvas.height / (c + 1)) * (j + 1) })));
+
+            layers.forEach((L, lIdx) => {
+                L.w.forEach((row, i) => row.forEach((w, j) => {
+                    ctx.beginPath(); ctx.moveTo(pos[lIdx][i].x, pos[lIdx][i].y); ctx.lineTo(pos[lIdx + 1][j].x, pos[lIdx + 1][j].y);
+                    ctx.strokeStyle = w > 0 ? `rgba(0,255,65,${Math.min(1, Math.abs(w))})` : `rgba(255,0,0,${Math.min(1, Math.abs(w))})`;
+                    ctx.lineWidth = Math.abs(w) * 2; ctx.stroke();
+                }));
+            });
+            pos.flat().forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 7); ctx.fillStyle = "#00ff41"; ctx.fill(); });
+        }
+    </script>
 </body>
+
 </html>

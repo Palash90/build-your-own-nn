@@ -717,60 +717,89 @@
                 traces.push({ x: x.map(r => r[0]), y: preds.map(r => r[0]), mode: 'lines', name: 'Network' });
             }
             else if (inDim === 2) {
-        // --- 2D CLASSIFICATION (XOR/MOONS) ---
-        layout.xaxis = { 
-            title: "Input 0 (X-Axis)",
-            gridcolor: '#222',
-            showticklabels: true,
-            tickfont: { color: '#00ff41', size: 10 },
-            dtick: 0.5, // Shows a tick every 0.5 units
-            zeroline: true,
-            zerolinecolor: '#444'
-        };
-        layout.yaxis = { 
-            title: "Input 1 (Y-Axis)",
-            gridcolor: '#222',
-            showticklabels: true,
-            tickfont: { color: '#00ff41', size: 10 },
-            dtick: 0.5,
-            zeroline: true,
-            zerolinecolor: '#444'
-        };
+                // --- 2D CLASSIFICATION (XOR/MOONS) ---
+                const isXOR = currentMode.includes('XOR');
+                const rangeLimit = isXOR ? 1.1 : 1.5; // Tighter view for XOR, wider for Moons
+                const rangeStart = isXOR ? -0.1 : -0.7;
 
-        const resolution = 20;
-        let gridX = [], gridY = [], gridZ = [];
-        for (let i = 0; i <= resolution; i++) {
-            let px = -1.5 + (i / resolution) * 3; // Expanded range to see more boundary
-            gridX.push(px);
-            let rowZ = [];
-            for (let j = 0; j <= resolution; j++) {
-                let py = -1.5 + (j / resolution) * 3;
-                if (i === 0) gridY.push(py);
-                let out = [px, py];
-                for (let L of layers) out = L.forward([out])[0];
-                rowZ.push(outDim === 3 ? out[0] - out[1] : out[0]);
-            }
-            gridZ.push(rowZ);
-        }
-        
-        traces.push({ 
-            x: gridX, y: gridY, z: gridZ, 
-            type: 'heatmap', 
-            colorscale: 'Viridis', 
-            opacity: 0.3, 
-            showscale: false 
-        });
+                // 1. Update Layout for Ticks and Visibility
+                layout.margin = { t: 20, b: 40, l: 50, r: 20 }; // Increased margin for tick labels
 
-        traces.push({
-            x: x.map(r => r[0]), y: x.map(r => r[1]), 
-            mode: 'markers',
-            marker: { 
-                color: y.map(r => r[0] > 0.5 ? '#00ff41' : '#ff3131'), 
-                size: 10,
-                line: { color: '#fff', width: 1 }
-            }
-        });
-    } else if (inDim === 3) {
+                layout.xaxis = {
+                    title: { text: "Input X", font: { size: 10 } },
+                    range: [rangeStart, rangeLimit],
+                    gridcolor: '#222',
+                    showticklabels: true,
+                    tickfont: { color: '#00ff41', size: 10 },
+                    tickmode: 'auto',
+                    nticks: 10,
+                    zeroline: true,
+                    zerolinecolor: '#444'
+                };
+                layout.yaxis = {
+                    title: { text: "Input Y", font: { size: 10 } },
+                    range: [rangeStart, rangeLimit],
+                    gridcolor: '#222',
+                    showticklabels: true,
+                    tickfont: { color: '#00ff41', size: 10 },
+                    tickmode: 'auto',
+                    nticks: 10,
+                    zeroline: true,
+                    zerolinecolor: '#444'
+                };
+
+                // 2. Generate Heatmap Grid
+                const resolution = 30;
+                let gridX = [], gridY = [], gridZ = [];
+
+                for (let i = 0; i <= resolution; i++) {
+                    gridX.push(rangeStart + (i / resolution) * (rangeLimit - rangeStart));
+                    gridY.push(rangeStart + (i / resolution) * (rangeLimit - rangeStart));
+                }
+
+                for (let j = 0; j <= resolution; j++) {
+                    let py = gridY[j];
+                    let rowZ = [];
+                    for (let i = 0; i <= resolution; i++) {
+                        let px = gridX[i];
+
+                        // Forward pass
+                        let out = [px, py];
+                        for (let L of layers) out = L.forward([out])[0];
+
+                        // Push prediction
+                        rowZ.push(outDim === 3 ? out[0] - out[1] : out[0]);
+                    }
+                    gridZ.push(rowZ); // Now gridZ[j][i] matches [Y][X]
+                }
+
+                
+
+                traces.push({
+                    x: gridX,
+                    y: gridY,
+                    z: gridZ,
+                    type: 'heatmap',
+                    transpose: false,
+                    colorscale: 'RdBu', // Blue/Red is standard for binary classification
+                    reversescale: true,
+                    opacity: 0.4,
+                    showscale: false,
+                    hoverinfo: 'skip'
+                });
+
+                // 3. Add Data Points
+                traces.push({
+                    x: x.map(r => r[0]), y: x.map(r => r[1]),
+                    mode: 'markers',
+                    marker: {
+                        color: y.map(r => r[0] > 0.5 ? '#00ff41' : '#ff3131'),
+                        size: 9,
+                        line: { color: '#fff', width: 1 }
+                    },
+                    name: 'Data'
+                });
+            } else if (inDim === 3) {
                 // --- 3D CLASSIFICATION (XOR3/COLOR) ---
                 // 1. Data Points
                 traces.push({

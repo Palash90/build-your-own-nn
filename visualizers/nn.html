@@ -205,6 +205,15 @@
             tanh: { f: x => Math.tanh(x), df: x => 1 - Math.pow(Math.tanh(x), 2) },
             sigmoid: { f: x => 1 / (1 + Math.exp(-x)), df: x => { let s = 1 / (1 + Math.exp(-x)); return s * (1 - s); } },
             lrelu: { f: x => x > 0 ? x : 0.01 * x, df: x => x > 0 ? 1 : 0.01 },
+            softmax: {
+                // Softmax is applied to a whole row (array)
+                f: (arr) => {
+                    const max = Math.max(...arr); // For numerical stability
+                    const exps = arr.map(v => Math.exp(v - max));
+                    const sum = exps.reduce((a, b) => a + b);
+                    return exps.map(v => v / sum);
+                }
+            }
         };
 
         class Layer {
@@ -216,8 +225,15 @@
                 this.lastZ = []; this.lastA = [];
             }
             forward(X) {
+                // Linear Step: Z = XW + B
                 this.lastZ = X.map(row => this.b.map((b, j) => row.reduce((sum, v, i) => sum + v * this.w[i][j], 0) + b));
-                this.lastA = this.lastZ.map(row => row.map(v => Act[this.act].f(v)));
+
+                // Activation Step
+                if (this.act === 'softmax') {
+                    this.lastA = this.lastZ.map(row => Act.softmax.f(row));
+                } else {
+                    this.lastA = this.lastZ.map(row => row.map(v => Act[this.act].f(v)));
+                }
                 return this.lastA;
             }
         }
@@ -275,7 +291,8 @@
                 layers.push(new Layer(curIn, s, a));
                 curIn = s;
             });
-            layers.push(new Layer(curIn, yRaw[0].length, 'sigmoid')); // Final layer logic
+            const finalAct = yRaw[0].length > 1 ? 'softmax' : 'sigmoid';
+            layers.push(new Layer(curIn, yRaw[0].length, finalAct));
             renderWeights();
             drawNet();
             document.getElementById('status').innerText = "Status: Network Built. Ready to Train.";

@@ -14,9 +14,9 @@
         }
 
         :root {
-            --neon: #00ff41;
-            --bg: #0a0a0a;
-            --panel: #1a1a1a;
+            --neon: #cbd5e1;
+            --bg: #020617;
+            --panel: #0f172a;
         }
 
         body {
@@ -27,36 +27,62 @@
             margin: 0;
         }
 
+        /* Add this to your CSS */
+        .controls>div {
+            border-bottom: 1px solid #2d3748;
+            padding-bottom: 15px;
+            margin-bottom: 5px;
+        }
+
+        .controls input,
+        .controls select {
+            height: 32px;
+            /* Forces consistent height across all input types */
+            box-sizing: border-box;
+        }
+
         .dashboard {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            /* Move controls to a narrow left column, plots to a wide right column */
+            grid-template-columns: 320px 1fr 1fr;
+            grid-template-rows: auto auto;
             gap: 20px;
-            max-width: 1600px;
+            width: 98vw;
+            max-width: 1800px;
             margin: auto;
         }
 
         .panel {
             background: var(--panel);
-            border: 1px solid #333;
+            border: 1px solid #334155;
             padding: 15px;
             border-radius: 8px;
-            overflow: hidden;
+        }
+
+        /* Make the Network Topology span across both plot columns */
+        .panel[style*="grid-column: span 2"] {
+            grid-column: 2 / span 2 !important;
         }
 
         .controls {
-            grid-column: span 2;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 15px;
-            background: #111;
-            padding: 20px;
-            border: 1px solid var(--neon);
+            /* Set controls to stay in the first column and span downward */
+            grid-column: 1;
+            grid-row: 1 / span 3;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            background: #0f172a;
+            padding: 15px;
+            border: 1px solid #334155;
+            height: fit-content;
+            overflow-y: auto;
         }
 
         canvas {
-            background: #000;
+            background: #00070a;
             width: 100%;
-            height: 250px;
+            height: 400px;
+            /* Increased from 250px to 400px for better vertical spread */
             border: 1px solid #222;
             margin-top: 10px;
         }
@@ -79,25 +105,34 @@
 
         /* Weight Grid Styling */
         #weightInspector {
-            grid-column: span 2;
-            max-height: 300px;
-            overflow-y: auto;
-            font-size: 0.75rem;
+            grid-column: 2 / span 2;
+            /* Align it under the plots */
+            max-height: 200px;
+            /* Set a strict height */
+            overflow-x: auto;
+            /* Allow horizontal scrolling for many layers */
+            white-space: nowrap;
+            /* Keep layers side-by-side */
+            border-top: 2px solid #334155;
+            padding-top: 10px;
         }
 
         .matrix-table {
             border-collapse: collapse;
-            margin: 10px;
+            margin: 5px;
             display: inline-block;
             vertical-align: top;
-            border: 1px solid #444;
+            border: 1px solid #334155;
+            background: #020617;
+            /* Darker contrast for the table itself */
+            font-size: 0.65rem;
+            /* Smaller font for high-density data */
         }
 
         .matrix-table td {
-            border: 1px solid #333;
-            padding: 4px;
-            text-align: center;
-            min-width: 60px;
+            border: 1px solid #1e293b;
+            padding: 2px 6px;
+            min-width: 45px;
         }
 
         .layer-title {
@@ -110,7 +145,27 @@
 
         .btn-group {
             display: flex;
-            gap: 5px;
+            flex-wrap: wrap;
+            /* Allows buttons to drop to a new line */
+            gap: 4px;
+            /* Tighter gap to save space */
+            margin-top: 5px;
+        }
+
+        .btn-group button {
+            flex: 1 1 calc(33% - 4px);
+            /* Fits roughly 3 buttons per row */
+            min-width: 60px;
+            /* Prevents buttons from getting too tiny */
+            font-size: 0.7rem;
+            /* Slightly smaller text for better fit */
+            padding: 6px 2px;
+            /* Vertical padding, minimal horizontal */
+            white-space: nowrap;
+            /* Prevents text from breaking mid-word */
+            overflow: hidden;
+            text-overflow: ellipsis;
+            /* Adds '...' if text is still too long */
         }
 
         label {
@@ -131,7 +186,7 @@
                 <label>Data Management</label>
                 <input id="inputX" value="0,0; 0,1; 1,0; 1,1">
                 <input id="inputY" value="1; 0; 0; 1">
-                <div class="btn-group">
+                <div class="btn-group" style="margin-bottom: 15px;">
                     <button onclick="setDataset('XOR', this)">XOR</button>
                     <button onclick="setDataset('XNOR', this)">XNOR</button>
                     <button onclick="setDataset('XOR3', this)">3 Input XOR</button>
@@ -197,7 +252,7 @@
                     <option value="2d">Force 2D</option>
                 </select>
                 <button id="trainBtn" onclick="toggleTraining()"
-                    style="background:#00441b; font-size: 1.1rem; height: 60px;">START TRAINING</button>
+                    style="background:#334155; font-size: 1.1rem; height: 60px;">START TRAINING</button>
                 <div class="btn-group">
                     <button onclick="stopFlag=true" style="background:#440000">STOP</button>
                     <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
@@ -206,13 +261,10 @@
             </div>
         </div>
         <div class="panel"><label>Prediction Plot</label>
-            <div id="plot" style="height: 350px;"></div>
+            <div id="plot" style="height: 400px;"></div>
         </div>
         <div class="panel"><label>Loss History</label>
-            <div id="lossPlot" style="height: 350px;"></div>
-
-
-
+            <div id="lossPlot" style="height: 400px;"></div>
         </div>
 
 
@@ -602,32 +654,37 @@
             if (btnElement) btnElement.classList.add('active-dataset');
             const data = [
                 // --- WARM COLORS (Output: 1,0,0) ---
-                { x: "1,0,0", y: "1,0,0" }, { x: "1,0.1,0.1", y: "1,0,0" }, { x: "0.8,0.2,0", y: "1,0,0" },
-                { x: "1,0.5,0", y: "1,0,0" }, { x: "0.9,0.4,0.1", y: "1,0,0" }, { x: "1,0.8,0", y: "1,0,0" },
-                { x: "0.7,0,0", y: "1,0,0" }, { x: "0.6,0.2,0.1", y: "1,0,0" }, { x: "1,0.3,0.3", y: "1,0,0" },
-                { x: "0.9,0.6,0.2", y: "1,0,0" }, { x: "0.8,0.1,0.2", y: "1,0,0" }, { x: "1,0.2,0", y: "1,0,0" },
-                { x: "0.5,0.1,0", y: "1,0,0" }, { x: "1,0.4,0.4", y: "1,0,0" }, { x: "0.8,0.5,0", y: "1,0,0" },
+                // Characteristics: High Red, Low Blue
+                { x: "1,0,0", y: "1,0,0" },       // Pure Red
+                { x: "1,0.5,0", y: "1,0,0" },     // Orange
+                { x: "1,1,0", y: "1,0,0" },       // Yellow
+                { x: "0.8,0.2,0.1", y: "1,0,0" }, // Brick Red
+                { x: "0.6,0,0", y: "1,0,0" },     // Deep Maroon
+                { x: "1,0.3,0.3", y: "1,0,0" },   // Coral/Pink
+                { x: "0.9,0.4,0.1", y: "1,0,0" }, // Burnt Orange
+                { x: "0.5,0.2,0", y: "1,0,0" },   // Brown
 
                 // --- COOL COLORS (Output: 0,1,0) ---
-                { x: "0,0,1", y: "0,1,0" }, { x: "0.1,0.1,0.9", y: "0,1,0" }, { x: "0,0.5,1", y: "0,1,0" },
-                { x: "0,1,1", y: "0,1,0" }, { x: "0.2,0.8,0.8", y: "0,1,0" }, { x: "0,0.3,0.7", y: "0,1,0" },
-                { x: "0.1,0.4,0.9", y: "0,1,0" }, { x: "0,0,0.6", y: "0,1,0" }, { x: "0.3,0.5,0.8", y: "0,1,0" },
-                { x: "0,0.7,0.7", y: "0,1,0" }, { x: "0.1,0.2,0.6", y: "0,1,0" }, { x: "0.4,0.7,1", y: "0,1,0" },
-                { x: "0,0.5,0.5", y: "0,1,0" }, { x: "0.2,0.3,0.9", y: "0,1,0" }, { x: "0.1,0.6,0.6", y: "0,1,0" },
+                // Characteristics: High Blue or Green, Low Red
+                { x: "0,0,1", y: "0,1,0" },       // Pure Blue
+                { x: "0,1,0", y: "0,1,0" },       // Pure Green
+                { x: "0,1,1", y: "0,1,0" },       // Cyan
+                { x: "0.5,0,1", y: "0,1,0" },     // Purple (Moved to Cool)
+                { x: "0.2,0.2,0.8", y: "0,1,0" }, // Soft Blue
+                { x: "0,0.5,0.5", y: "0,1,0" },   // Teal
+                { x: "0.1,0.8,0.2", y: "0,1,0" }, // Bright Green
+                { x: "0.7,0.3,1", y: "0,1,0" },   // Violet
 
                 // --- NEUTRAL/MUTED (Output: 0,0,1) ---
-                { x: "0.5,0.5,0.5", y: "0,0,1" }, { x: "0.2,0.2,0.2", y: "0,0,1" }, { x: "0.8,0.8,0.8", y: "0,0,1" },
-                { x: "1,1,1", y: "0,0,1" }, { x: "0,0,0", y: "0,0,1" }, { x: "0.4,0.4,0.4", y: "0,0,1" },
-                { x: "0.6,0.6,0.6", y: "0,0,1" }, { x: "0.3,0.3,0.3", y: "0,0,1" }, { x: "0.9,0.9,0.9", y: "0,0,1" },
-                { x: "0.5,0.5,0.6", y: "0,0,1" }, { x: "0.4,0.5,0.4", y: "0,0,1" }, { x: "0.5,0.4,0.4", y: "0,0,1" },
-                { x: "0.1,0.1,0.1", y: "0,0,1" }, { x: "0.7,0.7,0.7", y: "0,0,1" }, { x: "0.2,0.2,0.25", y: "0,0,1" },
-
-                // --- CHALLENGING GRADIENTS ---
-                { x: "0.5,0.2,0.2", y: "1,0,0" }, // Muddy Red (Warm)
-                { x: "0.2,0.2,0.5", y: "0,1,0" }, // Muddy Blue (Cool)
-                { x: "0.6,0.6,0.5", y: "0,0,1" }, // Off-Grey (Neutral)
-                { x: "0.5,0.4,0.3", y: "1,0,0" }, // Brownish (Warm)
-                { x: "0.3,0.4,0.5", y: "0,1,0" }  // Slate (Cool)
+                // Characteristics: R, G, and B are nearly equal
+                { x: "0,0,0", y: "0,0,1" },       // Black
+                { x: "1,1,1", y: "0,0,1" },       // White
+                { x: "0.5,0.5,0.5", y: "0,0,1" }, // Mid Gray
+                { x: "0.2,0.2,0.2", y: "0,0,1" }, // Dark Gray
+                { x: "0.8,0.8,0.8", y: "0,0,1" }, // Light Gray
+                { x: "0.4,0.4,0.4", y: "0,0,1" }, // Charcoal
+                { x: "0.6,0.6,0.6", y: "0,0,1" }, // Silver
+                { x: "0.1,0.1,0.1", y: "0,0,1" }  // Near Black
             ];
 
             document.getElementById('inputX').value = data.map(d => d.x).join('; ');
@@ -773,7 +830,7 @@
                     gridZ.push(rowZ); // Now gridZ[j][i] matches [Y][X]
                 }
 
-                
+
 
                 traces.push({
                     x: gridX,
@@ -858,14 +915,14 @@
                     html += "<tr>";
                     row.forEach(v => {
                         // Color coding: Green for positive, Red for negative
-                        const color = isNaN(v) ? '#ffff00' : v > 0 ? '#00ff41' : '#ff3131';
+                        const color = isNaN(v) ? '#fbbf24' : v > 0 ? '#10b981' : '#f43f5e';
                         const opacity = Math.min(1, Math.abs(v));
                         html += `<td style="color:${color}; opacity:${0.3 + opacity}">${v.toFixed(4)}</td>`;
                     });
                     html += "</tr>";
                 });
 
-                html += `</table><div class="layer-title">Biases</div><table><tr>`;
+                html += `</table><div class="layer-title" style="background:#1e293b; padding:2px;">Biases</div><table style="width:100%"><tr>`;
                 L.b.forEach(v => {
                     html += `<td>${v.toFixed(4)}</td>`;
                 });
@@ -875,6 +932,17 @@
         }
 
         function drawNet() {
+            const actColors = {
+                input: '#ffffff',   // White for input
+                relu: '#fbbf24',    // Amber
+                tanh: '#8b5cf6',    // Purple
+                sigmoid: '#ec4899', // Pink
+                lrelu: '#f97316',   // Orange
+                softmax: '#06b6d4', // Cyan
+                linear: '#94a3b8'   // Slate
+            };
+
+
             const canvas = document.getElementById('netCanvas');
             const ctx = canvas.getContext('2d');
             canvas.width = canvas.offsetWidth; canvas.height = canvas.offsetHeight;
@@ -886,11 +954,26 @@
             layers.forEach((L, lIdx) => {
                 L.w.forEach((row, i) => row.forEach((w, j) => {
                     ctx.beginPath(); ctx.moveTo(pos[lIdx][i].x, pos[lIdx][i].y); ctx.lineTo(pos[lIdx + 1][j].x, pos[lIdx + 1][j].y);
-                    ctx.strokeStyle = isNaN(w) ? '#ffff00' : w > 0 ? `rgba(0,255,65,${Math.abs(w)})` : `rgba(255,0,0,${Math.abs(w)})`;
+                    ctx.strokeStyle = isNaN(w) ? '#fbbf24' : w > 0 ? `rgba(16, 185, 129, ${Math.abs(w) * 0.4})` : `rgba(244, 63, 94, ${Math.abs(w) * 0.4})`;
                     ctx.lineWidth = Math.min(5, Math.abs(w) * 2); ctx.stroke();
                 }));
             });
-            pos.flat().forEach(p => { ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 7); ctx.fillStyle = "#00ff41"; ctx.fill(); });
+
+            pos.forEach((layerNodes, lIdx) => {
+                // Determine color: first layer is 'input', others come from layers[lIdx-1]
+                const actType = lIdx === 0 ? 'input' : layers[lIdx - 1].act;
+                const nodeColor = actColors[actType] || '#ffffff';
+
+                layerNodes.forEach(p => {
+                    ctx.beginPath();
+                    ctx.arc(p.x, p.y, 6, 0, 7); // Slightly larger nodes
+                    ctx.fillStyle = nodeColor;
+                    ctx.shadowBlur = 10;
+                    ctx.shadowColor = nodeColor; // Adds a subtle glow per activation type
+                    ctx.fill();
+                    ctx.shadowBlur = 0; // Reset shadow for next draw
+                });
+            });
         }
     </script>
 </body>

@@ -1,4 +1,5 @@
-title: Build Neural Network From Scratch in Rust
+title: "Neural Networks from First Principles"
+subtitle: "A systems-level walkthrough of tensor math in Rust"
 markdown: kramdown
 highlighter: rouge
 

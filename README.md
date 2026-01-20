@@ -1,5 +1,8 @@
+Neural Network from First Principles
+A systems-level walkthrough of tensor math in Rust
+
 # Prologue: Breaking the Black Box
-Machine Learning often felt like a "black box" to me. Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. Hence, I decided to start learning this technology by building it from scratch. 
+Machine Learning often feels like a "black box". Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. To break that opacity, this project builds the machinery from scratch.
 
 I have spent years trying to learn Rust. After experimenting with various methods (The Book, RBE, Rustlings, etc.) over the years, I found the missing link: the difficulty lay not in the language, but in the lack of a motivating end-goal.
 
@@ -7,11 +10,11 @@ This project began as a month-long deep dive into Linear Regression. However, my
 
 To be clear: This project is not meant to replace PyTorch, TensorFlow, or ndarray. It is a 'toy' engine by design. Its purpose is to replace the 'I don't know' in your head when you call torch.matmul() with a clear, mental model of memory buffers and cache lines. We aren't building for production; we are building for mastery.
 
-
 # Prerequisites
-This guide is designed as a self-contained journey. We do not assume a prior mathematical background. Instead, we derive the necessary mathematical principles as they arise.
+This guide is designed as a self-contained journey. We do not assume formal mathematical training, but we do assume patience and curiosity. We derive the necessary mathematical principles as they arise.
 
 While this guide does not assume mastery in Rust, a basic understanding of the following concepts will make the progression smoother:
+
 - **Rust Fundamentals:** The use of `structs`, `enums`, and basic pattern matching.
 - **The Memory Model:** A conceptual understanding of Ownership, Borrowing, and Slicing.
 - **The Module System:** Familiarity with how Rust organizes code across files.
@@ -21,6 +24,7 @@ While this guide does not assume mastery in Rust, a basic understanding of the f
 >In keeping with our philosophy of Radical Transparency, we will not rely on external linear algebra crates like ndarray. Our only dependency is the Rust Standard Library.
 
 # Project Philosophy
+
 This guide is designed with a specific philosophy in mind: **Radical Transparency**. We do not start with frameworks or pre-built third-party libraries. We start with a blank file and a single `fn main()`. From there, we will incrementally build the mathematical and structural architecture required to perform complex tasks.
 
 ## The Roadmap
@@ -32,8 +36,11 @@ This is the roadmap I wish I had two years ago. Whether you are a Rustacean curi
 - **Building the Network:** Constructing layers and activation functions.
 - **The Visual Goal:** Training our library to interpret and reconstruct images, proving that 'magic' is just linear algebra and high-dimensional calculus written in a language with strict safety guarantees.
 
+If you want production speed, use PyTorch. If you want understanding, read on.
+
 ## The End Goal
-Before we start building everything piece by piece, it's better to set an end goal for us. Our final product will be build an image reconstructor. Such that, if we feed it a simple monochrome image and give some multiplier, the image will be regenerated on the new scale. Something like the following:
+
+Before we start building everything piece by piece, it's better to set an end goal for us. Our final product will be an image reconstructor. Such that, if we feed it a simple monochrome image and give some multiplier, the image will be regenerated on the new scale. Something like the following:
 
 ```pbm
 assets/spiral_50px.pbm:50 * 50 Original Image, assets/arrow.pbm, assets/spiral_200px.pbm:200*200 Reconstructed Image
@@ -93,6 +100,7 @@ println!("{}", a[0][0]); // Output: 1
 >Mathematical notation and programming differ in how they index a collection of numbers. Mathematics typically uses 1-based indexing, whereas programming uses 0-based indexing.
 
 ## Implementation: Memory Buffers and Layout
+
 With the mathematical background, now we'll design and implement the `Tensor`. Let's first kick off the project and then we'll add elements to it. We'll use the default `cargo new` command for this:
 
 ```shell
@@ -101,6 +109,7 @@ $ cargo new build_your_own_nn
 note: see more `Cargo.toml` keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 ```
+
 That's it. Nothing else. Let's begin translating our design into code.
 
 We need a way to store multiple data points and we should be able to index the data structure to access or modify the data inside.
@@ -118,7 +127,7 @@ $$
 \end{array}
 $$
 
-2. **Rigidity:** `Vec` of `Vec` would permanently limit our application to a 2D matrix and later, if we want to support higher dimension tensors, we would have to change our code.
+1. **Rigidity:** `Vec` of `Vec` would permanently limit our application to a 2D matrix and later, if we want to support higher dimension tensors, we would have to change our code.
 
 To avoid these problems, we'll use two `Vec`s instead. One will hold the data in a flat _1D_ structure and the other will hold the _shape_ definition like this:
 
@@ -265,6 +274,7 @@ Cargo.toml
 ```
 
 ## Display: Pretty Printing Matrix
+
 The definition and implementation of the tensor is now clear. But how can we intuitively inspect the data if we need to. Looking at the data directly from `Vec` isn't very intuitive.
 
 Let's first try to understand the problem and then we'll fix it. We rewrite the `main` function to inspect the data inside the tensor:
@@ -480,10 +490,10 @@ pub fn test_tensor_operations() -> Result<(), TensorError>  {
 }
 ```
 
-Now we'll implement these operations. All the implementations so far operate on the data element wise and the shape of those two tensors must match. So, we will add a common method inside the `impl` block and use it to unify all the element wise logic using function pointers:
+These operations all share the same structural constraint: identical shapes. So, we will add a common method inside the `impl` block and use it to unify all the element wise logic using function pointers:
 
 ```rust
-    pub fn _element_wise_op(
+    fn _element_wise_op(
         &self,
         other: &Tensor,
         op: fn(f32, f32) -> f32,

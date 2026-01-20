@@ -412,6 +412,27 @@ layout: default
     }
 </style>
 
+<style>
+.page-header {
+    max-width: 900px;
+    margin-bottom: 40px;
+}
+
+.page-title {
+    font-size: 2.4rem;
+    font-weight: 700;
+    line-height: 1.2;
+    margin-bottom: 10px;
+}
+
+.page-subtitle {
+    font-size: 1.2rem;
+    color: #8b949e;
+    font-weight: 400;
+}
+
+</style>
+
 <script>
     window.MathJax = {
         loader: { load: ['[tex]/color'] },
@@ -440,6 +461,10 @@ layout: default
 <script src='https://cdn.plot.ly/plotly-3.3.0.min.js'></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<header class="page-header">
+  <p class="page-subtitle">{{ page.subtitle }}</p>
+</header>
 
 * TOC
 {:toc}

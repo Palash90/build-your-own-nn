@@ -1,14 +1,97 @@
-Neural Network from First Principles
-A systems-level walkthrough of tensor math in Rust
-
-# Prologue: Breaking the Black Box
-Machine Learning often feels like a "black box". Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. To break that opacity, this project builds the machinery from scratch.
+# Prologue: Building the Machinery from First Principles
+Machine Learning often feels like a _black box_. Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. To break that opacity, this project builds the machinery from scratch.
 
 I have spent years trying to learn Rust. After experimenting with various methods (The Book, RBE, Rustlings, etc.) over the years, I found the missing link: the difficulty lay not in the language, but in the lack of a motivating end-goal.
 
-This project began as a month-long deep dive into Linear Regression. However, my momentum gradually slowed and after numerous iterations, I have finally reached a milestone where I can document this journey. As of today, the project is still evolving.
+This project began as a month-long deep dive into Linear Regression but, momentum gradually slowed, I realized I needed a broader scope. After numerous iterations, I have finally reached a milestone where I can document this journey. As of today, the project is still evolving.
 
-To be clear: This project is not meant to replace PyTorch, TensorFlow, or ndarray. It is a 'toy' engine by design. Its purpose is to replace the 'I don't know' in your head when you call torch.matmul() with a clear, mental model of memory buffers and cache lines. We aren't building for production; we are building for mastery.
+To be clear: This project is not meant to replace PyTorch, TensorFlow, or ndarray. This is a deliberately small engine, but it is built with the same care real systems demand. Its purpose is to replace the 'I don't know' in your head when you call torch.matmul() with a clear, mental model of memory buffers and cache lines. We aren't building for production; we are building for mastery.
+
+# How to Read This Guide
+
+This guide is written as a **systems-level walkthrough**, not a framework tutorial.
+It prioritizes **understanding, correctness, and mental models** over brevity or convenience.
+
+Readers are encouraged to move slowly, revisit sections, and experiment with the code.
+
+
+## Who This Guide Is For
+
+This guide is written for readers who:
+
+* Want to understand **how neural networks actually work**, beneath modern ML frameworks
+* Are curious about **tensor math, memory layout, and matrix operations** at a concrete level
+* Have experience with **software development** and are comfortable reading real code
+* Are learning **Rust** and want a non-trivial, systems-oriented project
+* Use ML frameworks (PyTorch, TensorFlow, etc.) but want to replace *intuition gaps* with real understanding
+* Prefer **first principles** over black-box abstractions
+
+You do **not** need:
+
+* Formal training in linear algebra
+* Prior experience implementing neural networks
+* Deep knowledge of Rust beyond basic syntax and ownership concepts
+
+
+## Who This Guide Is Not For
+
+This guide is **not** a good fit for readers who:
+
+* Are looking for a **high-level overview** of neural networks without implementation details
+* Want a **production-ready ML library** or performance comparable to BLAS-backed frameworks
+* Prefer **copy-paste solutions** over building understanding from the ground up
+* Are seeking their **first introduction** to programming or mathematics
+* Want to train large models or achieve state-of-the-art results
+
+This guide intentionally avoids:
+
+* Framework abstractions
+* Hardware-specific optimizations
+* Advanced numerical tricks
+* API ergonomics in favor of clarity
+
+
+## How to Use This Guide
+
+To get the most value from this guide:
+
+* **Read sequentially** — later sections build directly on earlier concepts
+* **Pause often** — understanding the memory layout and indexing is essential
+* **Re-derive examples** — do the math by hand at least once
+* **Run the code** — the implementation is part of the explanation
+* **Don’t rush** — this is designed for depth, not speed
+
+Some sections are **deliberately slow and detailed**.
+They are meant to replace vague intuition with concrete mental models.
+
+
+## What This Guide Prioritizes
+
+This guide emphasizes:
+
+* Explicit data layout over implicit abstractions
+* Correctness over cleverness
+* Simplicity over generality
+* Understanding over convenience
+
+Every design decision is made in service of clarity.
+
+
+## What to Expect by the End
+
+By the end of this guide, you should:
+
+* Understand what a tensor **is in memory**, not just in notation
+* Be able to trace **matrix multiplication** down to individual memory accesses
+* Recognize why certain operations dominate neural network performance
+* Feel comfortable reasoning about tensors without relying on frameworks
+
+If this sounds like what you’re looking for, continue reading.
+
+> **NOTE**
+> *This guide is not optimized for speed of reading.
+> It is optimized for depth of understanding.*
+
 
 # Prerequisites
 This guide is designed as a self-contained journey. We do not assume formal mathematical training, but we do assume patience and curiosity. We derive the necessary mathematical principles as they arise.
@@ -19,6 +102,8 @@ While this guide does not assume mastery in Rust, a basic understanding of the f
 - **The Memory Model:** A conceptual understanding of Ownership, Borrowing, and Slicing.
 - **The Module System:** Familiarity with how Rust organizes code across files.
 - **The Toolchain:** You’ll need `rustc` and `cargo` installed and ready.
+
+This guide occasionally touches systems concepts (like memory locality) or mathematical concepts (like mathematical notations). You don’t need prior expertise—we’ll only rely on intuition, not formal hardware theory or mathematical research papers.
 
 >**NOTE**
 >In keeping with our philosophy of Radical Transparency, we will not rely on external linear algebra crates like ndarray. Our only dependency is the Rust Standard Library.
@@ -49,7 +134,9 @@ assets/spiral_50px.pbm:50 * 50 Original Image, assets/arrow.pbm, assets/spiral_2
 And that’s where the story begins...
 
 # The Tensor
-To build a neural network from scratch, we need to construct the fundamental building blocks first. In the world of Machine Learning, that building block would be a **Tensor**. In simple terms, a tensor is a collection of numbers organized in a grid.
+To build a neural network from scratch, we need to construct the fundamental building blocks first.
+
+If you’ve ever used tensors in PyTorch and felt comfortable using them but uneasy about what they actually are, this chapter is for you.
 
 ## Journey from Scalar to Tensor
 To understand the data structure we are building, we need to develop an intuition first. Let's start building it from scratch as well.
@@ -73,6 +160,11 @@ $$
 \color{#E74C3C}{1} & \left[\begin{matrix} \color{cyan}1 \\ \color{cyan}2 \end{matrix} \right] & \left[\begin{matrix} \color{magenta}{1} & \color{magenta}{2} \\\ \color{magenta}{3} & \color{magenta}{4} \end{matrix} \right]
 \end{array}
 $$
+
+> **Who This Is For**
+> If you’ve used tensors in PyTorch but never questioned what they *are* in memory,
+> this section is written for you.
+> If you’re comfortable in Rust but new to linear algebra, don’t worry—we’ll build intuition first.
 
 ## Matrix Notation and Indexing
 
@@ -406,6 +498,11 @@ fn main() -> Result<(), TensorError> {
 
 **Challenge to the readers:** I encourage the readers to implement their own formatting. I chose this formatting because I like it, you don't have to stick to this.
 
+> **Checkpoint**
+> If you understand why this formatting works, you now understand how a 2D tensor
+> is mapped onto a 1D memory buffer.
+> Everything that follows—transpose, matmul, reduction—builds on this idea.
+
 # Basic Tensor Arithmetic
 If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).
 
@@ -650,6 +747,13 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
 
 
 ## Dot Product
+
+At this point, the guide splits readers into two camps:
+
+- ML practitioners who know *what* matrix multiplication does
+- systems programmers who know *how* memory works
+The goal of the next section is to bridge that gap.
+
 We have already seen how to multiply two matrices or vectors element wise. However, there is another multiplication operation we can perform on tensors, known as the **Dot Product**. It is slightly more involved, as it combines element wise multiplication and a reduction operation into a single step.
 
 The dot product of two vectors $A$ and $B$ of length n is defined as:
@@ -716,7 +820,10 @@ However, to make our tensor useful, we'll avoid the textbook naive implementatio
 First we'll write tests for matrix multiplications with correct assumptions and then we'll jump into both the implementations.
 
 #### Tests for Matrix Multiplication
-This test will capture many scenarios based on 1D, 2D matrix operations. We will add this to our existing tests:
+This test captures a wide range of scenarios: vectors, matrices, and mixed shapes.
+
+Don’t worry if the full set of cases feels overwhelming at first.
+You’re not expected to memorize these combinations—only to recognize the patterns as they emerge.
 
 ```rust
     #[test]
@@ -922,6 +1029,13 @@ C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times
 $$
 
 #### The Optimized Implementation (IKJ)
+
+This loop order matters more than the math itself.
+
+Many libraries compress this entire operation into a single function call. Here, we’re going to expand it fully: not because it’s efficient, but because this is where understanding is built.
+
+Take your time. You’re supposed to.
+
 We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
 
 1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
@@ -946,7 +1060,9 @@ for i in 0..a_rows {
 }
 ```
 
-Instead of the standard $i \xrightarrow{} j \xrightarrow{} k$ loop order, if we switch to $i \xrightarrow{} k \xrightarrow{} j$ we can unlock two major hardware optimizations:
+Up to this point, nothing “mathematical” has changed. We are still computing the same dot products, summing the same values, and producing the same result matrix.
+
+What has changed is how the CPU walks through memory.
 
 1. **Improved Cache Locality:** In the IKJ order, the innermost loop moves across index `j`. This means we are reading `other.data` and writing to data in a straight, continuous line. The CPU can predict this "streaming" access and pre-fetch the data into the cache avoiding the RAM fetch.
 
@@ -1049,7 +1165,15 @@ pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
  }
  ```
 
- Now we have both the methods, let's run some accuracy check and performance check:
+Before looking at the numbers, it’s worth setting expectations.
+
+We haven’t used unsafe code.
+We haven’t used SIMD intrinsics.
+We haven’t used parallelism.
+
+All we did was change loop order.
+
+That alone is enough to produce a dramatic difference.
 
  ```text
 $ target/release/build-your-own-nn 
@@ -1074,8 +1198,9 @@ Matrix Multiplication using optimized method:
   |139.0000, 154.0000|
 
 Time taken (optimized): 12.845µs
- ```
-We can clearly see that the optimized method performs the task faster than the naive method, that too for very small input tensors. If we increase the number of rows and columns in both the input matrices, we'll see a much larger benefit of using the optimized method:
+```
+
+In programming, performance means nothing without accuracy. Here is the verification of the accuracy.
 
 ```text
 $ target/release/build-your-own-nn 
@@ -1092,6 +1217,7 @@ Time taken (optimized): 26.23µs
 
 Results match!
 ```
+
 Here is how both the methods performed the calculations:
 
 ```text
@@ -1172,9 +1298,11 @@ Final Result:
   |139.0000, 154.0000|
 
 ```
+
 >**NOTE** 
 >We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
 
+If you only remember one thing from this section, remember this: changing loop order does not change math—but it completely changes performance. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
 
 ## Reduction
 A matrix or a vector gives us information about individual elements, but at times we need an aggregation of those individual elements.
@@ -2784,15 +2912,13 @@ Of course not. We solve the problem with **Multi Layer Perceptron**.
 
 ## Multi Layer Perceptron
 
-If we stack a combination of Single Layer Perceptrons, we can approximate any continuous function — a principal known as **Universal Approximation Theorem**.
+If we stack a combination of Single Layer Perceptrons, we can approximate any continuous function — a principle known as **Universal Approximation Theorem**.
 
 According to [wikipedia](https://en.wikipedia.org/wiki/Universal_approximation_theorem) —
 
 > the universal approximation theorems (UATs) state that neural networks with a certain structure can, in principle, approximate any continuous function to any desired degree of accuracy.
 
-Let's take another example by stacking many layers instead of one:
-
-Now, we'll stack these layers and plot:
+Here, we visualize how a ReLU-activated layer transforms a linear input into a piecewise linear function.
 
 $$
 h(x) = g(f(g(f(x))))
@@ -2818,7 +2944,7 @@ $$
 }
 ```
 
-You can see here, the bending of the line changes as we stack more layers. 
+As we stack layers, the 'bend' in the activation function becomes more complex, allowing the model to fit non-linear data. 
 
 We'll now see what happens if we mix two different valued $m$ and $c$ and add them together.
 

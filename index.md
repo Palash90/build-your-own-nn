@@ -237,6 +237,15 @@ layout: default
     .bq-warning strong {
         color: #d29922 !important;
     }
+
+    .bq-checkpoint {
+        background-color: rgba(138, 18, 218, 0.34) !important;
+        border-left: 0.25em solid #a11edd !important;
+    }
+    .bq-checkpoint strong {
+        color: #772a9b !important;
+    }
+    
 </style>
 
 <style>
@@ -426,9 +435,12 @@ layout: default
 }
 
 .page-subtitle {
-    font-size: 1.2rem;
-    color: #8b949e;
+    font-size: 1rem;
+    color: #86c1ff;
     font-weight: 400;
+    text-align: right;
+    font-style: oblique;
+    margin-bottom: 100px;
 }
 
 </style>
@@ -463,7 +475,7 @@ layout: default
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <header class="page-header">
-  <p class="page-subtitle">{{ page.subtitle }}</p>
+  <p class="page-subtitle">{{ site.subtitle }}</p>
 </header>
 
 * TOC
@@ -485,6 +497,8 @@ layout: default
             bq.classList.add('bq-tip');
         } else if (type.includes('WARNING') || type.includes('IMPORTANT')) {
             bq.classList.add('bq-warning');
+        }else if (type.includes('CHECKPOINT') || type.includes('IMPORTANT')) {
+            bq.classList.add('bq-checkpoint');
         }
     });
 </script>

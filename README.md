@@ -1,55 +1,58 @@
-# Prologue: Building the Machinery from First Principles
-Machine Learning often feels like a _black box_. Every tutorial I found introduced `NumPy` as a baseline requirement. Libraries like `scikit-learn`, `PyTorch`, `TensorFlow`, etc. are excellent for building quick prototypes as well as production-grade models. However, they heavily obscure the underlying mechanics. To break that opacity, this project builds the machinery from scratch.
+# Prologue — Building the Machinery from First Principles
 
-I have spent years trying to learn Rust. After experimenting with various methods (The Book, RBE, Rustlings, etc.) over the years, I found the missing link: the difficulty lay not in the language, but in the lack of a motivating end-goal.
+Machine learning often feels like a black box. Tutorials introduce **NumPy** and then hand you frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. Those tools are powerful, but they hide the mechanics that make models actually work.
 
-This project began as a month-long deep dive into Linear Regression but, momentum gradually slowed, I realized I needed a broader scope. After numerous iterations, I have finally reached a milestone where I can document this journey. As of today, the project is still evolving.
+This project strips away the layers. We build a tiny ML engine from first principles so you can see what happens when you call `torch.matmul()` — the memory layout, the indexing, and the cache behavior that make linear algebra fast and predictable.
 
-To be clear: This project is not meant to replace PyTorch, TensorFlow, or ndarray. This is a deliberately small engine, but it is built with the same care real systems demand. Its purpose is to replace the 'I don't know' in your head when you call torch.matmul() with a clear, mental model of memory buffers and cache lines. We aren't building for production; we are building for mastery.
+I learned Rust by trying many resources (The Book, Rust by Example, Rustlings) and discovered the missing piece: a motivating, hands‑on project. What started as a month‑long experiment in linear regression grew into a broader, more instructive journey. The result is a deliberately small, carefully engineered codebase designed for **mastery**, not production.
 
-# How to Read This Guide
+We are not building a drop‑in replacement for PyTorch or ndarray. We are building understanding.
 
-This guide is written as a **systems-level walkthrough**, not a framework tutorial.
-It prioritizes **understanding, correctness, and mental models** over brevity or convenience.
+## Quickstart
 
-Readers are encouraged to move slowly, revisit sections, and experiment with the code.
+This is a systems‑level, hands‑on guide that implements tensors, matrix operations, and backpropagation in Rust so you can inspect every memory access, index calculation, and gradient step. It trades API polish and peak performance for clarity and a deep mental model.
 
+For a quick peek on the final product we build step by step:
 
-## Who This Guide Is For
+1. Install Rust Tool chain if not already installed
+2. Clone the repository - [Build your own Neural Network](https://github.com/Palash90/build-your-own-nn)
+3. From the project root run the final version and follow instructions:
+  
+    ```shell
+    $ cargo build --release
+    $ target/release/build-your-own-nn
+    ```
 
-This guide is written for readers who:
+You can choose from any of the examples in the menu and run the neural network on your machine.
 
-* Want to understand **how neural networks actually work**, beneath modern ML frameworks
-* Are curious about **tensor math, memory layout, and matrix operations** at a concrete level
-* Have experience with **software development** and are comfortable reading real code
-* Are learning **Rust** and want a non-trivial, systems-oriented project
-* Use ML frameworks (PyTorch, TensorFlow, etc.) but want to replace *intuition gaps* with real understanding
-* Prefer **first principles** over black-box abstractions
+## How to Approach This Guide
 
-You do **not** need:
+This is a **systems‑level walkthrough**, not a framework tutorial. It favors correctness and mental models over brevity.
 
-* Formal training in linear algebra
-* Prior experience implementing neural networks
-* Deep knowledge of Rust beyond basic syntax and ownership concepts
+- **Read sequentially.** Later chapters build on earlier ones.  
+- **Run the code.** The implementation is part of the lesson.  
+- **Re‑derive the math.** Do the index arithmetic by hand at least once.  
+- **Pause and experiment.** Small edits reveal how memory layout affects behavior.  
+- **Don’t rush.** Depth matters more than speed.
 
+Some sections are deliberately slow to replace vague intuition with concrete understanding.
 
-## Who This Guide Is Not For
+## Who This Guide Is For and Who It Is Not For
 
-This guide is **not** a good fit for readers who:
+**For readers who:**
 
-* Are looking for a **high-level overview** of neural networks without implementation details
-* Want a **production-ready ML library** or performance comparable to BLAS-backed frameworks
-* Prefer **copy-paste solutions** over building understanding from the ground up
-* Are seeking their **first introduction** to programming or mathematics
-* Want to train large models or achieve state-of-the-art results
+- Want to understand how neural networks work beneath modern frameworks.  
+- Are curious about tensor math, memory layout, and matrix operations.  
+- Have software development experience and can read real code.  
+- Are learning Rust and want a nontrivial, systems‑oriented project.  
+- Prefer first principles over black‑box abstractions.
 
-This guide intentionally avoids:
+**Not for readers who:**
 
-* Framework abstractions
-* Hardware-specific optimizations
-* Advanced numerical tricks
-* API ergonomics in favor of clarity
-
+- Want a high‑level overview without implementation detail.  
+- Need a production BLAS‑level library or peak performance.  
+- Prefer copy‑paste solutions or want to train very large models.  
+- Are brand new to programming or mathematics.
 
 ## How to Use This Guide
 
@@ -64,68 +67,32 @@ To get the most value from this guide:
 Some sections are **deliberately slow and detailed**.
 They are meant to replace vague intuition with concrete mental models.
 
+## Prerequisites and Philosophy
 
-## What This Guide Prioritizes
+**Prerequisites**
 
-This guide emphasizes:
+- **Basic Rust:** Understanding of `struct`, `enum`, ownership, borrowing should be enough to follow.  
+- Familiarity with `cargo` and running tests.  
+- No formal linear algebra required; we derive what we need.
 
-* Explicit data layout over implicit abstractions
-* Correctness over cleverness
-* Simplicity over generality
-* Understanding over convenience
+**Philosophy**
 
-Every design decision is made in service of clarity.
+- **Radical transparency.** No hidden crates or magic.  
+- **Clarity over ergonomics.** We trade API polish and raw performance for explicit, inspectable code.  
+- **One dependency:** the Rust standard library.
 
+## Roadmap and End Goal
 
-## What to Expect by the End
+**Roadmap**
 
-By the end of this guide, you should:
+- **The Blank Canvas:** Start from `fn main()` and a flat `Vec<f32>`.  
+- **The Mathematical Engine:** Implement `Tensor`, elementwise ops, transpose, dot product, and gradients.  
+- **Building the Network:** Compose layers, activations, and backprop.  
+- **The Visual Goal:** Train a tiny model to reconstruct and rescale simple monochrome images.
 
-* Understand what a tensor **is in memory**, not just in notation
-* Be able to trace **matrix multiplication** down to individual memory accesses
-* Recognize why certain operations dominate neural network performance
-* Feel comfortable reasoning about tensors without relying on frameworks
+**End Goal**
 
-If this sounds like what you’re looking for, continue reading.
-
-> **NOTE**
-> *This guide is not optimized for speed of reading.
-> It is optimized for depth of understanding.*
-
-
-# Prerequisites
-This guide is designed as a self-contained journey. We do not assume formal mathematical training, but we do assume patience and curiosity. We derive the necessary mathematical principles as they arise.
-
-While this guide does not assume mastery in Rust, a basic understanding of the following concepts will make the progression smoother:
-
-- **Rust Fundamentals:** The use of `structs`, `enums`, and basic pattern matching.
-- **The Memory Model:** A conceptual understanding of Ownership, Borrowing, and Slicing.
-- **The Module System:** Familiarity with how Rust organizes code across files.
-- **The Toolchain:** You’ll need `rustc` and `cargo` installed and ready.
-
-This guide occasionally touches systems concepts (like memory locality) or mathematical concepts (like mathematical notations). You don’t need prior expertise—we’ll only rely on intuition, not formal hardware theory or mathematical research papers.
-
->**NOTE**
->In keeping with our philosophy of Radical Transparency, we will not rely on external linear algebra crates like ndarray. Our only dependency is the Rust Standard Library.
-
-# Project Philosophy
-
-This guide is designed with a specific philosophy in mind: **Radical Transparency**. We do not start with frameworks or pre-built third-party libraries. We start with a blank file and a single `fn main()`. From there, we will incrementally build the mathematical and structural architecture required to perform complex tasks.
-
-## The Roadmap
-
-This is the roadmap I wish I had two years ago. Whether you are a Rustacean curious about AI or an ML practitioner looking to understand systems-level implementation, this journey is for you.
-
-- **The Blank Canvas:** Initializing the environment and establishing the foundational data structures.
-- **The Mathematical Engine:** Implementing tensors, gradients, and backpropagation from scratch.
-- **Building the Network:** Constructing layers and activation functions.
-- **The Visual Goal:** Training our library to interpret and reconstruct images, proving that 'magic' is just linear algebra and high-dimensional calculus written in a language with strict safety guarantees.
-
-If you want production speed, use PyTorch. If you want understanding, read on.
-
-## The End Goal
-
-Before we start building everything piece by piece, it's better to set an end goal for us. Our final product will be an image reconstructor. Such that, if we feed it a simple monochrome image and give some multiplier, the image will be regenerated on the new scale. Something like the following:
+Train a minimal system that learns to reconstruct a small monochrome image at a larger resolution:
 
 ```pbm
 assets/spiral_50px.pbm:50 * 50 Original Image, assets/arrow.pbm, assets/spiral_200px.pbm:200*200 Reconstructed Image

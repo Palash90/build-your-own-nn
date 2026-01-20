@@ -157,7 +157,7 @@
         }
 
         .matrix-table td {
-            border: 1px solid #111;
+            border: 1px solid #011b27;
             padding: 4px 8px;
             min-width: 50px;
             font-family: 'Consolas', monospace;
@@ -193,7 +193,7 @@
 <body>
 
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
-    <p>This tool accompanies the learning guide: <a href="/#neural-network">Linear Regression</a></p>
+    <p>This tool accompanies the learning guide: <a href="/#neural-network">Neural Network</a></p>
 
     <div class="dashboard">
         <div class="controls">
@@ -217,7 +217,7 @@
                 <div>
                     <label>Model Inference & Live Test</label>
                     <div id="dynamicTestUI"
-                        style="background: #111; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
+                        style="background: #050524; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
                     </div>
                     <div id="predictionResult" style="margin-top: 10px; font-size: 0.85rem;">
                         Result: awaiting input...
@@ -350,7 +350,7 @@
                 for (let i = 0; i < inputs; i++) {
                     html += `<label style="color:#888">BIT ${i} <input type="checkbox" class="logic-sw" onchange="runLiveTest()" style="width:20px; height:20px;"></label>`;
                 }
-                html += '<div id="bulb" style="width:30px; height:30px; border-radius:50%; background:#333; border:2px solid #555; margin-left:20px; transition: 0.2s;"></div>';
+                html += '<div id="bulb" style="width:30px; height:30px; border-radius:50%; background:#272c30; border:2px solid #555; margin-left:20px; transition: 0.2s;"></div>';
                 html += '<span id="logicVal" style="margin-left:10px; font-weight:bold;">0.00</span></div>';
                 container.innerHTML = html;
             }

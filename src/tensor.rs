@@ -95,7 +95,22 @@ impl Tensor {
         Ok(Tensor { data, shape })
     }
 
-    pub fn empty() -> Tensor { Tensor { data: vec![], shape: vec![] }}
+    pub fn one(shape: Vec<usize>) -> Result<Tensor, TensorError> {
+        if shape.len() == 0 || shape.len() > 2 {
+            return Err(TensorError::InvalidRank);
+        }
+
+        let data = vec![1.0; shape.iter().product()];
+       
+        Ok(Tensor { data, shape })
+    }
+
+    pub fn empty() -> Tensor {
+        Tensor {
+            data: vec![],
+            shape: vec![],
+        }
+    }
 
     pub fn data(&self) -> &[f32] {
         &self.data
@@ -117,6 +132,10 @@ impl Tensor {
         self._element_wise_op(other, |a, b| a * b)
     }
 
+    pub fn div(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        self._element_wise_op(other, |a, b| a / b)
+    }
+
     pub fn abs(&self) -> Result<Tensor, TensorError> {
         self._element_wise_op_single(|a: f32| a.abs())
     }
@@ -128,6 +147,18 @@ impl Tensor {
     pub fn scale(&self, scalar: &f32) -> Result<Tensor, TensorError> {
         let scalar = *scalar;
         self._element_wise_op_single(|a: f32| a * scalar)
+    }
+
+    pub fn relu(&self) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a| if a > 0.0 { a } else { 0.0 })
+    }
+
+    pub fn relu_prime(&self) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a| if a > 0.0 { 1.0 } else { 0.0 })
+    }
+
+    pub fn exp(&self) -> Result<Tensor, TensorError> {
+        self._element_wise_op_single(|a| f32::exp(a))
     }
 
     pub fn transpose(&self) -> Result<Tensor, TensorError> {

@@ -32,7 +32,12 @@ This is the roadmap I wish I had two years ago. Whether you are a Rustacean curi
 - **Building the Network:** Constructing layers and activation functions.
 - **The Visual Goal:** Training our library to interpret and reconstruct images, proving that 'magic' is just linear algebra and high-dimensional calculus written in a language with strict safety guarantees.
 
-![Image Reconstruction]()
+## The End Goal
+Before we start building everything piece by piece, it's better to set an end goal for us. Our final product will be build an image reconstructor. Such that, if we feed it a simple monochrome image and give some multiplier, the image will be regenerated on the new scale. Something like the following:
+
+```pbm
+assets/spiral_50px.pbm:50 * 50 Original Image, assets/arrow.pbm, assets/spiral_200px.pbm:200*200 Reconstructed Image
+```
 
 And that’s where the story begins...
 
@@ -1336,7 +1341,7 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 That's all the heavy mathematics that we care for now and all the implementations are completed. A few minor functions will still be needed, we'll implement them as required. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
 
 # Linear Regression
-Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. Machine learns the rules from data, thus the term "Machine Learning".
+Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. A machine learns the rules from data, thus the term "Machine Learning".
 
 The equation of a straight line expressed as:
 
@@ -1360,7 +1365,7 @@ Let's visualize this on a 2 Dimensional Plane:
 
 ```
 
-Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can derive at these two values, we can find the output of the equation given any unknown $x$ value.
+Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can derive these two values, we can find the output of the equation given any unknown $x$ value.
 
 For example, if we want to know the value of $y$ when $x$ is $900$, we can easily derive at the output - $1803$.
 
@@ -1396,7 +1401,7 @@ The model starts with random values for $m$ and $c$. Then it calculates the $y$ 
 
 Let's start implementing this first part. We have five data points here in this small example (in real-world datasets, we often have millions of such datapoints and once  we pass through the basic understanding of linear regression, we'll also work with larger datasets).
 
-We can define a random variables `m` and `c` separately and can initiate those variables with random values. Then we run a `for` loop on each entry of $x$ values to derive $y = mx + c$. However, this approach is not flexible. If we have $z = mx + ny +c$, where we deal with two inputs $x$ and $y$, rather than only $x$, we now need to trace two variables and this goes out of hand very quickly.
+We can define a random variables `m` and `c` separately and can initialize those variables with random values. Then we run a `for` loop on each entry of $x$ values to derive $y = mx + c$. However, this approach is not flexible. If we have $z = mx + ny +c$, where we deal with two inputs $x$ and $y$, rather than only $x$, we now need to trace two variables and this goes out of hand very quickly.
 
 To solve this problem, we will use our `Tensor` implementation instead. With tensors, we can handle multiple inputs and outputs at once and we can easily switch between different length of inputs and outputs.
 
@@ -1557,7 +1562,7 @@ The output gives us the predicted $y$ values or $\hat(y)$. Let's visualize the g
 
 >**NOTE**
 >as the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
->A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fasctinating by nature. If you spare some time, I would encourage you to look farther.
+>A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fasctinating by nature. If you spare some time, I would encourage you to look further.
 
 ## The Loss Function
 Looking at the plot above, our eyes immediately register that the generated line is 'wrong'. It’s too low, and the slope is too shallow. But a computer doesn't have eyes—it cannot see that the line is far away, the way we see it. We need a way to translate this visual distance into a single number that the computer can minimize. This is where Loss Functions come in. We need a 'scorecard' that tells the model exactly how much it is failing.
@@ -2122,6 +2127,717 @@ Now, let's verify our predicted line along with data:
 >**TIP**: If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
 
 # Neural Network
-In our last chapter, we have seen how we machines learn to extract the building blocks of an linear equation and we can use it various applications. However, real world is not always linear in nature.
 
-For example, 
+In the previous chapter, we saw how a machine "learns" the building blocks of a linear equation. By adjusting $m$ (slope) and $c$ (intercept), we could fit a straight line to our data. This technique is incredibly powerful for simple predictions, but the real world is rarely a straight line.
+
+**The Limitation of Linearity**
+
+Consider the image below. It’s a monochrome spiral—a classic example of a pattern that no single straight line can ever describe, no matter how much we "tweak" the weights:
+
+```pbm
+assets/spiral_50px.pbm
+```
+
+To reconstruct a pattern like this, we need to support **non-linearity** in our library. In a linear model, even if we stack multiple layers, we get a bigger linear function. 
+
+Let's take an example with two linear equations:
+
+$$
+g(x) = n \cdot x + d
+$$
+
+$$
+f(x) = m \cdot g(x) + c \implies f(x) = m \cdot (n \cdot x + d) + c \implies f(x) = m \cdot n \cdot x + m \cdot d + c
+$$
+
+Here $m$, $n$, $c$ and $d$ are all $constants$, so the final function again becomes - $f(x) = mx + c$, just with different values of $m$ and $c$.
+
+## Activation Function
+
+To achieve non-linearity, we'll wrap our existing linear function inside a non-linear **Activation Function** as follows:
+
+$$
+f(x) = activation(linear(x)) = activation(X \cdot W + B)
+$$
+
+Let's take a real example:
+
+$$
+g(x) = max(0, x)
+$$
+
+$$
+f(x) = 3 \cdot x + 5
+$$
+
+$$
+h(x) = g(f(x)) = max(0, (3 \cdot x + 5))
+$$
+
+Let's now plot this function for 10 points and see:
+
+```plotly
+{
+  "title": "Rectified Linear Unit",
+  "traces": [
+    {
+      "type": "line",
+      "x": [-5, -4, -3, -2, -1,  0,  1,  2,  3,  4],
+      "y": [ 0,  0,  0,  0,  2,  5,  8, 11, 14, 17],
+      "name": "ReLU"
+    }
+  ]
+}
+```
+
+As you can see, with just one activation function, we can bend a straight line.
+
+### Implementing Activation
+
+Let's bring this mathematical part into code. We'll create an `activation.rs` first. We'll follow the same structure we followed in **Linear Layer** earlier:
+
+```rust
+use crate::tensor::Tensor;
+use crate::tensor::TensorError;
+
+pub enum ActivationType {
+    ReLU,
+}
+pub struct Activation {
+    input: Tensor,
+    t: ActivationType,
+}
+
+impl Activation {
+    pub fn new(t: ActivationType) -> Self {
+        Activation {
+            input: Tensor::empty(),
+            t,
+        }
+    }
+    pub fn forward(&mut self, input: &Tensor) -> Result<Tensor, TensorError> {
+        self.input = Tensor::new(input.data().to_vec(), input.shape().to_vec())?;
+
+        match self.t {
+            ActivationType::ReLU => input.relu(),
+        }
+    }
+}
+```
+
+Our tensor does not have `relu` defined yet. Let's implement that inside our `Tensor`:
+
+```rust
+pub fn relu(&self) -> Result<Tensor, TensorError> {
+    self._element_wise_op_single(|a| if a > 0.0 { a } else { 0.0 })
+}
+```
+
+Now, let' write the driver code:
+
+```rust
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let mut linear_layer = Linear::new(2, 1, &mut rng);
+    let mut activation_layer = Activation::new(ActivationType::ReLU);
+
+    let input = Tensor::new(
+        vec![
+            -2.0, 1.0_f32, -1.0, 1.0_f32, 0.0, 1.0_f32, 1.0, 1.0_f32, 2.0, 1.0_f32,
+        ],
+        vec![5, 2],
+    )?;
+
+    println!("Input:");
+    println!("{}", input);
+
+    let linear_output = linear_layer.forward(&input)?;
+
+    println!("Linear Layer Output:");
+    println!("{}", linear_output);
+
+    let activation_output = activation_layer.forward(&linear_output)?;
+
+    println!("Activation Layer Output");
+    println!("{}", activation_output);
+
+    Ok(())
+}
+```
+
+Here is the output:
+
+```text
+$ target/release/build-your-own-nn 
+Input:
+  | -2.0000,   1.0000|
+  | -1.0000,   1.0000|
+  |  0.0000,   1.0000|
+  |  1.0000,   1.0000|
+  |  2.0000,   1.0000|
+
+Linear Layer Output:
+  | -0.5247|
+  | -0.1546|
+  |  0.2155|
+  |  0.5855|
+  |  0.9556|
+
+Activation Layer Output
+  |  0.0000|
+  |  0.0000|
+  |  0.2155|
+  |  0.5855|
+  |  0.9556|
+
+```
+
+Please note that the negative values in the linear layer output has been transformed to `0` in the activation layer output. And if we plot the output, we'll see some non-linearity in it.
+
+```plotly
+{
+  "title": "Forward Pass",
+  "traces": [
+    {
+      "type": "line",
+      "x": [-2, -1, 0, 1, 2],
+      "y": [ 0, 0, 0.2155, 0.5855, 0.9566],
+      "name": "ReLU"
+    }
+  ]
+}
+```
+
+Our implementation already started forming a network. This simple network with one linear layer and one activation layer is known as **Single Layer Perceptron** in the world of Machine Learning. However, it is not complete yet. To achieve the status fully, we need to implement the mathematics of **Backward Pass**.
+
+## Backward Pass
+
+The backward pass is not different from what we've already seen in linear regression. The same mathematics apply here too. Only difference is that, instead of propagating the loss to only one layer, we propagate it back to every layer. For now, we only have one layer of merged linear layer and activation layer. So our backward pass will look like this:
+
+$$
+\text{Input} \leftarrow{} \text{Linear Layer} \leftarrow{} Output
+$$
+
+Conceptually the network as a whole will look like this:
+
+$$\begin{array}{ccccccc}
+X & \xrightarrow{W} & Z & \xrightarrow{\text{ReLU}} & A & \rightarrow & \text{Loss}(A, Y) \\
+& & & & & & \downarrow \\
+\frac{\partial L}{\partial X} & \xleftarrow{\text{Linear Grad}} & \frac{\partial L}{\partial Z} & \xleftarrow{\text{ReLU Grad}} & \frac{\partial L}{\partial A} & \leftarrow & \nabla \text{Loss}
+\end{array}
+$$
+
+### Implementing Single Layer Perceptron
+
+Let's complete the full flow.
+
+We'll start by writing the derivative of ReLU. By looking at the mathematical expression and the plot of ReLU function, it is clear that:
+
+$$
+\frac{d}{dx}\text{ReLU}(x) = 
+\begin{cases} 
+1 & \text{if } x > 0 \\ 
+0 & \text{otherwise} 
+\end{cases}
+$$
+
+We'll add this function in our tensor:
+
+```rust
+pub fn relu_prime(&self) -> Result<Tensor, TensorError> {
+    self._element_wise_op_single(|a| if a > 0.0 { 1.0 } else { 0.0 })
+}
+```
+
+Now, we'll add the `backward` method in our activation layer implementation:
+
+```rust
+pub fn backward(&self, output_error: &Tensor) -> Result<Tensor, TensorError> {
+    match self.t {
+        ActivationType::ReLU => {
+            let mask = self.input.relu_prime()?;
+            output_error.mul(&mask)
+        }
+    }
+}
+```
+
+Finally, we would add the driver code:
+
+```rust
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let mut linear_layer = Linear::new(2, 1, &mut rng);
+    let mut activation_layer = Activation::new(ActivationType::ReLU);
+
+    let input = Tensor::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0], vec![4, 2])?;
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+
+    let learning_rate = 0.01;
+
+    println!("Input:");
+    println!("{}", input);
+
+    println!("Actual Input");
+    println!("{}", actual);
+
+    for _ in 0..5000 {
+        let linear_output = linear_layer.forward(&input)?;
+        let activation_output = activation_layer.forward(&linear_output)?;
+
+        let grad = mse_loss_gradient(&activation_output, &actual)?;
+
+        let activation_grad = activation_layer.backward(&grad)?;
+
+        let _ = linear_layer.backward(&activation_grad, learning_rate);
+    }
+
+    let model_output = linear_layer.forward(&input)?;
+    let model_output = activation_layer.forward(&model_output)?;
+
+    println!("Model Output after training");
+    println!("{}", model_output);
+
+    Ok(())
+}
+```
+
+We are using the  OR gate expression to approximate by our network and here is the network output:
+
+```text
+$ target/release/build-your-own-nn 
+Input:
+  |  0.0000,   0.0000|
+  |  0.0000,   1.0000|
+  |  1.0000,   0.0000|
+  |  1.0000,   1.0000|
+
+Actual Output
+  |  0.0000|
+  |  1.0000|
+  |  1.0000|
+  |  1.0000|
+
+Model Output after training
+  |  0.0000|
+  |  0.6667|
+  |  0.6667|
+  |  1.3333|
+```
+
+The network is separating the data. However, it can do better, if we add a few more loss and activations.
+
+## Sigmoid Activation & BCE Loss
+
+MSE is great for Regression problems but **Binary Cross Entropy** suits better for binary classification problems, where the output is either $0$ or $1$. Similarly, for activation functions ReLU is used widely in many applications but we will also encounter a few more while working with neural networks. In particular **Sigmoid** is used widely for binary classification problems.
+
+Let's look at the definitions of these functions, their derivatives and add them in our application.
+
+### Sigmoid
+
+Sigmoid is defined mathematically as:
+
+$$
+\sigma(x) = \frac{1}{1 + e^{-x}}
+$$
+
+and it's derivative is:
+
+$$
+\frac{d}{dx}\sigma(x) = \sigma(x) \cdot (1 - \sigma(x))
+$$
+
+To implement both these functions we'll need `exp` method  in our tensor. Let's add that in tensor.
+
+
+```rust
+pub fn exp(&self) -> Result<Tensor, TensorError> {
+    self._element_wise_op_single(|a| f32::exp(a))
+}
+```
+
+We have to extend our tensor to give us a tensor filled with all $1$. We could do it with by simply creating a `vec![1; size]` too but `one` is a handy method.
+
+```rust
+pub fn one(shape: Vec<usize>) -> Result<Tensor, TensorError> {
+    if shape.len() == 0 || shape.len() > 2 {
+        return Err(TensorError::InvalidRank);
+    }
+    
+    let data = vec![1.0; shape.iter().product()];
+    
+    Ok(Tensor { data, shape })
+}
+```
+
+We'll also need to implement element wise division, which was not needed till now. It works just the same as element wise addition or subtraction.
+
+```rust
+pub fn div(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+    self._element_wise_op(other, |a, b| a / b)
+}
+```
+
+Let's create the implementation in activation as well:
+
+```rust
+impl Activation {
+    pub fn new(t: ActivationType) -> Self {
+        Activation {
+            input: Tensor::empty(),
+            t,
+        }
+    }
+    pub fn forward(&mut self, input: &Tensor) -> Result<Tensor, TensorError> {
+        self.input = Tensor::new(input.data().to_vec(), input.shape().to_vec())?;
+
+        match self.t {
+            ActivationType::ReLU => input.relu(),
+            ActivationType::Sigmoid => {
+                let neg_x = input.scale(&-1.0)?;
+                let denominator = Tensor::one(input.shape().to_vec())?.add(&neg_x.exp()?)?;
+
+                Tensor::one(input.shape().to_vec())?.div(&denominator)
+            }
+        }
+    }
+
+    pub fn backward(&self, output_error: &Tensor) -> Result<Tensor, TensorError> {
+        match self.t {
+            ActivationType::ReLU => {
+                let mask = self.input.relu_prime()?;
+                output_error.mul(&mask)
+            }
+
+            ActivationType::Sigmoid => {
+                let neg_input = self.input.scale(&-1.0)?;
+                let denominator =
+                    Tensor::one(self.input.shape().to_vec())?.add(&neg_input.exp()?)?;
+                let a = Tensor::one(self.input.shape().to_vec())?.div(&denominator)?;
+
+                let one = Tensor::one(a.shape().to_vec())?;
+                let sigmoid_prime = a.mul(&one.sub(&a)?)?;
+
+                output_error.mul(&sigmoid_prime)
+            }
+        }
+    }
+}
+```
+
+Finally, we'll rewrite the driver code.
+
+```rust
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let mut linear_layer = Linear::new(3, 1, &mut rng);
+    let mut activation_layer = Activation::new(ActivationType::Sigmoid);
+
+    let input = Tensor::new(
+        vec![
+            0.0, 0.0, 1.0_f32, 0.0, 1.0, 1.0_f32, 1.0, 0.0, 1.0_f32, 1.0, 1.0, 1.0_f32,
+        ],
+        vec![4, 3],
+    )?;
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+
+    let learning_rate = 0.1;
+
+    println!("Input:");
+    println!("{}", input);
+
+    println!("Actual Output");
+    println!("{}", actual);
+
+    for _ in 0..5000 {
+        let linear_output = linear_layer.forward(&input)?;
+        let activation_output = activation_layer.forward(&linear_output)?;
+
+        let grad = mse_loss_gradient(&activation_output, &actual)?;
+
+        let activation_grad = activation_layer.backward(&grad)?;
+
+        let _ = linear_layer.backward(&activation_grad, learning_rate);
+    }
+
+    let model_output = linear_layer.forward(&input)?;
+    let model_output = activation_layer.forward(&model_output)?;
+
+    println!("Model Output after training");
+    println!("{}", model_output);
+
+    Ok(())
+}
+```
+
+We can clearly see the network has learnt the pattern better than our old architecture with MSE:
+
+```text
+$ target/release/build-your-own-nn 
+Input:
+  |  0.0000,   0.0000,   1.0000|
+  |  0.0000,   1.0000,   1.0000|
+  |  1.0000,   0.0000,   1.0000|
+  |  1.0000,   1.0000,   1.0000|
+
+Actual Output
+  |  0.0000|
+  |  1.0000|
+  |  1.0000|
+  |  1.0000|
+
+Model Output after training
+  |  0.1197|
+  |  0.9265|
+  |  0.9266|
+  |  0.9991|
+```
+
+### Sigmoid BCE Shortcut
+
+We are still using the MSE to calculate the loss. However, if we pair Sigmoid and BCE, we get a shortcut to use without all the expensive operations. In the shortcut step, we don't calculate the loss and the gradient separately, we fuse them together to get: $grad=(a-y)$.
+
+We add the shortcut in the loss module:
+
+```rust
+pub fn bce_sigmoid_delta(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    if predicted.shape() != actual.shape() {
+        return Err(TensorError::ShapeMismatch);
+    }
+
+    let n = predicted.shape().iter().product::<usize>() as f32;
+    
+    predicted.sub(actual)?.scale(&(1.0 / n))
+}
+```
+
+Then change our training loop:
+
+```rust
+for _ in 0..5000 {
+    let linear_output = linear_layer.forward(&input)?;
+    let activation_output = activation_layer.forward(&linear_output)?;
+
+    let delta = bce_sigmoid_delta(&activation_output, &actual)?;
+
+    let _ = linear_layer.backward(&delta, learning_rate);
+}
+```
+
+## Limitation of Single Layer Perceptron
+
+We have successfully stacked layers of calculations and we have seen how we can use this to classify things into yes/no category. However, this architecture cannot generalize to any functions. This only works for linearly separable data or data which has a clear separating lines into two categories. Like OR, AND, NAND, NOR etc. logic. Let's see the line of separation in these cases.
+
+```plotly
+{
+  "title": "OR Gate Decision Boundary",
+  "layout": {
+    "xaxis": { "title": "Input X1", "range": [-0.5, 1.5] },
+    "yaxis": { "title": "Input X2", "range": [-0.5, 1.5] },
+    "showlegend": false
+  },
+  "traces": [
+    {
+      "type": "contour",
+      "x": [-0.5, 0, 0.5, 1.0, 1.5],
+      "y": [-0.5, 0, 0.5, 1.0, 1.5],
+      "z": [
+        [0.26, 0.37, 0.50, 0.62, 0.73],
+        [0.37, 0.50, 0.62, 0.73, 0.81],
+        [0.50, 0.62, 0.73, 0.81, 0.88],
+        [0.62, 0.73, 0.81, 0.88, 0.92],
+        [0.73, 0.81, 0.88, 0.92, 0.95]
+      ],
+      "colorscale": "RdBu",
+      "reversescale": true,
+      "showscale": true,
+      "contours": {
+        "coloring": "heatmap",
+        "showlines": true,
+        "start": 0.5,
+        "end": 0.5,
+        "size": 0
+      }
+    },
+    {
+      "type": "scatter",
+      "x": [0, 0, 1, 1],
+      "y": [0, 1, 0, 1],
+      "mode": "markers",
+      "marker": {
+        "size": 18,
+        "color": [0, 1, 1, 1],
+        "colorscale": "RdBu",
+        "reversescale": true,
+        "line": { "width": 3, "color": "white" },
+        "symbol": "circle"
+      },
+      "name": "Actual Data"
+    }
+  ]
+}
+```
+
+In this, the black line is the decision boundary.
+
+Let's check out the similar for XOR gate:
+
+```plotly
+{
+  "title": "XOR Gate Decision Boundary (Non-Linear)",
+  "layout": {
+    "xaxis": { "title": "Input X1", "range": [-0.5, 1.5] },
+    "yaxis": { "title": "Input X2", "range": [-0.5, 1.5] },
+    "showlegend": false
+  },
+  "traces": [
+    {
+      "type": "contour",
+      "x": [-0.5, 0, 0.5, 1.0, 1.5],
+      "y": [-0.5, 0, 0.5, 1.0, 1.5],
+      "z": [
+        [0.10, 0.30, 0.45, 0.30, 0.10],
+        [0.30, 0.10, 0.80, 0.95, 0.60],
+        [0.45, 0.80, 0.50, 0.80, 0.45],
+        [0.30, 0.95, 0.80, 0.10, 0.30],
+        [0.10, 0.60, 0.45, 0.30, 0.10]
+      ],
+      "colorscale": "RdBu",
+      "reversescale": true,
+      "showscale": true,
+      "contours": {
+        "coloring": "heatmap",
+        "showlines": true,
+        "start": 0.5,
+        "end": 0.5,
+        "size": 0
+      }
+    },
+    {
+      "type": "scatter",
+      "x": [0, 1, 0, 1],
+      "y": [0, 1, 1, 0],
+      "mode": "markers",
+      "marker": {
+        "size": 18,
+        "color": [0, 0, 1, 1],
+        "colorscale": "RdBu",
+        "reversescale": true,
+        "line": { "width": 3, "color": "white" },
+        "symbol": "circle"
+      },
+      "name": "Actual Data"
+    }
+  ]
+}
+```
+
+Here you'll see XOR gate doesn't have a linear decision boundary. A single layer perceptron can't approximate this.
+
+Let's try it with our network. We'll simply change the last output of OR ($1$) to output of XOR ($0$).
+
+```rust
+let actual = Tensor::new(vec![0.0, 1.0, 1.0, 0.0], vec![4, 1])?;
+```
+
+Output:
+
+```text
+$ target/release/build-your-own-nn 
+Input:
+  |  0.0000,   0.0000,   1.0000|
+  |  0.0000,   1.0000,   1.0000|
+  |  1.0000,   0.0000,   1.0000|
+  |  1.0000,   1.0000,   1.0000|
+
+Actual Output
+  |  0.0000|
+  |  1.0000|
+  |  1.0000|
+  |  0.0000|
+
+Model Output after training
+  |  0.5000|
+  |  0.5000|
+  |  0.5000|
+  |  0.5000|
+```
+
+The network squashed every output to the same number. Even if we change our activation and loss functions, the network won't be able to approximate the function.
+
+Does it mean, we are stuck here?
+
+Of course not. We solve the problem with **Multi Layer Perceptron**.
+
+## Multi Layer Perceptron
+
+If we stack a combination of Single Layer Perceptrons, we can approximate any continuous function — a principal known as **Universal Approximation Theorem**.
+
+According to [wikipedia](https://en.wikipedia.org/wiki/Universal_approximation_theorem) —
+
+> the universal approximation theorems (UATs) state that neural networks with a certain structure can, in principle, approximate any continuous function to any desired degree of accuracy.
+
+Let's take another example by stacking many layers instead of one:
+
+Now, we'll stack these layers and plot:
+
+$$
+h(x) = g(f(g(f(x))))
+$$
+
+```plotly
+{
+  "title": "Rectified Linear Unit",
+  "traces": [
+    {
+      "type": "line",
+      "x": [-5, -4, -3, -2, -1,  0,  1,  2,  3,  4],
+      "y": [ 0,  0,  0,  0,  2,  5,  8, 11, 14, 17],
+      "name": "Single Layer"
+    },
+    {
+      "type": "line",
+      "x": [-5, -4, -3, -2, -1,  0,  1,  2,  3,  4],
+      "y": [ 5,  5,  5,  5, 11, 20, 29, 38, 47, 56],
+      "name": "2 Layers"
+    }
+  ]
+}
+```
+
+You can see here, the bending of the line changes as we stack more layers. 
+
+We'll now see what happens if we mix two different valued $m$ and $c$ and add them together.
+
+$$
+y_{1}(x) = 3x+2
+$$
+
+$$
+y_{2}(x) = -3x+4
+$$
+
+$$
+f(x) = max(0,x)
+$$
+
+$$
+y = f(y_{1}(x)) - f(y_{2}(x)) = max(0, 3x + 2) + max(0, -3x + 4)
+$$
+
+```plotly
+{
+  "title": "Rectified Linear Unit",
+  "traces": [
+    {
+      "type": "line",
+      "x": [-5, -4, -3, -2, -1,  0,  1,  2,  3,  4],
+      "y": [ 19, 16, 13, 10,  7,  6,  6,  8, 11, 14],
+      "name": "2 Different Units Added"
+    }
+  ]
+}
+```

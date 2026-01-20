@@ -223,6 +223,7 @@
                 <input id="inputX" value="0,0; 0,1; 1,0; 1,1">
                 <input id="inputY" value="1; 0; 0; 1">
                 <div class="btn-group" style="margin-bottom: 15px;">
+                    <button onclick="setDataset('OR', this)">OR</button>
                     <button onclick="setDataset('XOR', this)">XOR</button>
                     <button onclick="setDataset('XNOR', this)">XNOR</button>
                     <button onclick="setDataset('XOR3', this)">3 Input XOR</button>
@@ -365,7 +366,7 @@
             container.innerHTML = ''; // Clear previous
             currentMode = type;
 
-            if (['XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(type)) {
+            if (['OR', 'XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(type)) {
                 const inputs = type.includes('3') ? 3 : 2;
                 let html = '<div style="display:flex; gap:15px; align-items:center;">';
                 for (let i = 0; i < inputs; i++) {
@@ -449,7 +450,7 @@
 
             let inputVector = [];
 
-            if (['XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(currentMode)) {
+            if (['OR', 'XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(currentMode)) {
                 inputVector = Array.from(document.querySelectorAll('.logic-sw')).map(sw => sw.checked ? 1 : 0);
             } else if (['SIN', 'COS'].includes(currentMode)) {
                 inputVector = [parseFloat(document.querySelector('#dynamicTestUI input[type="range"]').value)];
@@ -504,7 +505,7 @@
 
             const resultDiv = document.getElementById('predictionResult');
 
-            if (['XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(currentMode)) {
+            if (['OR', 'XOR', 'XNOR', 'XOR3', 'XNOR3'].includes(currentMode)) {
                 const val = outputs[0];
                 document.getElementById('bulb').style.background = `rgba(0, 255, 65, ${val})`;
                 document.getElementById('bulb').style.boxShadow = val > 0.5 ? `0 0 15px #00ff41` : 'none';
@@ -562,7 +563,10 @@
             lossHistory = []; // Reset loss history for the new dataset
 
             // 3. Dataset Definitions
-            if (type === 'XOR') {
+            if (type === 'OR') {
+                document.getElementById('inputX').value = "0,0; 0,1; 1,0; 1,1";
+                document.getElementById('inputY').value = "0; 1; 1; 1";
+            } else if (type === 'XOR') {
                 document.getElementById('inputX').value = "0,0; 0,1; 1,0; 1,1";
                 document.getElementById('inputY').value = "0; 1; 1; 0";
             } else if (type === 'XNOR') {

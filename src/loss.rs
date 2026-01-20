@@ -32,3 +32,13 @@ pub fn mse_loss_gradient(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, 
     let n = predicted.shape()[0] as f32;
     diff.scale(&(2.0 / n))
 }
+
+pub fn bce_sigmoid_delta(predicted: &Tensor, actual: &Tensor) -> Result<Tensor, TensorError> {
+    if predicted.shape() != actual.shape() {
+        return Err(TensorError::ShapeMismatch);
+    }
+
+    let n = predicted.shape().iter().product::<usize>() as f32;
+    
+    predicted.sub(actual)?.scale(&(1.0 / n))
+}

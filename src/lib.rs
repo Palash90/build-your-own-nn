@@ -1,6 +1,8 @@
 pub mod linear;
 pub mod tensor;
 pub mod loss;
+pub mod image_generator;
+pub mod activation;
 
 pub trait Rng {
     fn next_u32(&mut self) -> i32;

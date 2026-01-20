@@ -1,6 +1,9 @@
+use std::os::unix::raw::mode_t;
+
 use build_your_own_nn::Rng;
+use build_your_own_nn::activation::{Activation, ActivationType};
 use build_your_own_nn::linear::Linear;
-use build_your_own_nn::loss::{l1_loss, mse_loss, mse_loss_gradient};
+use build_your_own_nn::loss::{bce_sigmoid_delta, l1_loss, mse_loss, mse_loss_gradient};
 use build_your_own_nn::tensor::{Tensor, TensorError};
 
 struct SimpleRng {
@@ -14,7 +17,7 @@ impl Rng for SimpleRng {
     }
 }
 
-fn main() -> Result<(), TensorError> {
+fn linear_regression() -> Result<(), TensorError> {
     let mut rng = SimpleRng { state: 73 };
 
     let mut linear = Linear::new(2, 1, &mut rng);
@@ -68,9 +71,43 @@ fn main() -> Result<(), TensorError> {
     println!("Final weights");
     println!("{}", linear.weight());
 
-    
     println!("Final Output");
     println!("{}", output);
+
+    Ok(())
+}
+
+fn main() -> Result<(), TensorError> {
+    let mut rng = SimpleRng { state: 73 };
+
+    let mut linear_layer = Linear::new(2, 1, &mut rng);
+    let mut activation_layer = Activation::new(ActivationType::ReLU);
+
+    let input = Tensor::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0], vec![4, 2])?;
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+
+    let learning_rate = 0.001;
+
+    println!("Input:");
+    println!("{}", input);
+
+    println!("Actual Output");
+    println!("{}", actual);
+
+    for _ in 0..10000 {
+        let linear_output = linear_layer.forward(&input)?;
+        let activation_output = activation_layer.forward(&linear_output)?;
+
+        let delta = bce_sigmoid_delta(&activation_output, &actual)?;
+
+        let _ = linear_layer.backward(&delta, learning_rate);
+    }
+
+    let model_output = linear_layer.forward(&input)?;
+    let model_output = activation_layer.forward(&model_output)?;
+
+    println!("Model Output after training");
+    println!("{}", model_output);
 
     Ok(())
 }

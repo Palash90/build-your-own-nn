@@ -490,6 +490,100 @@ layout: default
         codeBlock.appendChild(button);
     });
 </script>
+
+<script type="module">
+    document.addEventListener("DOMContentLoaded", async () => {
+        const blocks = document.querySelectorAll('.language-pbm');
+
+        for (const block of blocks) {
+            const rows = block.textContent.trim().split('\n');
+            const container = document.createElement('div');
+            container.style.display = 'flex';
+            container.style.flexDirection = 'column';
+            container.style.gap = '20px';
+            container.style.margin = '20px 0';
+
+            for (const row of rows) {
+                const rowDiv = document.createElement('div');
+                rowDiv.style.display = 'flex';
+                rowDiv.style.alignItems = 'center'; // Vertically align to bottom
+                rowDiv.style.gap = '15px';
+                rowDiv.style.flexWrap = 'wrap';
+
+                const fileNames = row.split(',').map(s => s.trim());
+
+                for (const imgDetails of fileNames) {
+                    if (!imgDetails) continue;
+
+                    let parts = imgDetails.split(':');
+
+                    let fileName = parts[0]?.trim() || "";
+                    let caption = parts[1]?.trim() || "";
+
+                    const canvas = await createPBMCanvas(fileName);
+                    if (canvas) {
+                        const figure = document.createElement('div');
+                        figure.style.textAlign = 'center';
+
+                        // Optional: Add filename label under image
+                        const label = document.createElement('div');
+                        label.textContent = caption;
+                        label.style.fontSize = '10px';
+                        label.style.color = '#8b949e';
+                        label.style.marginTop = '5px';
+
+                        figure.appendChild(canvas);
+                        figure.appendChild(label);
+                        rowDiv.appendChild(figure);
+                    }
+                }
+                container.appendChild(rowDiv);
+            }
+            block.parentElement.replaceWith(container);
+        }
+    });
+
+    async function createPBMCanvas(url) {
+        try {
+            const response = await fetch(url);
+            const text = await response.text();
+            const tokens = text.split(/\s+/);
+            if (tokens[0] !== 'P1') return null;
+
+            const w = parseInt(tokens[1]);
+            const h = parseInt(tokens[2]);
+            const pixels = tokens.slice(3);
+
+            const canvas = document.createElement('canvas');
+            canvas.width = w;
+            canvas.height = h;
+            canvas.style.width = (w * 2) + "px"; // Scale up for visibility
+            canvas.style.imageRendering = 'pixelated';
+            canvas.style.border = '1px solid #30363d';
+
+            const ctx = canvas.getContext('2d');
+            const imgData = ctx.createImageData(w, h);
+
+            for (let i = 0; i < pixels.length; i++) {
+                const idx = i * 4;
+                const isBlack = pixels[i] === '1';
+                // RGB: Blue for 1s (#58a6ff), Dark for 0s (#0d1117)
+                imgData.data[idx] = isBlack ? 88 : 13;
+                imgData.data[idx + 1] = isBlack ? 166 : 17;
+                imgData.data[idx + 2] = isBlack ? 255 : 23;
+                imgData.data[idx + 3] = 255;
+            }
+            ctx.putImageData(imgData, 0, 0);
+            return canvas;
+        } catch (e) {
+            console.error("Error loading PBM:", url, e);
+            return null;
+        }
+    }
+
+
+</script>
+
 <script type="module">
     var layout = {
         colorway: [
@@ -563,9 +657,6 @@ layout: default
             }
             return { ...t }; // Return the original trace if it's not a line or scatter
         });
-
-        console.log(data.traces);
-        console.log(traces)
 
         const plotDiv = document.createElement('div');
         plotDiv.className = 'plotly';

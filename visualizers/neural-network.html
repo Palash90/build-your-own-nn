@@ -54,6 +54,40 @@
             letter-spacing: 0.5px;
         }
 
+        .spinner {
+            /* Size of the spinner */
+            width: 30px;
+            height: 30px;
+            align-self: center;
+            align-items: center;
+
+            /* Create a circle */
+            border-radius: 50%;
+
+            /* Define the border: solid, color, and thickness */
+            border: 5px solid rgba(0, 0, 0, 0.1);
+            /* Light gray border for the track */
+
+            /* Apply a contrasting color to only one part of the border */
+            border-top-color: #3498db;
+            /* Blue color for the moving part */
+
+            /* Apply the animation */
+            animation: spin 1s linear infinite;
+        }
+
+        /* Define the rotation animation */
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+
         .dashboard {
             display: grid;
             grid-template-columns: 320px 1fr 1fr;
@@ -89,13 +123,13 @@
 
         .controls>div {
             border-bottom: 1px solid var(--border);
-            padding-bottom: 20px;
-            margin-bottom: 20px;
+            padding-bottom: 5px;
+            margin-bottom: 5px;
         }
 
         .training-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1fr 1fr 1fr;
             gap: 10px;
             margin-bottom: 15px;
         }
@@ -116,10 +150,11 @@
         /* High-Visibility Training Button */
         #trainBtn {
             width: 100%;
-            height: 45px;
-            /* Reduced from 60px */
             margin-bottom: 8px;
+            color: #10b981;
+            border-color: #10b981;
         }
+
 
         /* Dataset and Control Buttons */
         .btn-group {
@@ -129,6 +164,17 @@
         }
 
         .btn-group button {
+            font-size: 0.65rem;
+            padding: 6px 2px;
+        }
+
+        .btn-group-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+        }
+
+        .btn-group-4 button {
             font-size: 0.65rem;
             padding: 6px 2px;
         }
@@ -290,8 +336,6 @@
 <body>
 
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
-    <p>This tool accompanies the learning guide: <a href="/#neural-network">Neural Network</a></p>
-
     <div class="dashboard">
         <div class="controls">
             <div>
@@ -307,25 +351,11 @@
                     <button onclick="setDataset('SIN', this)">SIN</button>
                     <button onclick="setDataset('COS', this)">COS</button>
                     <button onclick="setDataset('MOON', this)">MOONS</button>
-                    <button onclick="setColorDataset(this)">Color Data Set</button>
-                </div>
-
-                <br />
-
-                <div>
-                    <label>Model Inference & Live Test</label>
-                    <div id="dynamicTestUI"
-                        style="background: #101029; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
-                    </div>
-                    <div id="predictionResult" style="margin-top: 10px; font-size: 0.85rem;">
-                        Result: awaiting input...
-                    </div>
+                    <button onclick="setColorDataset(this)">Color Temp</button>
                 </div>
             </div>
-
             <div>
                 <label>Network Structure</label>
-
                 <div id="layersConfig">
                     <div style="display:flex; gap:2px; margin-bottom: 20px;">
                         <input type="number" class="l-size" value="4">
@@ -345,9 +375,8 @@
                         <option value="linear">Regression (Linear)</option>
                     </select>
                 </div>
-                <button onclick="buildNetwork()" style="background: #222;">BUILD NETWORK</button>
-            </div>
 
+            </div>
             <div>
                 <label>Training Parameters</label>
                 <div class="training-grid">
@@ -356,24 +385,46 @@
                         <input type="number" id="epochs" value="2000">
                     </div>
                     <div>
-                        <label>Delay(ms)</label>
-                        <input type="number" id="delay" value="10">
+                        <label>LR</label>
+                        <input type="number" id="lr" value="0.1" step="0.01" style="width: 100%;">
+                    </div>
+                    <div>
+                        <label>Speed</label>
+                        <input type="number" id="delay" value="10" />
                     </div>
                 </div>
-                <label>Learning Rate</label>
-                <input type="number" id="lr" value="0.1" step="0.01" style="width: 100%;">
+            </div>
+            <div>
+                <div class="btn-group-4">
+                    <button onclick="buildNetwork()"
+                        style="font-size: 20px; color: var(--neon-cyan); border-color: #06b6d4;"
+                        title="Build Network">&#128736;</button>
+                    <button id="trainBtn" onclick="toggleTraining()" style="font-size: 20px;"
+                        title="Start">&#9658;</button>
+                    <button id="pauseBtn" class="control-btn"
+                        style="font-size: 20px; border-color: #fbbf24; color: #fbbf24;" onclick="togglePause()"
+                        title="Pause">&#9208;</button>
+                    <button onclick="resetEverything()" style="font-size: 20px; border-color: #ef4444; color: #ef4444;"
+                        class="control-btn" title="STOP">&#x23F9;</button>
+                </div>
+                <div id="status" style="margin-top:10px;">Awaiting Initialization</div>
             </div>
 
+
             <div>
-                <label>&nbsp;</label>
-                <button id="trainBtn" onclick="toggleTraining()"
-                    style="background:#334155; font-size: 1.1rem; height: 60px;">START TRAINING</button>
-                <div class="btn-group">
-                    <button onclick="resetEverything()" class="control-btn" style="background:#440000">STOP</button>
-                    <button id="pauseBtn" class="control-btn" onclick="togglePause()">PAUSE</button>
+                <label>Model Inference & Live Test</label>
+                <div id="dynamicTestUI"
+                    style="background: #101029; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
                 </div>
-                <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
+                <div id="predictionResult" style="margin-top: 10px; font-size: 0.85rem;">
+                    Result: awaiting input...
+                </div>
             </div>
+
+
+
+
+
         </div>
         <div class="panel"><label>Prediction Plot</label>
             <div id="plot" style="height: 400px;"></div>
@@ -600,21 +651,21 @@
                 resultDiv.innerHTML = `Signal: ${(val * 100).toFixed(1)}%`;
 
                 resultDiv.innerHTML = `
-        <div style="margin-top: 15px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                <label style="font-size: 0.7rem; color: var(--sub-text); letter-spacing: 1px;">SIGNAL STRENGTH</label>
-                <span style="color: #00ff41; font-family: monospace; font-weight: bold;">${(val * 100).toFixed(1)}%</span>
-            </div>
-            <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; overflow: hidden;">
-                <div id="signalLine" style="
-                    width: ${val * 100}%; 
-                    height: 100%; 
-                    background: linear-gradient(90deg, #00441b, #00ff41); 
-                    transition: width 0.2s ease-out;
-                    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
-                "></div>
-            </div>
-        </div>`;
+                    <div style="margin-top: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                            <label style="font-size: 0.7rem; color: var(--sub-text); letter-spacing: 1px;">SIGNAL STRENGTH</label>
+                            <span style="color: #00ff41; font-family: monospace; font-weight: bold;">${(val * 100).toFixed(1)}%</span>
+                        </div>
+                        <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; overflow: hidden;">
+                            <div id="signalLine" style="
+                                width: ${val * 100}%; 
+                                height: 100%; 
+                                background: linear-gradient(90deg, #00441b, #00ff41); 
+                                transition: width 0.2s ease-out;
+                                box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+                            "></div>
+                        </div>
+                    </div>`;
             }
             else if (currentMode === 'MOON') {
                 const val = outputs[0]; // Assuming 1 output neuron for binary
@@ -739,7 +790,7 @@
         }
 
         function buildNetwork() {
-            document.getElementById('predictionResult').innerHTML = "<i>Architecture built. Start training to begin learning.</i>";
+            document.getElementById('predictionResult').innerHTML = "<small>Train The Network First</small>";
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
             const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
 
@@ -764,13 +815,13 @@
             renderWeights();
             initPlots();
             drawNet();
-            document.getElementById('status').innerText = "Status: Network Built. Ready to Train.";
+            document.getElementById('status').innerHTML = "<small>Network Built. Ready to Train.</small>";
         }
 
 
         function predictUniversal() {
             if (layers.length === 0) {
-                document.getElementById('predictionResult').innerText = "Error: Build and train the network first.";
+                document.getElementById('predictionResult').innerHTML = "<small>Error: Build and train the network first.</small>";
                 return;
             }
 
@@ -780,8 +831,8 @@
 
             // Validation: Ensure input length matches the first layer's weights
             if (inputVector.length !== layers[0].w.length) {
-                document.getElementById('predictionResult').innerText =
-                    `Error: Expected ${layers[0].w.length} inputs, but got ${inputVector.length}.`;
+                document.getElementById('predictionResult').innerHTML =
+                    `<small>Error: Expected ${layers[0].w.length} inputs, but got ${inputVector.length}.</small>`;
                 return;
             }
 
@@ -799,13 +850,13 @@
                 const percentage = (val * 100).toFixed(2);
                 // Create a simple visual bar for each output
                 html += `
-            <div style="margin-bottom: 4px;">
-                <span style="display:inline-block; width: 80px;">Out[${i}]:</span>
-                <span style="color: #00ff41;">${percentage}%</span>
-                <div style="background: #333; width: 100%; height: 4px; margin-top: 2px;">
-                    <div style="background: #00ff41; width: ${val * 100}%; height: 100%;"></div>
-                </div>
-            </div>`;
+                    <div style="margin-bottom: 4px;">
+                        <span style="display:inline-block; width: 80px;">Out[${i}]:</span>
+                        <span style="color: #00ff41;">${percentage}%</span>
+                        <div style="background: #333; width: 100%; height: 4px; margin-top: 2px;">
+                            <div style="background: #00ff41; width: ${val * 100}%; height: 100%;"></div>
+                        </div>
+                    </div>`;
             });
 
             // For classification: Highlight the winner
@@ -835,13 +886,10 @@
             document.getElementById('matrixDisplay').innerHTML = "";
 
             // Reset UI Elements
-            document.getElementById('status').innerText = "Status: Reset - Awaiting Initialization";
-            document.getElementById('predictionResult').innerHTML =
-                `<div style="color: #94a3b8; border: 1px dashed #334155; padding: 10px; text-align: center;">
-                    <small>NETWORK RESET: No training data learned yet.</small>
-                 </div>`;
-            document.getElementById('pauseBtn').innerText = "PAUSE";
-            document.getElementById('trainBtn').innerText = "START TRAINING";
+            document.getElementById('status').innerHTML = "<small>Reset - Awaiting Initialization</small>";
+            document.getElementById('predictionResult').innerHTML = `<small>Train the Network First</small>`;
+            document.getElementById('pauseBtn').innerHTML = "&#9208;";
+            document.getElementById('trainBtn').innerHTML = "&#9658;";
 
             // Clear Plots
             // initPlots();
@@ -903,8 +951,8 @@
             isTraining = true;
             stopFlag = false;
             toggleDatasetButtons(true);
-            document.getElementById('predictionResult').innerHTML = "Training in progress...";
-            document.getElementById('trainBtn').innerText = "TRAINING...";
+            document.getElementById('predictionResult').innerHTML = "<small>Training in progress...</small>";
+            document.getElementById('trainBtn').innerHTML = '<div class="spinner"></div>';
 
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
             const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').filter(v => v.trim() !== "").map(v => parseFloat(v.trim())));
@@ -954,16 +1002,16 @@
             }
             isTraining = false;
             toggleDatasetButtons(false);
-            document.getElementById('trainBtn').innerText = "START TRAINING";
+            document.getElementById('trainBtn').innerHTML = "&#9658;";
         }
 
         function togglePause() {
             isPaused = !isPaused;
-            document.getElementById('pauseBtn').innerText = isPaused ? "RESUME" : "PAUSE";
+            document.getElementById('pauseBtn').innerHTML = isPaused ? "&#9658;" : "&#9208;";
         }
 
         function updateViz(x, y, preds, loss, ep) {
-            document.getElementById('status').innerText = `Epoch: ${ep} | Loss: ${loss.toFixed(4)}`;
+            document.getElementById('status').innerHTML = `<small>Epoch: ${ep} | Loss: ${loss.toFixed(4)}</small>`;
             const inDim = x[0].length;
             const outDim = y[0].length;
             let traces = [];
@@ -1176,11 +1224,19 @@
 
                 layerNodes.forEach(p => {
                     ctx.beginPath();
-                    ctx.arc(p.x, p.y, 6, 0, 7); // Slightly larger nodes
-                    ctx.fillStyle = nodeColor;
-                    ctx.shadowBlur = 10;
+                    ctx.arc(p.x, p.y, 10, 0, 7); // Slightly larger nodes
+
+
+                    ctx.shadowBlur = 16;
                     ctx.shadowColor = nodeColor; // Adds a subtle glow per activation type
+
+                    ctx.strokeStyle = nodeColor;
+                    ctx.lineWidth = 2.5; // Thickness of the ring
+                    ctx.stroke();
+
+                    ctx.fillStyle = nodeColor + '33'; // Adds 22 hex transparency (approx 13%)
                     ctx.fill();
+
                     ctx.shadowBlur = 0; // Reset shadow for next draw
                 });
             });

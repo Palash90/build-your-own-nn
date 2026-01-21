@@ -380,22 +380,7 @@
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
     <div class="dashboard">
         <div class="controls">
-            <div>
-                <label>Data Management</label>
-                <input id="inputX" value="0,0; 0,1; 1,0; 1,1">
-                <input id="inputY" value="1; 0; 0; 1">
-                <div class="btn-group" style="margin-bottom: 15px;">
-                    <button onclick="setDataset('OR', this)">OR</button>
-                    <button onclick="setDataset('XOR', this)">XOR</button>
-                    <button onclick="setDataset('XNOR', this)">XNOR</button>
-                    <button onclick="setDataset('XOR3', this)">3 Input XOR</button>
-                    <button onclick="setDataset('XNOR3', this)">3 Input XNOR</button>
-                    <button onclick="setDataset('SIN', this)">SIN</button>
-                    <button onclick="setDataset('COS', this)">COS</button>
-                    <button onclick="setDataset('MOON', this)">MOONS</button>
-                    <button onclick="setColorDataset(this)">Color Temp</button>
-                </div>
-            </div>
+            
             <div>
                 <label>Network Structure</label>
                 <div id="layersConfig">
@@ -418,6 +403,22 @@
                     </select>
                 </div>
 
+            </div>
+            <div>
+                <label>Data Management</label>
+                <input id="inputX" value="0,0; 0,1; 1,0; 1,1">
+                <input id="inputY" value="1; 0; 0; 1">
+                <div class="btn-group" style="margin-bottom: 15px;">
+                    <button onclick="setDataset('OR', this)">OR</button>
+                    <button onclick="setDataset('XOR', this)">XOR</button>
+                    <button onclick="setDataset('XNOR', this)">XNOR</button>
+                    <button onclick="setDataset('XOR3', this)">3 Input XOR</button>
+                    <button onclick="setDataset('XNOR3', this)">3 Input XNOR</button>
+                    <button onclick="setDataset('SIN', this)">SIN</button>
+                    <button onclick="setDataset('COS', this)">COS</button>
+                    <button onclick="setDataset('MOON', this)">MOONS</button>
+                    <button onclick="setColorDataset(this)">Color Temp</button>
+                </div>
             </div>
             <div>
                 <label>Training Parameters</label>
@@ -468,6 +469,11 @@
 
 
         </div>
+         <div class="panel" style="grid-column: span 2;">
+            <label>Topology & Weight Magnitude (Live)</label>
+            <canvas id="netCanvas"></canvas>
+
+        </div>
         <div class="panel"><label>Prediction Plot</label>
             <div id="plot" style="height: 400px;"></div>
         </div>
@@ -476,11 +482,7 @@
         </div>
 
 
-        <div class="panel" style="grid-column: span 2;">
-            <label>Topology & Weight Magnitude (Live)</label>
-            <canvas id="netCanvas"></canvas>
-
-        </div>
+       
 
         <div id="weightInspector" class="panel">
             <label style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">Numerical

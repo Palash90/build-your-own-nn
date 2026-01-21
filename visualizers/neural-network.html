@@ -53,6 +53,29 @@
             box-sizing: border-box;
         }
 
+        @media (max-width: 1024px) {
+            .dashboard {
+                display: flex;
+                flex-direction: column;
+                width: 100%;
+                padding: 10px;
+            }
+
+            .panel {
+                width: 100% !important;
+                margin-bottom: 15px;
+                /* Prevent plotly from stretching the container */
+                overflow: hidden;
+            }
+
+            #plot,
+            #lossPlot {
+                width: 100% !important;
+                height: 350px !important;
+                /* Slightly shorter for mobile screens */
+            }
+        }
+
         body {
             font-family: 'Inter', 'Consolas', monospace;
             background: var(--bg);
@@ -388,7 +411,6 @@
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
     <div class="dashboard">
         <div class="controls">
-
             <div>
                 <label>Network Structure</label>
                 <div class="config-row"
@@ -396,7 +418,7 @@
                     <span style="font-size: 0.7rem; width: 60px;">INPUT:</span>
                     <input type="text" id="inputFeaturesCount" disabled value="2" class="l-size"
                         style="background: transparent; border-style: dotted;">
-                    <span style="font-size: 0.6rem; color: var(--sub-text);">Features</span>
+                    <span style="font-size: 0.6rem; color: var(--sub-text);">Features (based on input data)</span>
                 </div>
                 <div id="layersConfig">
                     <div style="display:flex; gap:2px; margin-bottom: 20px;">
@@ -420,9 +442,7 @@
                             <option value="linear">Regression (Linear)</option>
                         </select>
                     </div>
-
                 </div>
-
             </div>
             <div>
                 <label>Data Management</label>
@@ -472,8 +492,6 @@
                 </div>
                 <div id="status" style="margin-top:10px;">Awaiting Initialization</div>
             </div>
-
-
             <div>
                 <label>Model Inference & Live Test</label>
                 <div id="dynamicTestUI"
@@ -483,16 +501,10 @@
                     Result: awaiting input...
                 </div>
             </div>
-
-
-
-
-
         </div>
         <div class="panel" style="grid-column: span 2;">
             <label>Topology & Weight Magnitude (Live)</label>
             <canvas id="netCanvas"></canvas>
-
         </div>
         <div class="panel"><label>Prediction Plot</label>
             <div id="plot" style="height: 400px;"></div>
@@ -500,10 +512,6 @@
         <div class="panel"><label>Loss History</label>
             <div id="lossPlot" style="height: 400px;"></div>
         </div>
-
-
-
-
         <div id="weightInspector" class="panel">
             <label style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">Numerical
                 Weight & Bias Matrices (Trace)</label>
@@ -1310,6 +1318,12 @@
         }
 
         function initPlots() {
+            const config = {
+                responsive: true,
+                displayModeBar: false, // Hides the annoying floating menu on mobile
+                scrollZoom: false      // Prevents chart from capturing scroll gestures
+            };
+
             const emptyLayout = {
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
@@ -1317,6 +1331,7 @@
                     gridcolor: 'rgba(51, 65, 85, 0.3)', // Very faint grid lines
                     zerolinecolor: 'rgba(51, 65, 85, 0.5)'
                 },
+                margin: { t: 20, b: 40, l: 40, r: 20 },
                 yaxis: {
                     gridcolor: 'rgba(51, 65, 85, 0.3)',
                     zerolinecolor: 'rgba(51, 65, 85, 0.5)'
@@ -1349,6 +1364,16 @@
             Plotly.Plots.resize('plot');
             Plotly.Plots.resize('lossPlot');
         }
+
+        // Force charts to re-calculate their width for touch devices
+        const resizeObserver = new ResizeObserver(() => {
+            Plotly.Plots.resize('plot');
+            Plotly.Plots.resize('lossPlot');
+            drawNet(); // Also keep your canvas in sync
+        });
+
+        // Start observing the dashboard container
+        resizeObserver.observe(document.querySelector('.dashboard'));
     </script>
 </body>
 

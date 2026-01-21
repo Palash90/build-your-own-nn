@@ -2756,8 +2756,11 @@ We have successfully stacked layers of calculations and we have seen how we can 
         [0.62, 0.73, 0.81, 0.88, 0.92],
         [0.73, 0.81, 0.88, 0.92, 0.95]
       ],
-      "colorscale": "RdBu",
-      "reversescale": true,
+      "colorscale": [
+                        [0, "#964440"],
+                        [1, "#368d3e"]
+                    ],
+      "reversescale": false,
       "showscale": true,
       "contours": {
         "coloring": "heatmap",
@@ -2775,8 +2778,11 @@ We have successfully stacked layers of calculations and we have seen how we can 
       "marker": {
         "size": 18,
         "color": [0, 1, 1, 1],
-        "colorscale": "RdBu",
-        "reversescale": true,
+        "colorscale": [
+             [0, "#e73027"],
+             [1, "#1bd82e"]
+        ],
+        "reversescale": false,
         "line": { "width": 3, "color": "white" },
         "symbol": "circle"
       },
@@ -2810,7 +2816,10 @@ Let's check out the similar for XOR gate:
         [0.30, 0.95, 0.80, 0.10, 0.30],
         [0.10, 0.60, 0.45, 0.30, 0.10]
       ],
-      "colorscale": "RdBu",
+      "colorscale": [
+                        [0, "#964440"],
+                        [1, "#368d3e"]
+                    ],
       "reversescale": true,
       "showscale": true,
       "contours": {
@@ -2829,7 +2838,10 @@ Let's check out the similar for XOR gate:
       "marker": {
         "size": 18,
         "color": [0, 0, 1, 1],
-        "colorscale": "RdBu",
+        "colorscale": [
+             [0, "#e73027"],
+             [1, "#1bd82e"]
+        ],
         "reversescale": true,
         "line": { "width": 3, "color": "white" },
         "symbol": "circle"

@@ -241,17 +241,6 @@
             padding: 6px 2px;
         }
 
-        .btn-group-4 {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 4px;
-        }
-
-        .btn-group-4 button {
-            font-size: 0.65rem;
-            padding: 6px 2px;
-        }
-
         /* Fix Overflows */
         .config-row {
             display: flex;
@@ -407,7 +396,6 @@
 </head>
 
 <body>
-
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
     <div class="dashboard">
         <div class="controls">
@@ -478,10 +466,7 @@
                 </div>
             </div>
             <div>
-                <div class="btn-group-4">
-                    <button onclick="buildNetwork()"
-                        style="font-size: 20px; color: var(--neon-cyan); border-color: #06b6d4;"
-                        title="Build Network">&#128736;</button>
+                <div class="btn-group">
                     <button id="trainBtn" onclick="toggleTraining()" style="font-size: 20px;"
                         title="Start">&#9658;</button>
                     <button id="pauseBtn" class="control-btn"
@@ -1021,7 +1006,7 @@
 
         async function toggleTraining() {
             if (isTraining) return;
-            if (layers.length === 0) buildNetwork();
+            buildNetwork();
 
             isTraining = true;
             stopFlag = false;

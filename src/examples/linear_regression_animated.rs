@@ -36,7 +36,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     }
     let line_input = Tensor::new(line_input_vec, vec![50, 2])?;
 
-    let epochs = 30_000;
+    let epochs = 10_000;
     let bounds = Some((0.0, 20.0, 0.0, 50.0)); 
     for epoch in 0..epochs {
         let predicted = linear.forward(&input)?;
@@ -64,14 +64,11 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 is_line: true,
             };
 
-            render_plot(&[trace_actual, trace_pred], 100, 35, bounds);
-            thread::sleep(Duration::from_millis(30));
+            render_plot(&[trace_actual, trace_pred], 100, 35, bounds, String::from("Linear Regression"));
+            thread::sleep(Duration::from_millis(3));
         }
         print!("\x1b[2J\x1b[1;1H");
     }
-
-    println!("Actual weights near [1.8, 10]. Model predicted:");
-    println!("{}", linear.weight());
 
     Ok(())
 }

@@ -110,7 +110,7 @@ pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 });
             }
 
-            render_plot(&traces, 70, 25, bounds);
+            render_plot(&traces, 70, 25, bounds, String::from("Binary Classification"));
             thread::sleep(Duration::from_millis(40));
         }
 

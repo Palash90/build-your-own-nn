@@ -96,15 +96,14 @@ pub fn render_plot(
     traces: &[Trace], 
     width: usize, 
     height: usize, 
-    fixed_bounds: Option<(f32, f32, f32, f32)>
+    fixed_bounds: Option<(f32, f32, f32, f32)>,
+    title: String
 ) {
-    // Determine bounds: use provided fixed bounds or calculate from data
     let (min_x, max_x, min_y, max_y) = match fixed_bounds {
         Some(bounds) => bounds,
         None => get_bounds(traces),
     };
 
-    // 1. DYNAMIC MARGINS & CONFIG
     let margin_l = 10;
     let margin_b = 2;
     let plot_w = width - margin_l - 2;
@@ -115,17 +114,13 @@ pub fn render_plot(
 
     let mut grid = vec![vec![" ".to_string(); width]; height];
 
-    // 2. DRAW Y-AXIS AND INTERMEDIATE TICKS
     for i in 0..=y_tick_count {
         let t = i as f32 / y_tick_count as f32;
-        // Map 0.0-1.0 to the vertical plot area (inverted for terminal rows)
         let py = map_val(t, 0.0, 1.0, plot_h as f32, 0.0) as usize;
         let val = map_val(t, 0.0, 1.0, min_y, max_y);
 
-        // Draw the tick mark on the axis
         grid[py][margin_l] = "┼".to_string();
 
-        // Format and place the Y label
         let label = format!("{:>9.1}", val);
         for (idx, c) in label.chars().enumerate() {
             if idx < margin_l {
@@ -134,18 +129,14 @@ pub fn render_plot(
         }
     }
 
-    // 3. DRAW X-AXIS AND INTERMEDIATE TICKS
     for i in 0..=x_tick_count {
         let t = i as f32 / x_tick_count as f32;
-        // Map 0.0-1.0 to the horizontal plot area
         let px = map_val(t, 0.0, 1.0, 0.0, plot_w as f32) as usize + margin_l + 1;
         let val = map_val(t, 0.0, 1.0, min_x, max_x);
 
         if px < width {
-            // Draw the tick mark on the axis
             grid[plot_h][px] = "┴".to_string();
 
-            // Format and place the X label below the axis
             let label = format!("{:.1}", val);
             for (idx, c) in label.chars().enumerate() {
                 if px + idx < width {
@@ -155,7 +146,6 @@ pub fn render_plot(
         }
     }
 
-    // 4. FILL REMAINING BORDERS
     for y in 0..plot_h {
         if grid[y][margin_l] == " " { grid[y][margin_l] = "│".to_string(); }
     }
@@ -164,14 +154,12 @@ pub fn render_plot(
     }
     grid[plot_h][margin_l] = "└".to_string();
 
-    // 5. PLOT DATA
     for trace in traces {
         let color_code = trace.color.to_ansi(); 
         for i in 0..trace.x.len() {
             let px = map_val(trace.x[i], min_x, max_x, 0.0, plot_w as f32) as usize + margin_l + 1;
             let py = map_val(trace.y[i], min_y, max_y, plot_h as f32 - 1.0, 0.0) as usize;
 
-            // Only draw if within the plot frame
             if py < plot_h && px > margin_l && px < width {
                 if trace.is_line && i > 0 {
                     let prev_px = map_val(trace.x[i - 1], min_x, max_x, 0.0, plot_w as f32) as usize + margin_l + 1;
@@ -183,16 +171,23 @@ pub fn render_plot(
         }
     }
 
-    // 6. ATOMIC BUFFER PRINT
     let mut buffer = String::new();
-    // \x1b[2J = clear screen, \x1b[H = cursor top-left, \x1b[?25l = hide cursor
     buffer.push_str("\x1b[2J\x1b[H\x1b[?25l");
+
+    buffer.push_str("\n\n");
+    let title_len = title.len();
+    if title_len < width {
+        let padding = (width - title_len) / 2;
+        buffer.push_str(&" ".repeat(padding));
+    }
+    buffer.push_str(&format!("\x1b[1;36m{}\x1b[0m\n\n", title.to_uppercase()));
+    
+    
     for row in grid {
         buffer.push_str(&row.concat());
         buffer.push('\n');
     }
 
-    // Legend
     buffer.push('\n');
     for t in traces {
         buffer.push_str(&format!(
@@ -203,7 +198,7 @@ pub fn render_plot(
         ));
     }
     print!("{}", buffer);
-    println!("\x1b[?25h"); // Show cursor
+    println!("\x1b[?25h"); 
 }
 
 fn draw_line(grid: &mut Vec<Vec<String>>, x0: usize, y0: usize, x1: usize, y1: usize, color: &str) {

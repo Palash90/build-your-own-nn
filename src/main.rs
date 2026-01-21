@@ -78,7 +78,6 @@ fn main() -> Result<(), TensorError> {
             }
         }
 
-        println!("\nSimulation finished. Press Enter to return to menu.");
         let mut pause = String::new();
         io::stdin().read_line(&mut pause).unwrap();
     }

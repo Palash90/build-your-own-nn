@@ -138,12 +138,17 @@
         /* Tablet: 2 columns for plots, sidebar on top */
         @media (min-width: 768px) and (max-width: 1023px) {
             .dashboard {
-                grid-template-columns: 1fr 1fr;
+                grid-template-columns: 1fr;
             }
 
             .controls {
-                grid-column: span 2;
-                /* Sidebar takes full width at top */
+                grid-row: auto;
+                grid-column: 1;
+            }
+
+            .panel {
+                grid-column: 1 !important;
+                /* Force plots to take full width */
             }
         }
 
@@ -171,6 +176,17 @@
             padding: 15px;
             border-radius: 12px;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            /* Force panel to fill grid cell */
+            min-width: 0;
+            /* Prevents grid blowout */
+        }
+
+        #plot,
+        #lossPlot {
+            width: 100% !important;
+            /* Force plotly container to fill panel */
+            height: 400px;
         }
 
         /* High-Visibility Training Button */
@@ -415,7 +431,7 @@
                         <input type="number" id="lr" value="0.1" step="0.01" style="width: 100%;">
                     </div>
                     <div>
-                        <label>Speed</label>
+                        <label>Delay</label>
                         <input type="number" id="delay" value="10" />
                     </div>
                 </div>
@@ -1295,6 +1311,19 @@
             xorBtn.classList.add('active-dataset');
             setDataset('XOR', xorBtn); // This will trigger buildNetwork() and updateTestUI()
         };
+
+        // This forces all Plotly charts to resize whenever the window size changes
+        window.addEventListener('resize', function () {
+            Plotly.Plots.resize('plot');
+            Plotly.Plots.resize('lossPlot');
+        });
+
+        // Also call it inside your updateViz function to ensure 
+        // they snap to the correct size during training
+        function forceResize() {
+            Plotly.Plots.resize('plot');
+            Plotly.Plots.resize('lossPlot');
+        }
     </script>
 </body>
 

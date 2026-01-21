@@ -2956,3 +2956,29 @@ $$
   ]
 }
 ```
+
+# Extras
+
+While working on this project, I have come up with few ways to visualize the data. These are some console tricks that I used to visuallize the data on console. This guide was written with one single idea - radical transparency. As a result, during the course, we never installed any dependency. Yet during the course of writing this guide, I had to view the data plots. Visualization of data is a necessity in Machine Learning projects. Consequently, to bridge the gap, I had to discover ideas which made the visualization easy for me without breaking the rule of transparency.
+
+In this section, I will unveil those tools.
+
+**Who this section is for**
+
+If any of the following ticks for you, please read on:
+
+- This section is for motivated readers who wants to uncover the tools that helped shaping this book
+- This section is for readers who loves to build small scale tools to understand the nitty-gritties of the system
+- To look how some funny ideas got shaped as a tool
+
+**Who this section is not for**
+
+If any of the following ticks for you, please feel free to skip the rest:
+
+- If you are looking for another Machine Learning concept, this section is not about that
+- If you rather spend time building another Machine Learning Solution
+- If you have time crunch
+
+## PBM Generator tool
+## Plotter Tool
+## Image console drawer

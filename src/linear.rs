@@ -52,4 +52,8 @@ impl Linear {
     pub fn weight(&self) -> &Tensor {
         &self.weight
     }
+
+    pub fn set_weight(&mut self, t: Tensor){
+        self.weight = t;
+    }
 }

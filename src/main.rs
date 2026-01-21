@@ -1,10 +1,11 @@
-use std::os::unix::raw::mode_t;
-
 use build_your_own_nn::Rng;
-use build_your_own_nn::activation::{Activation, ActivationType};
-use build_your_own_nn::linear::Linear;
-use build_your_own_nn::loss::{bce_sigmoid_delta, l1_loss, mse_loss, mse_loss_gradient};
-use build_your_own_nn::tensor::{Tensor, TensorError};
+use build_your_own_nn::examples::linear_regression;
+use build_your_own_nn::examples::linear_regression_animated;
+use build_your_own_nn::examples::neural_network_or;
+use build_your_own_nn::examples::neural_network_or_animated;
+use build_your_own_nn::examples::neural_network_xor_animated;
+use build_your_own_nn::tensor::TensorError;
+use std::io::{self, Write};
 
 struct SimpleRng {
     state: u64,
@@ -17,97 +18,70 @@ impl Rng for SimpleRng {
     }
 }
 
-fn linear_regression() -> Result<(), TensorError> {
-    let mut rng = SimpleRng { state: 73 };
+fn get_user_choice(length: usize) -> usize {
+    print!("Enter choice (1-{length}): ");
+    io::stdout().flush().unwrap();
 
-    let mut linear = Linear::new(2, 1, &mut rng);
+    let mut input = String::new();
+    io::stdin()
+        .read_line(&mut input)
+        .expect("Failed to read line");
 
-    println!("Weights:");
-    println!("{}", linear.weight());
-
-    let input = Tensor::new(
-        vec![
-            1.0, 1.0_f32, 2.0, 1.0_f32, 3.0, 1.0_f32, 4.0, 1.0_f32, 5.0, 1.0_f32,
-        ],
-        vec![5, 2],
-    )?;
-
-    println!("Input:");
-    println!("{}", input);
-
-    let output = linear.forward(&input).unwrap();
-    println!("Initial Output:");
-    println!("{}", output);
-
-    let actual = Tensor::new(vec![5.6, 6.6, 9.5, 10.2, 14.0], vec![5, 1])?;
-
-    println!("Actual:");
-    println!("{}", actual);
-
-    let loss = mse_loss(&output, &actual)?;
-
-    println!("Initial MSE Loss:");
-    println!("{}", loss);
-
-    println!();
-    println!();
-
-    let epochs = 5000;
-
-    for _ in 0..epochs {
-        let predicted = linear.forward(&input)?;
-
-        let grad = mse_loss_gradient(&predicted, &actual)?;
-
-        linear.backward(&grad, 0.01)?;
-    }
-
-    let output = linear.forward(&input)?;
-    let loss = mse_loss(&output, &actual)?;
-
-    println!("Final MSE Loss after {epochs} iterations:");
-    println!("{}", loss);
-
-    println!("Final weights");
-    println!("{}", linear.weight());
-
-    println!("Final Output");
-    println!("{}", output);
-
-    Ok(())
+    input.trim().parse().unwrap_or(0)
 }
 
 fn main() -> Result<(), TensorError> {
     let mut rng = SimpleRng { state: 73 };
 
-    let mut linear_layer = Linear::new(2, 1, &mut rng);
-    let mut activation_layer = Activation::new(ActivationType::ReLU);
+    let options = vec![
+        "Simple Linear Regression (Trend Fitting)",
+        "Animated Linear Regression",
+        "Neural Network for OR Gate",
+        "OR Gate (Decision Surface Slice)",
+        "Animated XOR Decision Boundary",
+        "Exit",
+    ];
 
-    let input = Tensor::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0], vec![4, 2])?;
-    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+    loop {
+        print!("\x1b[2J\x1b[H");
+        println!("=== Neural Network Menu ===");
+        options
+            .iter()
+            .enumerate()
+            .for_each(|(index, op)| println!("{}. {}", index + 1, op));
+        println!("==========================================");
 
-    let learning_rate = 0.001;
+        match get_user_choice(options.len()) {
+            1 => {
+                linear_regression::linear_regression(&mut rng)?;
+            }
+            2 => {
+                linear_regression_animated::linear_regression(&mut rng)?;
+            }
+            3 => {
+                neural_network_or::or_neural_network(&mut rng)?;
+            }
+            4 => {
+                neural_network_or_animated::or_neural_network(&mut rng)?;
+            }
+            5 => {
+                neural_network_xor_animated::xor_neural_network(&mut rng)?;
+            }
+            6 => {
+                println!("Goodbye!");
+                break;
+            }
 
-    println!("Input:");
-    println!("{}", input);
+            _ => {
+                println!("Invalid choice, try again.");
+                std::thread::sleep(std::time::Duration::from_secs(1));
+            }
+        }
 
-    println!("Actual Output");
-    println!("{}", actual);
-
-    for _ in 0..10000 {
-        let linear_output = linear_layer.forward(&input)?;
-        let activation_output = activation_layer.forward(&linear_output)?;
-
-        let delta = bce_sigmoid_delta(&activation_output, &actual)?;
-
-        let _ = linear_layer.backward(&delta, learning_rate);
+        println!("\nSimulation finished. Press Enter to return to menu.");
+        let mut pause = String::new();
+        io::stdin().read_line(&mut pause).unwrap();
     }
-
-    let model_output = linear_layer.forward(&input)?;
-    let model_output = activation_layer.forward(&model_output)?;
-
-    println!("Model Output after training");
-    println!("{}", model_output);
 
     Ok(())
 }

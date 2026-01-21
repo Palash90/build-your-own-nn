@@ -1,38 +1,48 @@
-use std::fs::File;
-use std::io::{Write, BufWriter};
+use std::{fs::File, io::{BufRead, BufReader}};
 
-pub fn draw_image() -> std::io::Result<()> {
-    let size: i32 = 200;
-    let file = File::create("spiral.pbm")?;
-    let mut writer = BufWriter::new(file);
+pub fn draw_image(source: &str)  {
+    let file = File::open(source).expect("File not found");
+    let reader = BufReader::new(file);
 
-    writeln!(writer, "P1")?;
-    writeln!(writer, "{} {}", size, size)?;
+    // 1. Parse all tokens (skipping comments)
+    let tokens: Vec<String> = reader.lines()
+        .flatten()
+        .filter(|l| !l.trim().starts_with('#'))
+        .flat_map(|l| l.split_whitespace().map(String::from).collect::<Vec<_>>())
+        .collect();
 
-    for y in 0..size {
-        let mut row = String::with_capacity(size as usize * 2);
-        for x in 0..size {
-            // Normalize coordinates to be between -1.0 and 1.0
-            let nx = (x as f32 / size as f32) * 2.0 - 1.0;
-            let ny = (y as f32 / size as f32) * 2.0 - 1.0;
+    if tokens.len() < 3 { return; }
+    
+    // 2. Extract dimensions from header
+    let w: usize = tokens[1].parse().unwrap();
+    let h: usize = tokens[2].parse().unwrap();
+    let data = &tokens[3..];
 
-            // Convert to Polar Coordinates (r, theta)
-            let r = (nx * nx + ny * ny).sqrt();
-            let theta = ny.atan2(nx);
+    println!("Image: {} ({}x{})", source, w, h);
 
-            // The Spiral Logic: 
-            // We check if the angle matches the radius in a way that creates a "wrap"
-            // Adding 'r * 10.0' creates the tight turns.
-            let spiral_val = (theta + r * 10.0).sin();
+    // 3. Render using Braille 2x4 blocks
+    for y in (0..h).step_by(4) {
+        let mut row = String::new();
+        for x in (0..w).step_by(2) {
+            let mut byte = 0u8;
+            // The Braille dot mapping (standard bit positions)
+            let dots = [
+                (0, 0, 0x01), (0, 1, 0x02), (0, 2, 0x04),
+                (1, 0, 0x08), (1, 1, 0x10), (1, 2, 0x20),
+                (0, 3, 0x40), (1, 3, 0x80)
+            ];
 
-            if r < 0.9 && spiral_val > 0.0 {
-                row.push_str("1 "); // Part of the spiral arm
-            } else {
-                row.push_str("0 "); // Empty space
+            for (dx, dy, mask) in dots {
+                let (px, py) = (x + dx, y + dy);
+                // Bounds check ensures any resolution works
+                if px < w && py < h {
+                    if data.get(py * w + px).map_or(false, |v| v == "1") {
+                        byte |= mask;
+                    }
+                }
             }
+            row.push(std::char::from_u32(0x2800 + byte as u32).unwrap());
         }
-        writeln!(writer, "{}", row)?;
+        println!("{}", row);
     }
-    println!("Spiral generated: spiral.pbm");
-    Ok(())
 }

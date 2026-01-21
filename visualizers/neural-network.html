@@ -23,14 +23,22 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --bg: #1c2225;
-            --panel: #1f2124;
-            --border: #222222;
-            --neon-cyan: #00F0FF;
-            --neon-purple: #7000FF;
-            --neon-pink: #FF0055;
-            --text: #c9c1bc;
-            --sub-text: #848c97;
+            --bg: #010f30;
+            --panel: #020c1d;
+            --border: #334155;
+            --neon-cyan: #06b6d4;
+            --neon-purple: #8b5cf6;
+            --text: #f1f5f9;
+            --sub-text: #94a3b8;
+            --danger: #ef4444;
+        }
+
+        #inputX,
+        #inputY {
+            width: 100%;
+            margin-bottom: 12px;
+            /* Gap after input boxes */
+            display: block;
         }
 
         * {
@@ -81,8 +89,20 @@
 
         .controls>div {
             border-bottom: 1px solid var(--border);
-            padding-bottom: 15px;
-            margin-bottom: 5px;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+
+        .training-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .training-grid input {
+            width: 100%;
+            /* Prevents horizontal overflow */
         }
 
         .panel {
@@ -95,30 +115,55 @@
 
         /* High-Visibility Training Button */
         #trainBtn {
-            background: transparent;
-            border: 1px solid var(--neon-cyan);
-            color: var(--neon-cyan);
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: bold;
-            height: 60px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            width: 100%;
+            height: 45px;
+            /* Reduced from 60px */
+            margin-bottom: 8px;
         }
 
-        #trainBtn:hover {
-            background: var(--neon-cyan);
-            color: #000;
-            box-shadow: 0 0 20px var(--neon-cyan);
+        /* Dataset and Control Buttons */
+        .btn-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+        }
+
+        .btn-group button {
+            font-size: 0.65rem;
+            padding: 6px 2px;
+        }
+
+        /* Fix Overflows */
+        .config-row {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 6px;
+            align-items: center;
+        }
+
+        .l-size {
+            width: 60px !important;
+        }
+
+        /* Prevents crowding */
+        .l-act {
+            flex: 1;
+        }
+
+        .delete-btn {
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid var(--danger);
+            padding: 4px 8px;
         }
 
         .active-dataset {
-            background: linear-gradient(135deg, var(--neon-cyan), var(--neon-purple)) !important;
-            color: #000 !important;
-            font-weight: 800 !important;
-            border: none !important;
-            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            background: rgba(6, 182, 212, 0.2) !important;
+            /* Subtle Cyan tint */
+            color: var(--neon-cyan) !important;
+            border: 1px solid var(--neon-cyan) !important;
+            box-shadow: 0 0 8px rgba(6, 182, 212, 0.3);
+            font-weight: 600;
         }
 
         canvas {
@@ -128,6 +173,37 @@
             border: 1px solid var(--border);
             border-radius: 8px;
             margin-top: 10px;
+        }
+
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: 1px solid var(--border);
+            background: #334155;
+            color: var(--text);
+            text-transform: uppercase;
+            margin-top: 5px;
+            margin-bottom: 5px;
+        }
+
+        button:hover {
+            background: #475569;
+        }
+
+        btn-primary {
+            background: var(--neon-cyan);
+            color: #000;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: #22d3ee;
+            box-shadow: 0 0 12px rgba(6, 182, 212, 0.4);
         }
 
         input,
@@ -261,7 +337,7 @@
                 </div>
                 <button onclick="addLayerUI()">+ ADD LAYER</button>
                 <button onclick="buildNetwork()" style="background: #222;">BUILD NETWORK</button>
-                <div style="margin-top: 10px; border-top: 1px solid #444; pt: 5px;">
+                <div style="margin-top: 10px; border-top: 0px solid #444;">
                     <label>Output Layer Activation</label>
                     <select id="outputAct">
                         <option value="sigmoid">Sigmoid (Classification 0-1)</option>
@@ -272,14 +348,20 @@
             </div>
 
             <div>
-                <label>Training Parameters</label>
-                <div style="display:flex; gap:5px">
-                    <div style="flex:1"><label>Epochs</label><input type="number" id="epochs" value="2000"></div>
-                    <div style="flex:1"><label>Delay(ms)</label><input type="number" id="delay" value="10"></div>
-                </div>
-                <label>Learning Rate</label>
-                <input type="number" id="lr" value="0.1" step="0.01">
-            </div>
+    <label>Training Parameters</label>
+    <div class="training-grid">
+        <div>
+            <label>Epochs</label>
+            <input type="number" id="epochs" value="2000">
+        </div>
+        <div>
+            <label>Delay(ms)</label>
+            <input type="number" id="delay" value="10">
+        </div>
+    </div>
+    <label>Learning Rate</label>
+    <input type="number" id="lr" value="0.1" step="0.01" style="width: 100%;">
+</div>
 
             <div>
                 <label>&nbsp;</label>

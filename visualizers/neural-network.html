@@ -201,6 +201,35 @@
             /* Prevents horizontal overflow */
         }
 
+        /* Dynamic border for layer rows */
+        .layer-row-container {
+            border-left: 6px solid #00F0FF;
+            /* Default Tanh */
+            padding-left: 10px;
+            transition: border-color 0.3s ease;
+        }
+
+        /* Visual feedback for paused state */
+        .btn-paused {
+            animation: pulse-yellow 1.5s infinite;
+            border-color: #fbbf24 !important;
+            color: #fbbf24 !important;
+        }
+
+        @keyframes pulse-yellow {
+            0% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.6;
+            }
+
+            100% {
+                opacity: 1;
+            }
+        }
+
         .panel {
             background: var(--panel);
             border: 1px solid var(--border);
@@ -409,9 +438,9 @@
                     <span style="font-size: 0.6rem; color: var(--sub-text);">Features (based on input data)</span>
                 </div>
                 <div id="layersConfig">
-                    <div style="display:flex; gap:2px; margin-bottom: 20px;">
-                        <input type="number" class="l-size" value="4">
-                        <select class="l-act">
+                    <div class="layer-row-container" style="display:flex; gap:2px; margin-bottom: 20px;">
+                        <input type="number" class="l-size network-ctl" value="4">
+                        <select class="l-act network-ctl" onchange="updateLayerColor(this)">
                             <option value="tanh">Tanh</option>
                             <option value="relu">ReLU</option>
                             <option value="lrelu">Leaky ReLU</option>
@@ -421,10 +450,11 @@
                 <button onclick="addLayerUI()">+ ADD LAYER</button>
                 <div style="margin-top: 20px; margin-bottom: 10px; border-top: 0px solid #444;">
                     <label>Output Layer</label>
-                    <div style="display: flex; gap: 4px; align-items: center;">
+                    <div class="layer-row-container"
+                        style="display: flex; gap: 4px; align-items: center;  border-left:  solid #FF0055;">
                         <input type="text" id="outputNeuronsCount" disabled value="1" class="l-size"
                             style="width: 50px !important; background: transparent; border-style: dotted;">
-                        <select id="outputAct">
+                        <select id="outputAct" class="network-ctl" onchange="updateLayerColor(this)">
                             <option value="sigmoid">Sigmoid (Classification 0-1)</option>
                             <option value="softmax">Softmax (Multi-class)</option>
                             <option value="linear">Regression (Linear)</option>
@@ -467,13 +497,14 @@
             </div>
             <div>
                 <div class="btn-group">
-                    <button id="trainBtn" onclick="toggleTraining()" style="font-size: 20px;"
-                        title="Start">&#9658;</button>
-                    <button id="pauseBtn" class="control-btn"
-                        style="font-size: 20px; border-color: #fbbf24; color: #fbbf24;" onclick="togglePause()"
-                        title="Pause">&#9208;</button>
+                    <button id="trainBtn" class="control-btn" onclick="handleTrainClick()"
+                        style="font-size: 20px; grid-column: span 2;" title="Start/Pause">
+                        &#9658;
+                    </button>
                     <button onclick="resetEverything()" style="font-size: 20px; border-color: #ef4444; color: #ef4444;"
-                        class="control-btn" title="STOP">&#x23F9;</button>
+                        class="control-btn" title="STOP">
+                        &#x23F9;
+                    </button>
                 </div>
                 <div id="status" style="margin-top:10px;">Awaiting Initialization</div>
             </div>
@@ -506,6 +537,17 @@
 
     <script>
         let layers = [], isTraining = false, isPaused = false, stopFlag = false, lossHistory = [];
+
+        const actColors = {
+            input: '#ffffff',
+            relu: '#7000FF',    // Neon Purple
+            tanh: '#00F0FF',    // Neon Cyan
+            sigmoid: '#FF0055', // Neon Pink
+            lrelu: '#f97316',
+            softmax: '#00ff41',
+            linear: '#FDE047'
+        };
+
 
         const Act = {
             relu: { f: x => Math.max(0, x), df: x => x > 0 ? 1 : 0 },
@@ -547,6 +589,11 @@
             }
         }
 
+        function updateLayerColor(selectElement) {
+            const color = actColors[selectElement.value] || '#ffffff';
+            selectElement.parentElement.style.borderLeft = `6px solid ${color}`;
+            buildNetwork();
+        }
 
         let currentMode = 'LOGIC'; // Default
 
@@ -833,20 +880,46 @@
 
         function addLayerUI() {
             const div = document.createElement('div');
-            div.className = "config-row"; // Uses the new flex row logic
+            div.className = "config-row layer-row-container"; // Uses the new flex row logic
+            div.style.borderLeft = `6px solid ${actColors.tanh}`;
             div.innerHTML = `
-                    <input type="number" class="l-size" value="4"> 
-                    <select class="l-act">
+                    <input type="number" class="l-size network-ctl" value="4"> 
+                    <select class="l-act network-ctl" onchange="updateLayerColor(this)">
                         <option value="tanh">Tanh</option>
                         <option value="relu">ReLU</option>
                         <option value="lrelu">Leaky ReLU</option>
                     </select> 
                     <button class="delete-btn" onclick="this.parentElement.remove()">x</button>
-    `;
+                `;
             document.getElementById('layersConfig').appendChild(div);
+            buildNetwork();
+        }
+
+        async function handleTrainClick() {
+            const btn = document.getElementById('trainBtn');
+
+            if (!isTraining) {
+                // Start fresh training
+                toggleTraining();
+                btn.innerHTML = "&#9208;"; // Switch to Pause Icon
+            } else {
+                // Toggle the paused state
+                isPaused = !isPaused;
+                if (isPaused) {
+                    btn.innerHTML = "&#9658;"; // Show Play to resume
+                    btn.classList.add('btn-paused');
+                    document.getElementById('status').innerHTML = "<small>Paused</small>";
+                } else {
+                    btn.innerHTML = "&#9208;"; // Show Pause while running
+                    btn.classList.remove('btn-paused');
+                }
+            }
         }
 
         function buildNetwork() {
+            if (isTraining) return; // Prevent rebuilding during training
+
+            console.log("Building Network...");
             document.getElementById('predictionResult').innerHTML = "<small>Train The Network First</small>";
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
             const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
@@ -929,12 +1002,15 @@
         }
 
         function toggleDatasetButtons(disabled) {
-            const buttons = document.querySelectorAll('.btn-group button:not(.control-btn), .controls button:not(.control-btn)');
+            console.log("Toggling dataset buttons. Disabled:", disabled);
+            const buttons = document.querySelectorAll('.btn-group button:not(.control-btn), .controls button:not(.control-btn), .network-ctl, #outputAct');
+            console.log("Buttons found:", buttons);
             buttons.forEach(btn => {
                 btn.disabled = disabled;
                 btn.style.opacity = disabled ? "0.5" : "1";
                 btn.style.cursor = disabled ? "not-allowed" : "pointer";
             });
+
         }
 
         function resetEverything() {
@@ -945,11 +1021,14 @@
 
             document.getElementById('matrixDisplay').innerHTML = "";
 
+            const trainBtn = document.getElementById('trainBtn');
+
+            trainBtn.innerHTML = "&#9658;"; // Restore Play icon
+            trainBtn.classList.remove('btn-paused'); // Stop the pulsing
+
             // Reset UI Elements
             document.getElementById('status').innerHTML = "<small>Reset - Awaiting Initialization</small>";
             document.getElementById('predictionResult').innerHTML = `<small>Train the Network First</small>`;
-            document.getElementById('pauseBtn').innerHTML = "&#9208;";
-            document.getElementById('trainBtn').innerHTML = "&#9658;";
 
             // Clear Plots
             // initPlots();
@@ -1061,13 +1140,9 @@
                 }
             }
             isTraining = false;
+            document.getElementById('trainBtn').innerHTML = "&#9658;";
             toggleDatasetButtons(false);
             document.getElementById('trainBtn').innerHTML = "&#9658;";
-        }
-
-        function togglePause() {
-            isPaused = !isPaused;
-            document.getElementById('pauseBtn').innerHTML = isPaused ? "&#9658;" : "&#9208;";
         }
 
         function updateViz(x, y, preds, loss, ep) {
@@ -1250,15 +1325,6 @@
         }
 
         function drawNet() {
-            const actColors = {
-                input: '#ffffff',
-                relu: '#7000FF',    // Neon Purple
-                tanh: '#00F0FF',    // Neon Cyan
-                sigmoid: '#FF0055', // Neon Pink
-                lrelu: '#f97316',
-                softmax: '#00ff41',
-                linear: '#94a3b8'
-            };
 
 
             const canvas = document.getElementById('netCanvas');

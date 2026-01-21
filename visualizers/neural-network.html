@@ -33,6 +33,14 @@
             --danger: #ef4444;
         }
 
+        input:disabled {
+            cursor: not-allowed;
+            color: var(--neon-cyan);
+            border-color: var(--border);
+            font-weight: bold;
+            text-align: center;
+        }
+
         #inputX,
         #inputY {
             width: 100%;
@@ -380,9 +388,16 @@
     <h2 style="text-align: center;">Neural Network Visualizer</h2>
     <div class="dashboard">
         <div class="controls">
-            
+
             <div>
                 <label>Network Structure</label>
+                <div class="config-row"
+                    style="opacity: 0.7; margin-bottom: 10px; border-bottom: 1px dashed var(--border); padding-bottom: 10px;">
+                    <span style="font-size: 0.7rem; width: 60px;">INPUT:</span>
+                    <input type="text" id="inputFeaturesCount" disabled value="2" class="l-size"
+                        style="background: transparent; border-style: dotted;">
+                    <span style="font-size: 0.6rem; color: var(--sub-text);">Features</span>
+                </div>
                 <div id="layersConfig">
                     <div style="display:flex; gap:2px; margin-bottom: 20px;">
                         <input type="number" class="l-size" value="4">
@@ -395,12 +410,17 @@
                 </div>
                 <button onclick="addLayerUI()">+ ADD LAYER</button>
                 <div style="margin-top: 20px; margin-bottom: 10px; border-top: 0px solid #444;">
-                    <label>Output Layer Activation</label>
-                    <select id="outputAct">
-                        <option value="sigmoid">Sigmoid (Classification 0-1)</option>
-                        <option value="softmax">Softmax (Multi-class)</option>
-                        <option value="linear">Regression (Linear)</option>
-                    </select>
+                    <label>Output Layer</label>
+                    <div style="display: flex; gap: 4px; align-items: center;">
+                        <input type="text" id="outputNeuronsCount" disabled value="1" class="l-size"
+                            style="width: 50px !important; background: transparent; border-style: dotted;">
+                        <select id="outputAct">
+                            <option value="sigmoid">Sigmoid (Classification 0-1)</option>
+                            <option value="softmax">Softmax (Multi-class)</option>
+                            <option value="linear">Regression (Linear)</option>
+                        </select>
+                    </div>
+
                 </div>
 
             </div>
@@ -469,7 +489,7 @@
 
 
         </div>
-         <div class="panel" style="grid-column: span 2;">
+        <div class="panel" style="grid-column: span 2;">
             <label>Topology & Weight Magnitude (Live)</label>
             <canvas id="netCanvas"></canvas>
 
@@ -482,7 +502,7 @@
         </div>
 
 
-       
+
 
         <div id="weightInspector" class="panel">
             <label style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">Numerical
@@ -837,6 +857,9 @@
             document.getElementById('predictionResult').innerHTML = "<small>Train The Network First</small>";
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
             const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
+
+            document.getElementById('inputFeaturesCount').value = xRaw[0].length;
+            document.getElementById('outputNeuronsCount').value = yRaw[0].length;
 
             layers = [];
             let curIn = xRaw[0].length;

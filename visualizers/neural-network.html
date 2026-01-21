@@ -23,8 +23,8 @@
     <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
     <style>
         :root {
-            --bg: #010f30;
-            --panel: #020c1d;
+            --bg: #12161d;
+            --panel: #1d1f2e;
             --border: #334155;
             --neon-cyan: #06b6d4;
             --neon-purple: #8b5cf6;
@@ -167,7 +167,7 @@
         }
 
         canvas {
-            background: #05031b;
+            background: #1e1e24;
             width: 100%;
             height: 400px;
             border: 1px solid var(--border);
@@ -315,7 +315,7 @@
                 <div>
                     <label>Model Inference & Live Test</label>
                     <div id="dynamicTestUI"
-                        style="background: #050524; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
+                        style="background: #101029; padding: 10px; border: 1px solid #333; margin-top: 5px; min-height: 80px;">
                     </div>
                     <div id="predictionResult" style="margin-top: 10px; font-size: 0.85rem;">
                         Result: awaiting input...
@@ -325,8 +325,9 @@
 
             <div>
                 <label>Network Structure</label>
+
                 <div id="layersConfig">
-                    <div style="display:flex; gap:2px">
+                    <div style="display:flex; gap:2px; margin-bottom: 20px;">
                         <input type="number" class="l-size" value="4">
                         <select class="l-act">
                             <option value="tanh">Tanh</option>
@@ -336,8 +337,7 @@
                     </div>
                 </div>
                 <button onclick="addLayerUI()">+ ADD LAYER</button>
-                <button onclick="buildNetwork()" style="background: #222;">BUILD NETWORK</button>
-                <div style="margin-top: 10px; border-top: 0px solid #444;">
+                <div style="margin-top: 20px; margin-bottom: 10px; border-top: 0px solid #444;">
                     <label>Output Layer Activation</label>
                     <select id="outputAct">
                         <option value="sigmoid">Sigmoid (Classification 0-1)</option>
@@ -345,6 +345,7 @@
                         <option value="linear">Regression (Linear)</option>
                     </select>
                 </div>
+                <button onclick="buildNetwork()" style="background: #222;">BUILD NETWORK</button>
             </div>
 
             <div>
@@ -368,8 +369,8 @@
                 <button id="trainBtn" onclick="toggleTraining()"
                     style="background:#334155; font-size: 1.1rem; height: 60px;">START TRAINING</button>
                 <div class="btn-group">
-                    <button onclick="stopFlag=true" style="background:#440000">STOP</button>
-                    <button id="pauseBtn" onclick="togglePause()">PAUSE</button>
+                    <button onclick="resetEverything()" class="control-btn" style="background:#440000">STOP</button>
+                    <button id="pauseBtn" class="control-btn" onclick="togglePause()">PAUSE</button>
                 </div>
                 <div id="status" style="margin-top:10px;">Status: Awaiting Initialization</div>
             </div>
@@ -389,12 +390,10 @@
         </div>
 
         <div id="weightInspector" class="panel">
-            <label>Numerical Weight & Bias Matrices (Trace)</label>
+            <label style="margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--border);">Numerical
+                Weight & Bias Matrices (Trace)</label>
             <div id="matrixDisplay"></div>
         </div>
-
-
-
     </div>
 
     <script>
@@ -565,12 +564,18 @@
             };
 
             const layout = {
-                paper_bgcolor: '#1a1a1a',
-                plot_bgcolor: '#1a1a1a',
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
                 font: { color: '#0f0' },
                 margin: { t: 10, b: 30, l: 30, r: 10 },
-                xaxis: { title: 'Input (rad)' },
-                yaxis: { title: 'f(x)' }
+                xaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)', // Very faint grid lines
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)', title: 'Input (rad)'
+                },
+                yaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)', // Very faint grid lines
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)', title: 'f(x)'
+                }
             };
 
             Plotly.react('plot', [trace], layout);
@@ -593,6 +598,23 @@
                 document.getElementById('bulb').style.boxShadow = val > 0.5 ? `0 0 15px #00ff41` : 'none';
                 document.getElementById('logicVal').innerText = val.toFixed(3);
                 resultDiv.innerHTML = `Signal: ${(val * 100).toFixed(1)}%`;
+
+                resultDiv.innerHTML = `
+        <div style="margin-top: 15px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                <label style="font-size: 0.7rem; color: var(--sub-text); letter-spacing: 1px;">SIGNAL STRENGTH</label>
+                <span style="color: #00ff41; font-family: monospace; font-weight: bold;">${(val * 100).toFixed(1)}%</span>
+            </div>
+            <div style="width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; border: 1px solid #333; overflow: hidden;">
+                <div id="signalLine" style="
+                    width: ${val * 100}%; 
+                    height: 100%; 
+                    background: linear-gradient(90deg, #00441b, #00ff41); 
+                    transition: width 0.2s ease-out;
+                    box-shadow: 0 0 10px rgba(0, 255, 65, 0.4);
+                "></div>
+            </div>
+        </div>`;
             }
             else if (currentMode === 'MOON') {
                 const val = outputs[0]; // Assuming 1 output neuron for binary
@@ -623,13 +645,17 @@
         function displayOutputResults(outputs) {
             let html = `<div style="color: #fff; margin-top:10px;">Network Output:</div>`;
             outputs.forEach((val, i) => {
+                // Map index to labels
+                const labels = ['WARM', 'COOL', 'NEUTRAL'];
+                const barColor = i === 0 ? '#ef4444' : i === 1 ? '#06b6d4' : '#94a3b8'; // Red, Cyan, Gray
+
                 html += `
-        <div style="margin-bottom: 4px;">
-            <span style="font-size:0.7rem">${i === 0 ? 'WARM' : i === 1 ? 'NEUTRAL' : 'COOL'}: ${(val * 100).toFixed(1)}%</span>
-            <div style="background: #333; width: 100%; height: 8px;">
-                <div style="background: var(--neon); width: ${val * 100}%; height: 100%;"></div>
-            </div>
-        </div>`;
+                <div style="margin-bottom: 4px;">
+                    <span style="font-size:0.7rem">${labels[i]}: ${(val * 100).toFixed(1)}%</span>
+                    <div style="background: #1e293b; width: 100%; height: 8px; border-radius: 4px; overflow: hidden;">
+                        <div style="background: ${barColor}; width: ${val * 100}%; height: 100%; transition: width 0.3s ease;"></div>
+                    </div>
+                </div>`;
             });
             document.getElementById('predictionResult').innerHTML = html;
         }
@@ -713,6 +739,7 @@
         }
 
         function buildNetwork() {
+            document.getElementById('predictionResult').innerHTML = "<i>Architecture built. Start training to begin learning.</i>";
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
             const yRaw = document.getElementById('inputY').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
 
@@ -735,6 +762,7 @@
             layers.push(new Layer(curIn, outputDim, finalAct));
 
             renderWeights();
+            initPlots();
             drawNet();
             document.getElementById('status').innerText = "Status: Network Built. Ready to Train.";
         }
@@ -789,7 +817,41 @@
             document.getElementById('predictionResult').innerHTML = html;
         }
 
+        function toggleDatasetButtons(disabled) {
+            const buttons = document.querySelectorAll('.btn-group button:not(.control-btn), .controls button:not(.control-btn)');
+            buttons.forEach(btn => {
+                btn.disabled = disabled;
+                btn.style.opacity = disabled ? "0.5" : "1";
+                btn.style.cursor = disabled ? "not-allowed" : "pointer";
+            });
+        }
+
+        function resetEverything() {
+            stopFlag = true;
+            isTraining = false;
+            isPaused = false;
+            lossHistory = [];
+
+            document.getElementById('matrixDisplay').innerHTML = "";
+
+            // Reset UI Elements
+            document.getElementById('status').innerText = "Status: Reset - Awaiting Initialization";
+            document.getElementById('predictionResult').innerHTML =
+                `<div style="color: #94a3b8; border: 1px dashed #334155; padding: 10px; text-align: center;">
+                    <small>NETWORK RESET: No training data learned yet.</small>
+                 </div>`;
+            document.getElementById('pauseBtn').innerText = "PAUSE";
+            document.getElementById('trainBtn').innerText = "START TRAINING";
+
+            // Clear Plots
+            // initPlots();
+
+            // Re-enable buttons
+            toggleDatasetButtons(false);
+        }
+
         function setColorDataset(btnElement) {
+            document.querySelectorAll('.btn-group button').forEach(btn => btn.classList.remove('active-dataset'));
             if (btnElement) btnElement.classList.add('active-dataset');
             const data = [
                 // --- WARM COLORS (Output: 1,0,0) ---
@@ -838,7 +900,10 @@
             if (isTraining) return;
             if (layers.length === 0) buildNetwork();
 
-            isTraining = true; stopFlag = false;
+            isTraining = true;
+            stopFlag = false;
+            toggleDatasetButtons(true);
+            document.getElementById('predictionResult').innerHTML = "Training in progress...";
             document.getElementById('trainBtn').innerText = "TRAINING...";
 
             const xRaw = document.getElementById('inputX').value.split(';').map(r => r.split(',').map(v => parseFloat(v.trim())));
@@ -888,6 +953,7 @@
                 }
             }
             isTraining = false;
+            toggleDatasetButtons(false);
             document.getElementById('trainBtn').innerText = "START TRAINING";
         }
 
@@ -902,9 +968,16 @@
             const outDim = y[0].length;
             let traces = [];
             let layout = {
-                paper_bgcolor: '#1a1a1a', plot_bgcolor: '#1a1a1a',
+                paper_bgcolor: 'rgba(0,0,0,0)', plot_bgcolor: 'rgba(0,0,0,0)',
                 font: { color: '#0f0' }, margin: { t: 0, b: 0, l: 0, r: 0 },
-                xaxis: { gridcolor: '#222' }, yaxis: { gridcolor: '#222' }
+                xaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)', // Very faint grid lines
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)'
+                },
+                yaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)',
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)'
+                }
             };
 
             if (inDim === 1) {
@@ -969,16 +1042,14 @@
                     gridZ.push(rowZ); // Now gridZ[j][i] matches [Y][X]
                 }
 
-
-
                 traces.push({
                     x: gridX,
                     y: gridY,
                     z: gridZ,
                     type: 'heatmap',
                     transpose: false,
-                    colorscale: 'RdBu', // Blue/Red is standard for binary classification
-                    reversescale: true,
+                    colorscale: 'Greys',
+                    reversescale: false,
                     opacity: 0.4,
                     showscale: false,
                     hoverinfo: 'skip'
@@ -1119,8 +1190,14 @@
             const emptyLayout = {
                 paper_bgcolor: 'rgba(0,0,0,0)',
                 plot_bgcolor: 'rgba(0,0,0,0)',
-                xaxis: { visible: false },
-                yaxis: { visible: false }
+                xaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)', // Very faint grid lines
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)'
+                },
+                yaxis: {
+                    gridcolor: 'rgba(51, 65, 85, 0.3)',
+                    zerolinecolor: 'rgba(51, 65, 85, 0.5)'
+                }
             };
             Plotly.newPlot('plot', [], emptyLayout);
             Plotly.newPlot('lossPlot', [], emptyLayout);
@@ -1129,7 +1206,12 @@
         // Automatically build the initial network and UI on load
         window.onload = () => {
             initPlots();
-            setDataset('XOR'); // This will trigger buildNetwork() and updateTestUI()
+            const xorBtn = Array.from(document.querySelectorAll('.btn-group button'))
+                .find(btn => btn.innerText === 'XOR');
+
+            console.log('Initializing with XOR dataset...', xorBtn);
+            xorBtn.classList.add('active-dataset');
+            setDataset('XOR', xorBtn); // This will trigger buildNetwork() and updateTestUI()
         };
     </script>
 </body>

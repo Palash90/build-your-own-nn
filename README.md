@@ -2661,7 +2661,7 @@ fn main() -> Result<(), TensorError> {
         let linear_output = linear_layer.forward(&input)?;
         let activation_output = activation_layer.forward(&linear_output)?;
 
-        let grad = mse_loss_gradient(&activation_output, &actual)?;
+        let grad = bce_sigmoid_delta(&activation_output, &actual)?;
 
         let activation_grad = activation_layer.backward(&grad)?;
 
@@ -2695,10 +2695,10 @@ Actual Output
   |  1.0000|
 
 Model Output after training
-  |  0.1197|
-  |  0.9265|
-  |  0.9266|
-  |  0.9991|
+  |  0.1781|
+  |  0.8926|
+  |  0.8928|
+  |  0.9969|
 ```
 
 ### Sigmoid BCE Shortcut
@@ -2981,9 +2981,93 @@ $$
 
 This combination is now enough to not only bend the straight line in one direction but in all directions. If we use these two stacking mechanisms together we can approximate any complex function. We control the bend using different values of $m$ and $c$.
 
-We already have seen how 
+We have already used $calculus$ to derive the nearest values of the slope and bias by calculating the loss from actual data. Here also we do the same. We derive the correct slopes and biases which shapes any function. Hence, **Deep Learning** is Reverse Engineering on steroids.
 
-> **TIP** It is a bit more involved. I recommend visiting [Desmos](https://www.desmos.com/calculator) and plotting a few of these functions yourselves to get hands on experience.
+> **TIP** It is a bit more involved. I recommend visiting [Desmos](https://www.desmos.com/calculator) and plotting a few of the techniques discussed in this section by plotting the stacked functions yourselves to get hands on experience.
+
+
+## Implementation
+
+Once we have strengthened our mental model, we are ready to write some code. We actually have all the pieces ready. We just stack these pieces together and can start writing the driver code. We'll start with where left in the last section and approximated the XOR gate and stack one more layer to it:
+
+```rust
+pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
+
+    let mut input_layer = Linear::new(3, 4, rng);
+    let mut activation_layer = Activation::new(ActivationType::ReLU);
+
+    // These two lines creates the new layer
+    let mut hidden_layer = Linear::new(4, 1, rng);
+    let mut hidden_activation = Activation::new(ActivationType::Sigmoid);
+
+    let input = Tensor::new(vec![0.0, 0.0, 1.0_f32, 0.0, 1.0, 1.0_f32, 1.0, 0.0, 1.0_f32, 1.0, 1.0, 1.0_f32], vec![4, 3])?;
+
+    // Notice the change in the actual output
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 0.0], vec![4, 1])?;
+
+    let learning_rate = 0.1;
+
+    println!("Input:");
+    println!("{}", input);
+
+    println!("Actual Output");
+    println!("{}", actual);
+
+    for _ in 0..5_000 {
+        let linear_output = input_layer.forward(&input)?;
+        let activation_output = activation_layer.forward(&linear_output)?;
+
+        // Following two lines are stacking the new layer on top of the existing
+        let hidden_output = hidden_layer.forward(&activation_output)?;
+        let hidden_activation_output = hidden_activation.forward(&hidden_output)?;
+
+        let delta = bce_sigmoid_delta(&hidden_activation_output, &actual)?;
+
+        // Loss is also passed in reverse direction from output to input
+        let hidden_backward = hidden_layer.backward(&delta, learning_rate)?;
+        let activation_backward = activation_layer.backward(&hidden_backward)?;
+
+        let _ = input_layer.backward(&activation_backward, learning_rate);
+
+    }
+
+    let model_output = input_layer.forward(&input)?;
+    let model_output = activation_layer.forward(&model_output)?;
+
+    // During prediction also, the input should pass through the stacked layers.
+    let model_output = hidden_layer.forward(&model_output)?;
+    let model_output = hidden_activation.forward(&model_output)?;
+
+    println!("Model Output after training");
+    println!("{}", model_output);
+
+    Ok(())
+}
+```
+
+The above function results:
+
+```text
+Input:
+  |  0.0000,   0.0000,   1.0000|
+  |  0.0000,   1.0000,   1.0000|
+  |  1.0000,   0.0000,   1.0000|
+  |  1.0000,   1.0000,   1.0000|
+
+Actual Output
+  |  0.0000|
+  |  1.0000|
+  |  1.0000|
+  |  0.0000|
+
+Model Output after training
+  |  0.0024|
+  |  0.5000|
+  |  0.9988|
+  |  0.0019|
+```
+
+You may get a slightly different result but you can see, our new stacked network is doing a better approximation. Yet it is not still giving a satisfactory approximation. This is the right place we talk about another significant approach in Machine Learning, known as 'Hyper parameter tuning'.
 
 # Extras
 

@@ -2,14 +2,14 @@ use crate::{Rng, activation::{Activation, ActivationType}, linear::Linear, loss:
 
 pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
 
-    let mut linear_layer = Linear::new(2, 1, rng);
+    let mut linear_layer = Linear::new(3, 1, rng);
 
-    let mut activation_layer = Activation::new(ActivationType::ReLU);
+    let mut activation_layer = Activation::new(ActivationType::Sigmoid);
 
-    let input = Tensor::new(vec![0.0, 0.0, 0.0, 1.0, 1.0, 0.0, 1.0, 1.0], vec![4, 2])?;
-    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+    let input = Tensor::new(vec![0.0, 0.0, 1.0_f32, 0.0, 1.0, 1.0_f32, 1.0, 0.0, 1.0_f32, 1.0, 1.0, 1.0_f32], vec![4, 3])?;
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 0.0], vec![4, 1])?;
 
-    let learning_rate = 0.001;
+    let learning_rate = 0.1;
 
     println!("Input:");
     println!("{}", input);

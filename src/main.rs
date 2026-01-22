@@ -3,6 +3,7 @@ use build_your_own_nn::examples::linear_regression;
 use build_your_own_nn::examples::linear_regression_animated;
 use build_your_own_nn::examples::neural_network_or;
 use build_your_own_nn::examples::neural_network_or_animated;
+use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
 use build_your_own_nn::tensor::TensorError;
 use std::io::{self, Write};
@@ -36,8 +37,9 @@ fn main() -> Result<(), TensorError> {
     let options = vec![
         "Simple Linear Regression (Trend Fitting)",
         "Animated Linear Regression",
-        "Neural Network for OR Gate",
+        "Neural Network for OR Gate Approximation",
         "OR Gate (Decision Surface Slice)",
+        "Neural Network for XOR Gate Approximation",
         "Animated XOR Decision Boundary",
         "Exit",
     ];
@@ -65,13 +67,15 @@ fn main() -> Result<(), TensorError> {
                 neural_network_or_animated::or_neural_network(&mut rng)?;
             }
             5 => {
-                neural_network_xor_animated::xor_neural_network(&mut rng)?;
+                neural_network_xor::xor_neural_network(&mut rng)?;
             }
             6 => {
+                neural_network_xor_animated::xor_neural_network(&mut rng)?;
+            }
+            7 => {
                 println!("Goodbye!");
                 break;
             }
-
             _ => {
                 println!("Invalid choice, try again.");
                 std::thread::sleep(std::time::Duration::from_secs(1));

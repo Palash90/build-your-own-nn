@@ -470,7 +470,7 @@ layout: default
         }
     };
 </script>
-<script src='https://cdn.plot.ly/plotly-3.3.0.min.js'></script>
+<script src='https://cdn.jsdelivr.net/npm/plotly.js-dist@3.3.1/plotly.min.js'></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 

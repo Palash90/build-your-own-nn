@@ -14,7 +14,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
     // Notice the change in the actual output
     let actual = Tensor::new(vec![0.0, 1.0, 1.0, 0.0], vec![4, 1])?;
 
-    let learning_rate = 0.1;
+    let learning_rate = 0.001;
 
     println!("Input:");
     println!("{}", input);
@@ -22,7 +22,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
     println!("Actual Output");
     println!("{}", actual);
 
-    for _ in 0..5_000 {
+    for _ in 0..500_000 {
         let linear_output = input_layer.forward(&input)?;
         let activation_output = activation_layer.forward(&linear_output)?;
 

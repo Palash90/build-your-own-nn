@@ -1,7 +1,7 @@
 use crate::{
     Rng,
     activation::{Activation, ActivationType},
-    image_util::{PlotColor, Trace, render_plot},
+    image_utils::{PlotColor, Trace, render_plot},
     linear::Linear,
     loss::bce_sigmoid_delta,
     tensor::{Tensor, TensorError},

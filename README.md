@@ -2891,16 +2891,38 @@ Of course not. We solve the problem with **Multi Layer Perceptron**.
 
 ## Multi Layer Perceptron
 
-If we stack a combination of Single Layer Perceptrons, we can approximate any continuous function — a principle known as **Universal Approximation Theorem**.
+We have experienced, a single layer perceptron can't generalize any approximation. This is where we start leaning on our creativity to solve the problem of generalization. We use Single Layer Perceptron as a unit rather than final product.
+
+We stack a combination of Single Layer Perceptrons and we can approximate any continuous function — a principle known as **Universal Approximation Theorem**.
 
 According to [wikipedia](https://en.wikipedia.org/wiki/Universal_approximation_theorem) —
 
 > the universal approximation theorems (UATs) state that neural networks with a certain structure can, in principle, approximate any continuous function to any desired degree of accuracy.
 
-Here, we visualize how a ReLU-activated layer transforms a linear input into a piecewise linear function.
+We'll now see it in action.
+
+Our linear equation definition is:
 
 $$
-h(x) = g(f(g(f(x))))
+f(x) = 3 \cdot x + 5
+$$
+
+The ReLU defintion is:
+
+$$
+g(x) = max(0, x)
+%$$
+
+A single layer of combined function is:
+
+$$
+act(x) = g(f(x)) = max(0, (3 \cdot x + 5))
+$$
+
+Finally two layers of stacking gives us:
+
+$$
+h(x) = g(f(g(f(x)))) = max(0, 3 \cdot (max(0, 3 \cdot x + 5)) + 5)
 $$
 
 ```plotly
@@ -2923,7 +2945,7 @@ $$
 }
 ```
 
-As we stack layers, the 'bend' in the activation function becomes more complex, allowing the model to fit non-linear data. 
+With a single layer of ReLU, we bring a bend in the straight line produced by the linear equation. As we move on stacking layers, the bend in the activation function becomes more complex, allowing the model to fit non-linear data.
 
 We'll now see what happens if we mix two different valued $m$ and $c$ and add them together.
 
@@ -2956,6 +2978,12 @@ $$
   ]
 }
 ```
+
+This combination is now enough to not only bend the straight line in one direction but in all directions. If we use these two stacking mechanisms together we can approximate any complex function. We control the bend using different values of $m$ and $c$.
+
+We already have seen how 
+
+> **TIP** It is a bit more involved. I recommend visiting [Desmos](https://www.desmos.com/calculator) and plotting a few of these functions yourselves to get hands on experience.
 
 # Extras
 

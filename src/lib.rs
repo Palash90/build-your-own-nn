@@ -3,7 +3,7 @@ pub mod tensor;
 pub mod loss;
 pub mod image_generator;
 pub mod activation;
-pub mod image_util;
+pub mod image_utils;
 pub mod examples;
 
 pub trait Rng {

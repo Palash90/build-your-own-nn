@@ -95,9 +95,9 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
 fn main() {
     let mut rng = SimpleRng { state: 73 };
 
-    let source = "assets/spiral_50px.pbm";
+    let source = "assets/spiral_25.pbm";
 
-    match image_reconstructor::reconstruct_image(source, 10, &mut rng) {
+    match image_reconstructor::reconstruct_image(source, 1000, &mut rng) {
         Ok(_) => println!("Done"),
         err => println!("{:?}", err),
     }

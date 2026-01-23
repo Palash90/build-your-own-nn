@@ -63,7 +63,10 @@ pub fn reconstruct_image(
             render_image(w, h, &y_train.data());
 
             println!("Network Drawing after epoch {}:", epoch * 1000);
-            draw_save_network_image(w, &mut nn, &format!("output/reconstruction{epoch}.pbm"))?;
+            draw_save_network_image(w, &mut nn, &format!("output/reconstruction_{epoch}.pbm"))?;
+
+            println!("Rescaled Network Drawing after epoch {}:", epoch * 1000);
+            draw_save_network_image(size, &mut nn, &format!("output/scaled_reconstruction_{epoch}.pbm"))?;
 
             // Trace time
             let duration = last_checkpoint.elapsed();

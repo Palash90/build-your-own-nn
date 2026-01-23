@@ -95,7 +95,7 @@ They are meant to replace vague intuition with concrete mental models.
 Train a minimal system that learns to reconstruct a small monochrome image at a larger resolution:
 
 ```pbm
-assets/spiral_50px.pbm:50 * 50 Original Image, assets/arrow.pbm, assets/spiral_200px.pbm:200*200 Reconstructed Image
+assets/spiral_25.pbm:50 * 50 Original Image, assets/arrow.pbm, output/spiral_scaled.pbm:200*200 Reconstructed Image
 ```
 
 And that’s where the story begins...
@@ -2240,7 +2240,7 @@ In the previous chapter, we saw how a machine "learns" the building blocks of a 
 Consider the image below. It’s a monochrome spiral—a classic example of a pattern that no single straight line can ever describe, no matter how much we "tweak" the weights:
 
 ```pbm
-assets/spiral_50px.pbm
+assets/spiral_50.pbm
 ```
 
 To reconstruct a pattern like this, we need to support **non-linearity** in our library. In a linear model, even if we stack multiple layers, we get a bigger linear function. 

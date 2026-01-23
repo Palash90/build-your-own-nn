@@ -97,7 +97,7 @@ fn main() {
 
     let source = "assets/spiral_25.pbm";
 
-    match image_reconstructor::reconstruct_image(source, 1000, &mut rng) {
+    match image_reconstructor::reconstruct_image(source, 200, &mut rng) {
         Ok(_) => println!("Done"),
         err => println!("{:?}", err),
     }

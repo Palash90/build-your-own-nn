@@ -95,7 +95,7 @@ They are meant to replace vague intuition with concrete mental models.
 Train a minimal system that learns to reconstruct a small monochrome image at a larger resolution:
 
 ```pbm
-assets/spiral_25.pbm:50 * 50 Original Image, assets/arrow.pbm, output/spiral_scaled.pbm:200*200 Reconstructed Image
+assets/spiral_25.pbm:25 * 25 Original Image, assets/arrow.pbm, output/spiral_scaled_200.pbm:200*200 Reconstructed Image
 ```
 
 And that’s where the story begins...
@@ -2240,7 +2240,7 @@ In the previous chapter, we saw how a machine "learns" the building blocks of a 
 Consider the image below. It’s a monochrome spiral—a classic example of a pattern that no single straight line can ever describe, no matter how much we "tweak" the weights:
 
 ```pbm
-assets/spiral_50.pbm
+assets/spiral_25.pbm
 ```
 
 To reconstruct a pattern like this, we need to support **non-linearity** in our library. In a linear model, even if we stack multiple layers, we get a bigger linear function. 
@@ -3267,7 +3267,7 @@ That covers the fundamentals of **Deep Learning**. This is the foundation. From 
 
 No matter which path you take next, the fundamentals remain the same. Even a trillion-parameter Transformer model with emergent intelligence follows these basics.
 
-To see these basics in action, we will now move from theoretical models to a practical application. In the next chapter, we will build a neural network that learns to perform **Image Reconstruction**, transforming a low-resolution 50×50 spiral into a sharp, high-fidelity 200×200 image.
+To see these basics in action, we will now move from theoretical models to a practical application. In the next chapter, we will build a neural network that learns to perform **Image Reconstruction**, transforming a low-resolution 25×25 spiral into a sharp, high-fidelity 200×200 image.
 
 >**TIP** I have built a Neural Network Visualizer for you to tinker around. If you want to quickly verify how Neural Network works under the hood, head over to the hosted [Neural Network Visualizer](/visualizers/neural-network.html).
 

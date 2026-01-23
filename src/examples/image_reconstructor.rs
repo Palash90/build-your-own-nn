@@ -28,7 +28,7 @@ pub fn reconstruct_image(
     let x_train = Tensor::new(normalized_x_train.clone(), vec![h * w, 2])?;
     let y_train = Tensor::new(y_data, vec![h * w, 1])?;
 
-    let hl = 50; // Hidden layer size
+    let hl = 64; // Hidden layer size
     let mut nn = NetworkBuilder::new()
         .add_layer(Box::new(Linear::new(2, hl, rng)))
         .add_layer(Box::new(Activation::new(ActivationType::Tanh))) // For Image reconstruction tasks, Tanh is a better solution
@@ -53,7 +53,7 @@ pub fn reconstruct_image(
     let mut last_checkpoint = Instant::now();
 
     for epoch in 0..total_epochs {
-        nn.fit(&x_train, &y_train, 500, learning_rate)?;
+        nn.fit(&x_train, &y_train, 1000, learning_rate)?;
 
         if epoch % 5 == 0 {
             println!("Reconstruction at epoch {epoch}");
@@ -61,9 +61,6 @@ pub fn reconstruct_image(
             println!("Original Image:");
             // We use the original data for comparison
             render_image(w, h, &y_train.data());
-
-            println!("Network Drawing after epoch {}:", epoch * 1000);
-            draw_save_network_image(w, &mut nn, &format!("output/reconstruction_{epoch}.pbm"))?;
 
             println!("Rescaled Network Drawing after epoch {}:", epoch * 1000);
             draw_save_network_image(size, &mut nn, &format!("output/scaled_reconstruction_{epoch}.pbm"))?;

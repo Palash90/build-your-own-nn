@@ -6,11 +6,11 @@ Modern machine learning tools have become remarkably easy to use and increasingl
 
 Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you can train a model.
 
-These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric calculations and assumptions - none visible to users. Models work, gradients flow, losses decrease, and the machinery underneath fades into abstraction.
+These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric calculations and assumptions - none visible to users. Models work; gradients flow; losses decrease; and the machinery underneath fades into abstraction.
 
 This guide is an attempt to reverse that process. We build a minimal machine-learning engine from first principles, exposing every step along the way.
 
-Please take a note, we are not building a drop‑in replacement for PyTorch or ndarray.
+Please note, we are not building a drop‑in replacement for PyTorch or ndarray.
 
 The goal is not performance.
 The goal is _understanding_.
@@ -23,7 +23,7 @@ By the end, you will have built a small but complete deep learning engine and yo
 
 If you are curious what the final system looks like, you can run it today. To run it on your system:
 
-1. You need the Rust toolchain - [Rust Up](https://rustup.rs/)
+1. You need the Rust toolchain - [rustup](https://rustup.rs/)
 2. Clone this repository - [Build Your Own Neural Network](https://github.com/palash90/build-your-own-nn)
 3. Run a release version - `$ cargo run --release`
 4. Follow the instructions on screen
@@ -84,7 +84,7 @@ If something works, you should be able to explain why it works.
 
 We start with `cargo new` and we start building `struct` by `struct`, `impl` by `impl`. Afterwards, we compose these small pieces into layers and then connect them to build neural networks. We train them with different datasets.
 
-We complete this guide by putting it all together, we build a network to reconstruct a small monochrome image at a larger resolution
+We complete this guide by putting it all together, we build a network to reconstruct a small monochrome image at a higher resolution
 
 ```pbm
 assets/spiral_50.pbm:50 * 50 Original Image, assets/arrow.pbm, output/reconstructed_final.pbm:200*200 Reconstructed Image

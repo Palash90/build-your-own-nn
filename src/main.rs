@@ -7,6 +7,7 @@ use build_your_own_nn::examples::neural_network_or_animated;
 use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
 use build_your_own_nn::tensor::TensorError;
+use std::env;
 use std::io::{self, Write};
 
 struct SimpleRng {
@@ -95,9 +96,10 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
 fn main() {
     let mut rng = SimpleRng { state: 73 };
 
-    let source = "assets/spiral_25.pbm";
+    let args: Vec<String> = env::args().collect();
+    let source = &args[1];
 
-    match image_reconstructor::reconstruct_image(source, 200, &mut rng) {
+    match image_reconstructor::reconstruct_image(&source, 200, &mut rng) {
         Ok(_) => println!("Done"),
         err => println!("{:?}", err),
     }

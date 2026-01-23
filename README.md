@@ -1,104 +1,98 @@
-# Prologue — Building the Machinery from First Principles
+# Prologue — Opening the Black Box
 
-Machine learning often feels like a black box. Tutorials introduce **NumPy** and then hand you frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. Those tools are powerful, but they hide the mechanics that make models actually work.
+<!-- No more edit to this chapter. -->
 
-This project strips away the layers. We build a tiny ML engine from first principles so you can see what actually happens when you call `torch.matmul()` — the memory layout, the indexing, and the cache behavior that make linear algebra fast and predictable.
+Modern machine learning tools have become remarkably easy to use and increasingly difficult to understand.
 
-I learned Rust by trying many resources (The Book, Rust by Example, Rustlings) and discovered the missing piece: a motivating, hands‑on project. What started as a month‑long experiment in linear regression grew into a broader, more instructive journey. The result is a deliberately small, carefully engineered codebase designed for **mastery**, not production.
+Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you can train a model.
 
-We are not building a drop‑in replacement for PyTorch or ndarray. We are building understanding.
+These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric calculations and assumptions - none visible to users. Models work, gradients flow, losses decrease, and the machinery underneath fades into abstraction.
 
-## Quickstart
+This guide is an attempt to reverse that process. We build a minimal machine-learning engine from first principles, exposing every step along the way.
 
-This is a systems‑level, hands‑on guide that implements tensors, matrix operations, and backpropagation in Rust so you can inspect every memory access, index calculation, and gradient step. It trades API polish and peak performance for clarity and a deep mental model.
+Please take a note, we are not building a drop‑in replacement for PyTorch or ndarray.
 
-For a quick peek on the final product we build step by step:
+The goal is not performance.
+The goal is _understanding_.
 
-1. Install Rust Tool chain if not already installed
-2. Clone the repository - [Build your own Neural Network](https://github.com/Palash90/build-your-own-nn)
-3. From the project root run the final version and follow instructions:
-  
-    ```shell
-    $ cargo build --release
-    $ target/release/build-your-own-nn
-    ```
+## What We'll Build
 
-You can choose from any of the examples in the menu and run the neural network on your machine.
+This guide is a systems-level, hands-on guide to implementing the core machinery of machine learning in Rust. Step by step, we construct tensors, define matrix operations, implement backpropagation, and assemble a minimal neural network—using nothing more than the Rust standard library.
 
-## How to Approach This Guide
+By the end, you will have built a small but complete deep learning engine and you will have developed a concrete mental model of how modern frameworks operate beneath their APIs.
 
-This is a **systems‑level walkthrough**, not a framework tutorial. It favors correctness and mental models over brevity.
+If you are curious what the final system looks like, you can run it today. To run it on your system:
 
-- **Read sequentially.** Later chapters build on earlier ones.  
-- **Run the code.** The implementation is part of the lesson.  
-- **Re‑derive the math.** Do the index arithmetic by hand at least once.  
-- **Pause and experiment.** Small edits reveal how memory layout affects behavior.  
-- **Don’t rush.** Depth matters more than speed.
+1. You need the Rust toolchain - [Rust Up](https://rustup.rs/)
+2. Clone this repository - [Build Your Own Neural Network](https://github.com/palash90/build-your-own-nn)
+3. Run a release version - `$ cargo run --release`
+4. Follow the instructions on screen
 
-Some sections are deliberately slow to replace vague intuition with concrete understanding.
+> **WARNING**
+> If you choose Image Reconstruction example, it will take a long time to converge depending on your machine's architecture.
 
-## Who This Guide Is For and Who It Is Not For
+## Who This Guide Is For (and Who It Is Not)
 
-**For readers who:**
+This guide is written for the curious readers who want to go beneath the surface.
 
-- Want to understand how neural networks work beneath modern frameworks.  
-- Are curious about tensor math, memory layout, and matrix operations.  
-- Have software development experience and can read real code.  
-- Are learning Rust and want a nontrivial, systems‑oriented project.  
-- Prefer first principles over black‑box abstractions.
+It is for those who want to gain a deeper understanding about how tensors are represented in memory, how matrix multiplications are executed on hardware and how gradients actually flow through the data structures. In a nutshell, you will understand how a stream of $0$s and $1$s make machines learn. It assumes you are comfortable reading code and willing to reason carefully about both mathematics and machines.
 
-**Not for readers who:**
+It is especially suited for:
 
-- Want a high‑level overview without implementation detail.  
-- Need a production BLAS‑level library or peak performance.  
-- Prefer copy‑paste solutions or want to train very large models.  
-- Are brand new to programming or mathematics.
+- Software developers who want to understand neural networks beyond high-level APIs
+
+- Readers learning Rust who want a demanding, systems-oriented project
+
+It is not written for readers looking for a conceptual overview without implementation, for those seeking production-grade performance, or for complete beginners to programming or mathematics.
+
+This guide rewards patience.
 
 ## How to Use This Guide
 
-To get the most value from this guide:
+The chapters are meant to be read sequentially. Each concept builds directly on the ones before it.
 
-* **Read sequentially** — later sections build directly on earlier concepts
-* **Pause often** — understanding the memory layout and indexing is essential
-* **Re-derive examples** — do the math by hand at least once
-* **Run the code** — the implementation is part of the explanation
-* **Don’t rush** — this is designed for depth, not speed
+You are encouraged to:
 
-Some sections are **deliberately slow and detailed**.
-They are meant to replace vague intuition with concrete mental models.
+- Take a pause when necessary
+- Re-derive the math on your own
+- Write the code yourself
+- Experiment with the tool provided at each major section
+
+Optionally:
+
+- While using the visualizer tools, I encourage you to pause and verify the underlying data
+
+Do not rush. This guide is designed for depth, not speed.
 
 ## Prerequisites and Philosophy
 
-**Prerequisites**
+You do not need a formal background in linear algebra. Every mathematical concept used in this guide is derived as needed. You _do need_ basic familiarity with Rust; enough to understand `structs`, `enums`, ownership, borrowing, module system and how to run tests with Cargo.
 
-- **Basic Rust:** Understanding of `struct`, `enum`, ownership, borrowing should be enough to follow.  
-- Familiarity with `cargo` and running tests.  
-- No formal linear algebra required; we derive what we need.
+We use Rust not because it is the only way, but because its demand for explicitness makes it the perfect lens for viewing machine memory.
 
-**Philosophy**
+Beyond that, the philosophy is simple:
 
-- **Radical transparency.** No hidden crates or magic.  
-- **Clarity over ergonomics.** We trade API polish and raw performance for explicit, inspectable code.  
-- **One dependency:** the Rust standard library.
+- **Radical transparency:** no hidden crates, no magic
 
-## Roadmap and End Goal
+- **Clarity over ergonomics:** explicit code beats elegant APIs
 
-**Roadmap**
+- **Minimalism:** one dependency—the Rust standard library, everything else we'll build
 
-- **The Blank Canvas:** Start from `fn main()` and a flat `Vec<f32>`.  
-- **The Mathematical Engine:** Implement `Tensor`, elementwise ops, transpose, dot product, and gradients.  
-- **Building the Network:** Compose layers, activations, and backprop.  
-- **The Visual Goal:** Train a tiny model to reconstruct and rescale simple monochrome images.
+If something works, you should be able to explain why it works.
 
-**End Goal**
+## The Road Ahead
 
-Train a minimal system that learns to reconstruct a small monochrome image at a larger resolution:
+We start with `cargo new` and we start building `struct` by `struct`, `impl` by `impl`. Afterwards, we compose these small pieces into layers and then connect them to build neural networks. We train them with different datasets.
+
+We complete this guide by putting it all together, we build a network to reconstruct a small monochrome image at a larger resolution
 
 ```pbm
-assets/spiral_25.pbm:25 * 25 Original Image, assets/arrow.pbm, output/spiral_scaled_200.pbm:200*200 Reconstructed Image
+assets/spiral_50.pbm:50 * 50 Original Image, assets/arrow.pbm, output/reconstructed_final.pbm:200*200 Reconstructed Image
 ```
 
 And that’s where the story begins...
+
+<!-- Locked In, no more edits -->
 
 # The Tensor
 To build a neural network from scratch, we need to construct the fundamental building blocks first.
@@ -2240,7 +2234,7 @@ In the previous chapter, we saw how a machine "learns" the building blocks of a 
 Consider the image below. It’s a monochrome spiral—a classic example of a pattern that no single straight line can ever describe, no matter how much we "tweak" the weights:
 
 ```pbm
-assets/spiral_25.pbm
+assets/spiral_50.pbm
 ```
 
 To reconstruct a pattern like this, we need to support **non-linearity** in our library. In a linear model, even if we stack multiple layers, we get a bigger linear function. 
@@ -3583,7 +3577,7 @@ In this section, I will unveil those tools.
 
 If any of the following ticks for you, please read on:
 
-- This section is for motivated readers who wants to uncover the tools that helped shaping this book
+- This section is for motivated readers who want to uncover the tools that helped shaping this guide
 - This section is for readers who loves to build small scale tools to understand the nitty-gritties of the system
 - To look how some funny ideas got shaped as a tool
 

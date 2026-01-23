@@ -1,5 +1,5 @@
-title: "Breaking the Black Box of Neural Networks"
-subtitle: "— A systems-level journey through tensor math in Rust"
+title: "A First-Principles Guide to Deep Learning in Rust."
+subtitle: "— A systems-level journey through tensor math"
 markdown: kramdown
 highlighter: rouge
 

@@ -6,7 +6,6 @@ use build_your_own_nn::examples::neural_network_or;
 use build_your_own_nn::examples::neural_network_or_animated;
 use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
-use build_your_own_nn::image_utils::draw_pbm;
 use build_your_own_nn::tensor::TensorError;
 use std::io::{self, Write};
 
@@ -96,9 +95,9 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
 fn main() {
     let mut rng = SimpleRng { state: 73 };
 
-    draw_pbm("assets/spiral_200px.pbm");
+    let source = "assets/spiral_50px.pbm";
 
-    match image_reconstructor::reconstruct_image("assets/spiral_50px.pbm", 150, &mut rng) {
+    match image_reconstructor::reconstruct_image(source, 10, &mut rng) {
         Ok(_) => println!("Done"),
         err => println!("{:?}", err),
     }

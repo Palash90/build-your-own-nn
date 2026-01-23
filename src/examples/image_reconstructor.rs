@@ -28,7 +28,7 @@ pub fn reconstruct_image(
     let x_train = Tensor::new(normalized_x_train.clone(), vec![h * w, 2])?;
     let y_train = Tensor::new(y_data, vec![h * w, 1])?;
 
-    let hl = 64; // Hidden layer size
+    let hl = 50; // Hidden layer size
     let mut nn = NetworkBuilder::new()
         .add_layer(Box::new(Linear::new(2, hl, rng)))
         .add_layer(Box::new(Activation::new(ActivationType::Tanh))) // For Image reconstruction tasks, Tanh is a better solution
@@ -46,28 +46,26 @@ pub fn reconstruct_image(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let total_epochs = 500;
+    let total_epochs = 1000;
     let learning_rate = 0.01;
 
     // To perform back of the envelop calculation on how much time is required
     let mut last_checkpoint = Instant::now();
 
     for epoch in 0..total_epochs {
-        nn.fit(&x_train, &y_train, 1000, learning_rate)?;
+        nn.fit(&x_train, &y_train, 500, learning_rate)?;
 
         if epoch % 5 == 0 {
-            println!("Reconstructiion at epoch {epoch}");
-
-            // Let the CPU breath, otherwise thermal breakdown is possible
-            std::thread::sleep(std::time::Duration::from_millis(20000));
+            println!("Reconstruction at epoch {epoch}");
 
             println!("Original Image:");
             // We use the original data for comparison
             render_image(w, h, &y_train.data());
 
             println!("Network Drawing after epoch {}:", epoch * 1000);
-            draw_network_image(w, &mut nn)?;
+            draw_save_network_image(w, &mut nn, &format!("output/reconstruction{epoch}.pbm"))?;
 
+            // Trace time
             let duration = last_checkpoint.elapsed();
             println!("\n==============================");
             println!("Epoch: {}", epoch);
@@ -75,18 +73,21 @@ pub fn reconstruct_image(
             println!("==============================");
             // Reset the timer for the next block
             last_checkpoint = Instant::now();
+
+            // Let the CPU breath, otherwise thermal breakdown is possible
+            std::thread::sleep(std::time::Duration::from_millis(2000));
         }
     }
     println!("Original Image:");
     // We use the original data for comparison
     render_image(w, h, &y_train.data());
     println!("Final Image Reconstruction");
-    draw_network_image(size, &mut nn)?;
+    draw_save_network_image(size, &mut nn, "output/final.pbm")?;
 
     Ok(())
 }
 
-fn draw_network_image(size: usize, nn: &mut Network) -> Result<(), TensorError> {
+fn draw_save_network_image(size: usize, nn: &mut Network, dest: &str) -> Result<(), TensorError> {
     let mut dest_coords = Vec::with_capacity(size * size * 2);
     for r in 0..size {
         for c in 0..size {
@@ -97,9 +98,13 @@ fn draw_network_image(size: usize, nn: &mut Network) -> Result<(), TensorError> 
     }
 
     let x_dest = Tensor::new(dest_coords, vec![size * size, 2])?;
-    let final_prediction = nn.forward(x_dest)?;
+    let prediction = nn.forward(x_dest)?;
 
-    render_image(size, size, final_prediction.data());
+    render_image(size, size, prediction.data());
+
+    // Save the result to a file
+    crate::image_utils::save_as_pbm(dest, size, size, prediction.data());
+    println!("Saved reconstructed image to {}", dest);
 
     Ok(())
 }

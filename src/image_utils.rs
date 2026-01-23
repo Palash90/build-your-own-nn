@@ -1,4 +1,4 @@
-use std::f32;
+use std::{f32, fs::File, io::{BufWriter, Write}};
 
 pub fn read_pbm_for_nn(path: &str) -> (usize, usize, Vec<f32>, Vec<f32>) {
     let content = std::fs::read_to_string(path).expect("Read failed");
@@ -66,6 +66,34 @@ pub fn draw_pbm(source: &str) {
     let data: Vec<f32> = tokens.map(|t| t.parse::<f32>().unwrap()).collect();
 
     render_image(w, h, &data);
+}
+
+pub fn save_as_pbm(path: &str, w: usize, h: usize, data: &[f32]) -> std::io::Result<()> {
+    let file = File::create(path)?;
+    let mut writer = BufWriter::new(file);
+
+    // Write the PBM Header
+    // P1 means plain text black and white
+    writeln!(writer, "P1")?;
+    writeln!(writer, "{} {}", w, h)?;
+
+    let threshold = 0.5;
+
+    for (i, &pixel) in data.iter().enumerate() {
+        // Convert float to "0" or "1" based on threshold
+        let val = if pixel >= threshold { "1" } else { "0" };
+        write!(writer, "{}", val)?;
+
+        // Add a newline every 'w' pixels or spaces between values to keep it readable
+        if (i + 1) % w == 0 {
+            writeln!(writer)?;
+        } else {
+            write!(writer, " ")?;
+        }
+    }
+
+    writer.flush()?;
+    Ok(())
 }
 
 pub struct Trace {

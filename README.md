@@ -2,7 +2,7 @@
 
 Machine learning often feels like a black box. Tutorials introduce **NumPy** and then hand you frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. Those tools are powerful, but they hide the mechanics that make models actually work.
 
-This project strips away the layers. We build a tiny ML engine from first principles so you can see what happens when you call `torch.matmul()` — the memory layout, the indexing, and the cache behavior that make linear algebra fast and predictable.
+This project strips away the layers. We build a tiny ML engine from first principles so you can see what actually happens when you call `torch.matmul()` — the memory layout, the indexing, and the cache behavior that make linear algebra fast and predictable.
 
 I learned Rust by trying many resources (The Book, Rust by Example, Rustlings) and discovered the missing piece: a motivating, hands‑on project. What started as a month‑long experiment in linear regression grew into a broader, more instructive journey. The result is a deliberately small, carefully engineered codebase designed for **mastery**, not production.
 
@@ -156,7 +156,7 @@ println!("{}", a[0][0]); // Output: 1
 ```
 
 >**NOTE**
->Mathematical notation and programming differ in how they index a collection of numbers. Mathematics typically uses 1-based indexing, whereas programming uses 0-based indexing.
+>Mathematical notation and programming differ in how they index a collection of numbers. Conventionally Mathematics uses 1-based indexing, whereas programming uses 0-based indexing.
 
 ## Implementation: Memory Buffers and Layout
 
@@ -3516,12 +3516,30 @@ I later discovered, this particular architecture is known as `Bottleneck Archite
 
 While within the training phase, the network performs giant matrix multiplication and remember, although we may get hardware parallelization support, this operationg itself if a $O(n^3)$ operation and even if we divide the load in different processors, still the load would be very high.
 
-To avoid abrupt shutdown due to thermal cooling failure, we let the CPU have some breathing time. For that, every certain number of epochs, we allow the CPU to stop working hard on the problem and takes a small rest:
+To avoid abrupt shutdown due to thermal cooling failure, we let the CPU have some breathing time and save the final work periodically. For that, every certain number of epochs, we allow the CPU to stop working hard on the problem and takes a small rest:
 
 ```rust
 if epoch % 5 == 0 {
-    // Let the CPU breath, otherwise thermal breakdown is possibl
-    std::thread::sleep(std::time::Duration::from_millis(20000));
+    println!("Reconstruction at epoch {epoch}");
+
+    println!("Original Image:");
+    // We use the original data for comparison
+    render_image(w, h, &y_train.data());
+
+    println!("Network Drawing after epoch {}:", epoch * 1000);
+    draw_save_network_image(w, &mut nn, &format!("output/reconstruction{epoch}.pbm"))?;
+
+    // Trace time
+    let duration = last_checkpoint.elapsed();
+    println!("\n==============================");
+    println!("Epoch: {}", epoch);
+    println!("Time since last checkpoint: {:.2?}", duration);
+    println!("==============================");
+    // Reset the timer for the next block
+    last_checkpoint = Instant::now();
+
+    // Let the CPU breath, otherwise thermal breakdown is possible
+    std::thread::sleep(std::time::Duration::from_millis(2000));
 }
 ```
 

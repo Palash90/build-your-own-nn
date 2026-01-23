@@ -73,6 +73,13 @@ impl Tensor {
         Tensor::new(data, self.shape.clone())
     }
 
+    pub fn clone(&self) -> Tensor {
+        Self {
+            data: self.data().to_vec(),
+            shape: self.shape().to_vec(),
+        }
+    }
+
     fn _element_wise_op_single<F>(&self, op: F) -> Result<Tensor, TensorError>
     where
         F: Fn(f32) -> f32,
@@ -101,7 +108,7 @@ impl Tensor {
         }
 
         let data = vec![1.0; shape.iter().product()];
-       
+
         Ok(Tensor { data, shape })
     }
 

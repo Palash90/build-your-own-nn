@@ -1,10 +1,12 @@
 use build_your_own_nn::Rng;
+use build_your_own_nn::examples::image_reconstructor;
 use build_your_own_nn::examples::linear_regression;
 use build_your_own_nn::examples::linear_regression_animated;
 use build_your_own_nn::examples::neural_network_or;
 use build_your_own_nn::examples::neural_network_or_animated;
 use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
+use build_your_own_nn::image_utils::draw_pbm;
 use build_your_own_nn::tensor::TensorError;
 use std::io::{self, Write};
 
@@ -31,9 +33,7 @@ fn get_user_choice(length: usize) -> usize {
     input.trim().parse().unwrap_or(0)
 }
 
-fn main() -> Result<(), TensorError> {
-    let mut rng = SimpleRng { state: 73 };
-
+fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
     let options = vec![
         "Simple Linear Regression (Trend Fitting)",
         "Animated Linear Regression",
@@ -41,6 +41,7 @@ fn main() -> Result<(), TensorError> {
         "OR Gate (Decision Surface Slice)",
         "Neural Network for XOR Gate Approximation",
         "Animated XOR Decision Boundary",
+        "Image Reconstructor",
         "Exit",
     ];
 
@@ -55,24 +56,27 @@ fn main() -> Result<(), TensorError> {
 
         match get_user_choice(options.len()) {
             1 => {
-                linear_regression::linear_regression(&mut rng)?;
+                linear_regression::linear_regression(rng)?;
             }
             2 => {
-                linear_regression_animated::linear_regression(&mut rng)?;
+                linear_regression_animated::linear_regression(rng)?;
             }
             3 => {
-                neural_network_or::or_neural_network(&mut rng)?;
+                neural_network_or::or_neural_network(rng)?;
             }
             4 => {
-                neural_network_or_animated::or_neural_network(&mut rng)?;
+                neural_network_or_animated::or_neural_network(rng)?;
             }
             5 => {
-                neural_network_xor::xor_neural_network(&mut rng)?;
+                neural_network_xor::xor_neural_network(rng)?;
             }
             6 => {
-                neural_network_xor_animated::xor_neural_network(&mut rng)?;
+                neural_network_xor_animated::xor_neural_network(rng)?;
             }
             7 => {
+                image_reconstructor::reconstruct_image("assets/5_5.pbm", 20, rng);
+            }
+            8 => {
                 println!("Goodbye!");
                 break;
             }
@@ -87,4 +91,15 @@ fn main() -> Result<(), TensorError> {
     }
 
     Ok(())
+}
+
+fn main() {
+    let mut rng = SimpleRng { state: 73 };
+
+    draw_pbm("assets/spiral_200px.pbm");
+
+    match image_reconstructor::reconstruct_image("assets/spiral_50px.pbm", 150, &mut rng) {
+        Ok(_) => println!("Done"),
+        err => println!("{:?}", err),
+    }
 }

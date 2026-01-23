@@ -1,4 +1,4 @@
-use crate::{Rng, activation::{Activation, ActivationType}, linear::Linear, loss::bce_sigmoid_delta, tensor::{Tensor, TensorError}};
+use crate::{Layer, Rng, activation::{Activation, ActivationType}, linear::Linear, loss::bce_sigmoid_delta, tensor::{Tensor, TensorError}};
 
 pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
 

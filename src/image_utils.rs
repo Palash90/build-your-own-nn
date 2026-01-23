@@ -1,36 +1,34 @@
 use std::f32;
-use std::{
-    fs::File,
-    io::{BufRead, BufReader},
-};
 
-pub fn draw_pbm(source: &str) {
-    let file = File::open(source).expect("File not found");
-    let reader = BufReader::new(file);
+pub fn read_pbm_for_nn(path: &str) -> (usize, usize, Vec<f32>, Vec<f32>) {
+    let content = std::fs::read_to_string(path).expect("Read failed");
+    let mut tokens = content.split_whitespace();
 
-    // 1. Parse all tokens (skipping comments)
-    let tokens: Vec<String> = reader
-        .lines()
-        .flatten()
-        .filter(|l| !l.trim().starts_with('#'))
-        .flat_map(|l| l.split_whitespace().map(String::from).collect::<Vec<_>>())
-        .collect();
+    assert_eq!(tokens.next().unwrap(), "P1");
+    let w: usize = tokens.next().unwrap().parse().unwrap();
+    let h: usize = tokens.next().unwrap().parse().unwrap();
 
-    if tokens.len() < 3 {
-        return;
+    let mut x_coords = Vec::with_capacity(w * h * 2);
+    let mut y_values = Vec::with_capacity(w * h);
+
+    for i in 0..(w * h) {
+        // Input: [Row, Col]
+        x_coords.push((i / w) as f32); 
+        x_coords.push((i % w) as f32);
+        // Target: [Pixel]
+        y_values.push(tokens.next().unwrap().parse().unwrap());
     }
 
-    // 2. Extract dimensions from header
-    let w: usize = tokens[1].parse().unwrap();
-    let h: usize = tokens[2].parse().unwrap();
-    let data = &tokens[3..];
+    (w, h, x_coords, y_values)
+}
 
-    // 3. Render using Braille 2x4 blocks
+pub fn render_image(w: usize, h: usize, data: &[f32]) {
+    let threshold = 0.8;
+
     for y in (0..h).step_by(4) {
         let mut row = String::new();
         for x in (0..w).step_by(2) {
             let mut byte = 0u8;
-            // The Braille dot mapping (standard bit positions)
             let dots = [
                 (0, 0, 0x01),
                 (0, 1, 0x02),
@@ -44,9 +42,8 @@ pub fn draw_pbm(source: &str) {
 
             for (dx, dy, mask) in dots {
                 let (px, py) = (x + dx, y + dy);
-                // Bounds check ensures any resolution works
                 if px < w && py < h {
-                    if data.get(py * w + px).map_or(false, |v| v == "1") {
+                    if data[py * w + px] >= threshold {
                         byte |= mask;
                     }
                 }
@@ -55,6 +52,20 @@ pub fn draw_pbm(source: &str) {
         }
         println!("{}", row);
     }
+}
+
+pub fn draw_pbm(source: &str) {
+    let content = std::fs::read_to_string(source).expect("Read failed");
+    let mut tokens = content.split_whitespace().filter(|t| !t.starts_with('#'));
+
+    let _magic = tokens.next(); // Skip "P1"
+    let w: usize = tokens.next().unwrap().parse().unwrap();
+    let h: usize = tokens.next().unwrap().parse().unwrap();
+
+    // Convert ASCII "0"/"1" into actual 0 and 1 integers
+    let data: Vec<f32> = tokens.map(|t| t.parse::<f32>().unwrap()).collect();
+
+    render_image(w, h, &data);
 }
 
 pub struct Trace {
@@ -80,24 +91,24 @@ pub enum PlotColor {
 impl PlotColor {
     pub fn to_ansi(&self) -> &'static str {
         match self {
-            PlotColor::Red     => "\x1b[31m",
-            PlotColor::Blue    => "\x1b[34m",
-            PlotColor::Green   => "\x1b[32m",
-            PlotColor::Cyan    => "\x1b[36m",
+            PlotColor::Red => "\x1b[31m",
+            PlotColor::Blue => "\x1b[34m",
+            PlotColor::Green => "\x1b[32m",
+            PlotColor::Cyan => "\x1b[36m",
             PlotColor::Magenta => "\x1b[35m",
-            PlotColor::Yellow  => "\x1b[33m",
-            PlotColor::White   => "\x1b[37m",
-            PlotColor::Reset   => "\x1b[0m",
+            PlotColor::Yellow => "\x1b[33m",
+            PlotColor::White => "\x1b[37m",
+            PlotColor::Reset => "\x1b[0m",
         }
     }
 }
 
 pub fn render_plot(
-    traces: &[Trace], 
-    width: usize, 
-    height: usize, 
+    traces: &[Trace],
+    width: usize,
+    height: usize,
     fixed_bounds: Option<(f32, f32, f32, f32)>,
-    title: String
+    title: String,
 ) {
     let (min_x, max_x, min_y, max_y) = match fixed_bounds {
         Some(bounds) => bounds,
@@ -108,8 +119,8 @@ pub fn render_plot(
     let margin_b = 2;
     let plot_w = width - margin_l - 2;
     let plot_h = height - margin_b - 2;
-    
-    let y_tick_count = 5; 
+
+    let y_tick_count = 5;
     let x_tick_count = 4;
 
     let mut grid = vec![vec![" ".to_string(); width]; height];
@@ -147,23 +158,31 @@ pub fn render_plot(
     }
 
     for y in 0..plot_h {
-        if grid[y][margin_l] == " " { grid[y][margin_l] = "│".to_string(); }
+        if grid[y][margin_l] == " " {
+            grid[y][margin_l] = "│".to_string();
+        }
     }
     for x in margin_l + 1..width {
-        if grid[plot_h][x] == " " { grid[plot_h][x] = "─".to_string(); }
+        if grid[plot_h][x] == " " {
+            grid[plot_h][x] = "─".to_string();
+        }
     }
     grid[plot_h][margin_l] = "└".to_string();
 
     for trace in traces {
-        let color_code = trace.color.to_ansi(); 
+        let color_code = trace.color.to_ansi();
         for i in 0..trace.x.len() {
             let px = map_val(trace.x[i], min_x, max_x, 0.0, plot_w as f32) as usize + margin_l + 1;
             let py = map_val(trace.y[i], min_y, max_y, plot_h as f32 - 1.0, 0.0) as usize;
 
             if py < plot_h && px > margin_l && px < width {
                 if trace.is_line && i > 0 {
-                    let prev_px = map_val(trace.x[i - 1], min_x, max_x, 0.0, plot_w as f32) as usize + margin_l + 1;
-                    let prev_py = map_val(trace.y[i - 1], min_y, max_y, plot_h as f32 - 1.0, 0.0) as usize;
+                    let prev_px = map_val(trace.x[i - 1], min_x, max_x, 0.0, plot_w as f32)
+                        as usize
+                        + margin_l
+                        + 1;
+                    let prev_py =
+                        map_val(trace.y[i - 1], min_y, max_y, plot_h as f32 - 1.0, 0.0) as usize;
                     draw_line(&mut grid, prev_px, prev_py, px, py, color_code);
                 }
                 grid[py][px] = format!("{}●\x1b[0m", color_code);
@@ -181,8 +200,7 @@ pub fn render_plot(
         buffer.push_str(&" ".repeat(padding));
     }
     buffer.push_str(&format!("\x1b[1;36m{}\x1b[0m\n\n", title.to_uppercase()));
-    
-    
+
     for row in grid {
         buffer.push_str(&row.concat());
         buffer.push('\n');
@@ -198,7 +216,7 @@ pub fn render_plot(
         ));
     }
     print!("{}", buffer);
-    println!("\x1b[?25h"); 
+    println!("\x1b[?25h");
 }
 
 fn draw_line(grid: &mut Vec<Vec<String>>, x0: usize, y0: usize, x1: usize, y1: usize, color: &str) {

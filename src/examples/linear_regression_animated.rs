@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use crate::{Rng, image_utils::{PlotColor, Trace, render_plot}, linear::Linear, loss::{mse_loss, mse_loss_gradient}, tensor::{Tensor, TensorError}};
+use crate::{Layer, Rng, image_utils::{PlotColor, Trace, render_plot}, linear::Linear, loss::{mse_loss, mse_loss_gradient}, tensor::{Tensor, TensorError}};
 
 pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     let mut linear = Linear::new(2, 1, rng);

@@ -1,10 +1,5 @@
 use crate::{
-    Rng,
-    activation::{Activation, ActivationType},
-    image_utils::{PlotColor, Trace, render_plot},
-    linear::Linear,
-    loss::bce_sigmoid_delta,
-    tensor::{Tensor, TensorError},
+    Layer, Rng, activation::{Activation, ActivationType}, image_utils::{PlotColor, Trace, render_plot}, linear::Linear, loss::bce_sigmoid_delta, tensor::{Tensor, TensorError}
 };
 use std::thread;
 use std::time::Duration;

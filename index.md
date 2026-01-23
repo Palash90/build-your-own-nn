@@ -653,7 +653,7 @@ layout: default
         margin: { t: 60, b: 60, l: 60, r: 60 }
     };
 
-    var config = { responsive: true }
+    var config = { responsive: true, staticPlot: true }
 
     const blocks = document.querySelectorAll('.language-plotly');
 
@@ -696,6 +696,10 @@ layout: default
             }
             return { ...t }; // Return the original trace if it's not a line or scatter
         });
+
+        if(data.removeGrid) {
+            layout = {...layout, xaxis:{showGrid: false, visible:false}, yaxis:{showGrid:false, visible: false}}
+       }
 
         const plotDiv = document.createElement('div');
         plotDiv.className = 'plotly';

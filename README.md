@@ -2548,7 +2548,31 @@ $$
 \sigma(x) = \frac{1}{1 + e^{-x}}
 $$
 
-and it's derivative is:
+This is the shape of the function:
+
+```plotly
+{
+  "title": "Sigmoid",
+  "traces": [
+    {
+      "type": "line",
+      "x": [-6.0, -5.0       , -4.47368421, -3.94736842, -3.42105263, -2.89473684,
+            -2.36842105, -1.84210526, -1.31578947, -0.78947368, -0.26315789,
+            0.26315789,  0.78947368,  1.31578947,  1.84210526,  2.36842105,
+            2.89473684,  3.42105263,  3.94736842,  4.47368421,  5.0, 6],
+      "y": [0.00247, 0.00669285, 0.01127661, 0.0189398 , 0.03164396, 0.05241435,
+            0.08561266, 0.1368025 , 0.21151967, 0.31228169, 0.43458759,
+            0.56541241, 0.68771831, 0.78848033, 0.8631975 , 0.91438734,
+            0.94758565, 0.96835604, 0.9810602 , 0.98872339, 0.99330715, 0.9975273768433653],
+      "name": ""
+    }
+  ]
+}
+```
+
+Notice that this function squeezes any value between $0$ and $1$. This feature acts as a probability map and is useful for classification problems.
+
+Its derivative is defined as:
 
 $$
 \frac{d}{dx}\sigma(x) = \sigma(x) \cdot (1 - \sigma(x))
@@ -3067,7 +3091,469 @@ Model Output after training
   |  0.0019|
 ```
 
-You may get a slightly different result but you can see, our new stacked network is doing a better approximation. Yet it is not still giving a satisfactory approximation. This is the right place we talk about another significant approach in Machine Learning, known as 'Hyper parameter tuning'.
+You may get a slightly different result but you can see, our new stacked network is doing a better approximation. Yet it is not still giving a satisfactory approximation. This is the right place we talk about another significant approach in Machine Learning, known as 'Hyperparameter tuning'.
+
+## Hyperparameter Tuning
+
+We now have the network ready, we have the layers working for us, math is being implemented as expected. Yet we don't see a satisfactory answer. The network correctly maked 3 out of 4 answers but it could not approximate one value, the second number in the output $0.5000$. Looks like, it is stuck on the boundary where it is not sure if it should go to $0$ or $1$.
+
+This is exactly where, we need to do a few set of experiments to determine the best model. The best model highly depends on the dataset being used for training. Hence, there is no specific rule for setting these parameters. We just experiment. These experiments can be manual or can be done through automation but the idea remains the same; tinker around the settings in search of the best suit.
+
+We already are using two hyperparameters from our first model of linear regression. We started with a hunch and for all the experiments we have done, that hunch worked for us smoothly. However, as the complexity grew that initial hunch seems to be not working any more.
+
+Here are the two hyperparameters we are using from the begining - `learning rate` and `epoch`.
+
+From this section onwards, we'll use two more - `number of layers` and `number of nodes per layer`.
+
+As you have already seen, to stack a new layer to the network, we have to make changes in code and we have to keep track of the order of the layers in both the passes.
+
+Let's refactor the code. We'll perform these actions:
+
+- The `forward` and `backward` methods will be required for each layer. We'll unify these two methods in a `trait`
+- we'll create a new module `neural_network.rs` which will hold the layers
+- We'll make a `forward` method which we'll use for both forward pass and predictions
+- We'll create a `fit` method for training
+- We'll expose APIs to add layers to the neural network
+- We'll write a builder struct to build the network for cleaner access
+- We'll write a driver method which uses the network module and the builder module
+
+Here is the code for neural network and its builder module:
+
+```rust
+use crate::Layer;
+use crate::tensor::{Tensor, TensorError};
+
+/// Type alias for the loss gradient function pointer
+type LossGradFn = fn(&Tensor, &Tensor) -> Result<Tensor, TensorError>;
+
+pub struct Network {
+    layers: Vec<Box<dyn Layer>>,
+    loss_grad_fn: LossGradFn,
+}
+
+impl Network {
+    /// Passes the input through all layers sequentially
+    pub fn forward(&mut self, input: Tensor) -> Result<Tensor, TensorError> {
+        if self.layers.is_empty() {
+            return Ok(input);
+        }
+
+        let mut current_output = input;
+
+        for layer in &mut self.layers {
+            // Each layer processes the output of the previous layer
+            current_output = layer.forward(&current_output)?;
+        }
+
+        Ok(current_output)
+    }
+
+    /// The training loop: Forward, Loss Gradient, and Backpropagation
+    pub fn fit(
+        &mut self,
+        x_train: &Tensor,
+        y_train: &Tensor,
+        epochs: usize,
+        learning_rate: f32,
+    ) -> Result<(), TensorError> {
+        for epoch in 0..epochs {
+            // Following is the forward pass
+            let input = Tensor::new(x_train.data().to_vec(), x_train.shape().to_vec())?;
+            let output = self.forward(input)?;
+
+            // Loss gradient
+            let mut gradient = (self.loss_grad_fn)(&output, y_train)?;
+
+            // Passing the gradient backward from output to input
+            for layer in self.layers.iter_mut().rev() {
+                gradient = layer.backward(&gradient, learning_rate)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// Builder pattern for cleaner Network initialization
+pub struct NetworkBuilder {
+    layers: Vec<Box<dyn Layer>>,
+    loss_grad: Option<LossGradFn>,
+}
+
+impl NetworkBuilder {
+    pub fn new() -> Self {
+        Self {
+            layers: Vec::new(),
+            loss_grad: None,
+        }
+    }
+
+    /// Adds a layer to the network stack
+    pub fn add_layer(mut self, layer: Box<dyn Layer>) -> Self {
+        self.layers.push(layer);
+        self
+    }
+
+    /// Injects the loss gradient function from loss.rs
+    pub fn loss_gradient(mut self, f: LossGradFn) -> Self {
+        self.loss_grad = Some(f);
+        self
+    }
+
+    pub fn build(self) -> Result<Network, String> {
+        let loss_grad_fn = self.loss_grad.ok_or("Loss gradient function is required")?;
+
+        Ok(Network {
+            layers: self.layers,
+            loss_grad_fn,
+        })
+    }
+}
+```
+
+The refactored driver code now got simplified. If we want to change any hyperparameter and test, we can simply make few changes and the rest will be taken care automatically.
+
+```rust
+use crate::{
+    Rng,
+    activation::{Activation, ActivationType},
+    linear::Linear,
+    loss::bce_sigmoid_delta,
+    neural_network::NetworkBuilder,
+    tensor::{Tensor, TensorError},
+};
+
+pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
+    let mut nn = NetworkBuilder::new()
+        .add_layer(Box::new(Linear::new(3, 12, rng)))
+        .add_layer(Box::new(Activation::new(ActivationType::ReLU)))
+        .add_layer(Box::new(Linear::new(12, 1, rng)))
+        .add_layer(Box::new(Activation::new(ActivationType::Sigmoid)))
+        .loss_gradient(bce_sigmoid_delta)
+        .build()
+        .expect("Error building network");
+
+    let input = Tensor::new(
+        vec![0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0],
+        vec![4, 3],
+    )?;
+
+    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 0.0], vec![4, 1])?;
+
+    println!("Input:\n{}", input);
+    println!("Actual Output:\n{}", actual);
+
+    println!("Training...");
+    nn.fit(&input, &actual, 20_000, 0.01)?;
+
+    let model_output = nn.forward(input)?;
+
+    println!("Model Output after training:\n{}", model_output);
+
+    Ok(())
+}
+```
+We have now simplified the whole training process. With just a few lines of code, we can now train the network with data.
+
+## Checkpoint
+
+That covers the fundamentals of **Deep Learning**. This is the foundation. From here, you can begin your journey with complex architectures like:
+
+1. N-Gram Generators
+1. Convolutional Neural Networks (CNNs)
+1. Recurrent Neural Networks (RNNs)
+1. Image Recognition
+1. LSTM Networks
+1. Transformers
+
+No matter which path you take next, the fundamentals remain the same. Even a trillion-parameter Transformer model with emergent intelligence follows these basics.
+
+To see these basics in action, we will now move from theoretical models to a practical application. In the next chapter, we will build a neural network that learns to perform **Image Reconstruction**, transforming a low-resolution 50×50 spiral into a sharp, high-fidelity 200×200 image.
+
+>**TIP** I have built a Neural Network Visualizer for you to tinker around. If you want to quickly verify how Neural Network works under the hood, head over to the hosted [Neural Network Visualizer](/visualizers/neural-network.html).
+
+# Image Reconstruction: From Data to Geometry
+
+This is our ultimatum. We built the machinery to perform this task specifically. This will give us the exact visual proof and justify all the pain we endured while tracing the mathematics.
+
+We'll take a $50 \times 50$ PBM and reconstruct it on $200 \times 200$ canvas.
+
+## The Portable BitMap (PBM)
+
+Throughout this guide, we have maintained a **No Third Party** stance, this chapter will not be an exception. To keep up with the theme, we'll use the Portable BitMap (PBM) format. 
+
+PBM is the simplest way of storing an image. It is a text based image format, which can be opened in a text editor.
+
+For example, the following is a simple $5 \times 5$ checkerboard image:
+
+```text
+P1
+5 5
+1 0 1 0 1
+0 1 0 1 0
+1 0 1 0 1
+0 1 0 1 0
+1 0 1 0 1
+```
+
+If you open a textbox, copy and paste the code above and save the file with `.pbm` extension, you can see your image viewer opening this as a very tiny checkerbox image.
+
+PBM has the top lines dedicated to the description. The first line gives the magic number `P1` and the second line describes the width and height. The following matrix describes the pixel values - $0$ means `white` pixel and $1$ means `black` pixel.
+
+That's all about PBM we need to know, for more details checkout this [WIKIPEDIA Page](https://en.wikipedia.org/wiki/Netpbm).
+
+## The PBM Reader
+
+PBM is a great choice for our use case, it directly gives us the input tensor without the need of any compression or decompression logic or any encoder/decoder.
+
+With 20 lines of code, we can directly get the input matrix for our neural network:
+
+```rust
+pub fn read_pbm_for_nn(path: &str) -> (usize, usize, Vec<f32>, Vec<f32>) {
+    let content = std::fs::read_to_string(path).expect("Read failed");
+    let mut tokens = content.split_whitespace();
+
+    assert_eq!(tokens.next().unwrap(), "P1");
+    let w: usize = tokens.next().unwrap().parse().unwrap();
+    let h: usize = tokens.next().unwrap().parse().unwrap();
+
+    let mut x_coords = Vec::with_capacity(w * h * 2);
+    let mut y_values = Vec::with_capacity(w * h);
+
+    for i in 0..(w * h) {
+        // Input: [Row, Col]
+        x_coords.push((i / w) as f32); 
+        x_coords.push((i % w) as f32);
+        // Target: [Pixel]
+        y_values.push(tokens.next().unwrap().parse().unwrap());
+    }
+
+    (w, h, x_coords, y_values)
+}
+```
+
+In this code, we are taking the $(x, y)$ coordinates of the image as a single row. This is our training input or `x_train`. We are taking the pixel value at those coordinates. This corresponds to our target value or `y_train`. We can't directly take the matrix as is. Otherwise, we'll run into shape mismatch error while trying to reconstruct the same image in a different size.
+
+## The Tanh Activation Function
+
+If you noticed this, `relu` has a problem. It has its own place in Machine Learning World, Image Reconstruction is not one of them. If you think about it, `relu` is essentially made of two straight lines. So, our network will try very hard to fit the curve of the spiral into thousands of straight lines. Theoritically we can draw any shape using straight lines but we live in a practical world where resources matter, especially when everything we built upto now is running on CPU. We can't keep running the program forever. Patience plays a role too.
+
+The another big reason to avoid `relu` in these contexts is it can kiil neurons by transforming any negative inputs to $0$ and so, it does not have a negative swing. Remember in our section on non-linearity discussion, we were manually choosing negative slopes to bring a bump in the stacked output of `relu` layers. While it is possible for a machine to assign a negative weight automatically but before it becomes creative with calculations and guesses many nodes might already be set to 0 by `relu`. Once this happens, there is no rescue and that neuron is dead forever.
+
+To avoid these problems, we introduce a new activation function - **Hyperbolic Tangent** or in short **tanh**. This is how the function looks like:
+
+```plotly
+{
+    "title": "tanh",
+    "traces":[
+        {
+            "type": "line",
+            "x": [-5.0 , -4.47368421, -3.94736842, -3.42105263, -2.89473684,
+                    -2.36842105, -1.84210526, -1.31578947, -0.78947368, -0.26315789,
+                    0.26315789,  0.78947368,  1.31578947,  1.84210526,  2.36842105,
+                    2.89473684,  3.42105263,  3.94736842,  4.47368421,  5.0],
+            "y": [-0.9999092 , -0.99973988, -0.99925488, -0.99786657, -0.99389948,
+                  -0.98261979, -0.95099682, -0.865733  , -0.65811078, -0.25724684,
+                   0.25724684,  0.65811078,  0.865733  ,  0.95099682,  0.98261979,
+                   0.99389948,  0.99786657,  0.99925488,  0.99973988,  0.9999092 ]
+        }
+    ]
+}
+```
+ 
+This function looks like sigmoid function but instead of squeezing values between $0$ and $1$, this function squeezes them between $-1$ and $1$ and it has the similar curvature, sigmoid had. Thus this function can draw the curves in an image.
+
+This is the mathematical definition of this function:
+
+$$
+\tanh(x) = \frac{e^x - e^{-x}}{e^x + e^{-x}}
+$$
+
+And its derivative:
+
+$$\frac{d}{dx}\tanh(x) = 1 - \tanh^2(x)$$
+
+We'll add these in our activation module:
+
+```rust
+impl Layer for Activation {
+    fn forward(&mut self, input: &Tensor) -> Result<Tensor, TensorError> {
+        self.input = Tensor::new(input.data().to_vec(), input.shape().to_vec())?;
+
+        match self.t {
+            ActivationType::ReLU => input.relu(),
+            ActivationType::Sigmoid => {
+                let neg_x = input.scale(&-1.0)?;
+                let denominator = Tensor::one(input.shape().to_vec())?.add(&neg_x.exp()?)?;
+
+                Tensor::one(input.shape().to_vec())?.div(&denominator)
+            }
+            ActivationType::Tanh => {
+                // Formula: (exp(x) - exp(-x)) / (exp(x) + exp(-x))
+                let exp_x = input.exp()?;
+                let exp_neg_x = input.scale(&-1.0)?.exp()?;
+
+                let numerator = exp_x.sub(&exp_neg_x)?;
+                let denominator = exp_x.add(&exp_neg_x)?;
+
+                numerator.div(&denominator)
+            }
+        }
+    }
+
+    fn backward(&mut self, output_error: &Tensor, _: f32) -> Result<Tensor, TensorError> {
+        match self.t {
+            ActivationType::ReLU => {
+                let mask = self.input.relu_prime()?;
+                output_error.mul(&mask)
+            }
+
+            ActivationType::Sigmoid => {
+                let neg_input = self.input.scale(&-1.0)?;
+                let denominator =
+                    Tensor::one(self.input.shape().to_vec())?.add(&neg_input.exp()?)?;
+                let a = Tensor::one(self.input.shape().to_vec())?.div(&denominator)?;
+
+                let one = Tensor::one(a.shape().to_vec())?;
+                let sigmoid_prime = a.mul(&one.sub(&a)?)?;
+
+                output_error.mul(&sigmoid_prime)
+            }
+            ActivationType::Tanh => {
+                // Derivative: 1 - tanh^2(x)
+                let exp_x = self.input.exp()?;
+                let exp_neg_x = self.input.scale(&-1.0)?.exp()?;
+                let tanh_x = exp_x.sub(&exp_neg_x)?.div(&exp_x.add(&exp_neg_x)?)?;
+
+                let one = Tensor::one(tanh_x.shape().to_vec())?;
+                let tanh_sq = tanh_x.mul(&tanh_x)?;
+                let tanh_prime = one.sub(&tanh_sq)?;
+
+                output_error.mul(&tanh_prime)
+            }
+        }
+    }
+}
+```
+
+## The Feature Scaling
+
+If we now go ahead and change our network to use $tanh$ instead, it will start working and will work for small images with may be upto 5 or 10 pixels but it will not work for higher resolution images. The reason behind that is the same $tanh$. Because at higher resolutions, we get values of `x` in high values. For example, our training image of $50$ pixels is also enough to push the tanh to the higher end of the function and the derivative becomes $0$, causing a **Vanishing Gradient** problem.
+
+To overcome this issue, we use a technique called **normalization**.
+
+```rust
+let (w, h, x_data, y_data) = read_pbm_for_nn(source);
+
+// Without Normalization, the gradient becomes zero. So, we make the data between 0 and 1
+let normalized_x_train: Vec<f32> = x_data
+    .chunks(2)
+    .flat_map(|coord| vec![coord[0] / h as f32, coord[1] / w as f32])
+    .collect();
+```
+
+There are many ways we do normalization, here we are simply dividing each pixel by the max value.
+
+## Network Architecture
+
+This is where all the pieces finally come together and you can start experimenting with a complete network. I should be honest here as the author of this guide: I do not have a principled reason why this exact architecture works.
+
+I arrived at it by trial and error. I have tried a few more that worked well too but this was by far the best architecture:
+
+```rust
+let hl = 64; // Hidden layer size
+let mut nn = NetworkBuilder::new()
+    .add_layer(Box::new(Linear::new(2, hl, rng)))
+    .add_layer(Box::new(Activation::new(ActivationType::Tanh))) // For Image reconstruction tasks, Tanh is a better solution
+    .add_layer(Box::new(Linear::new(hl, hl, rng)))
+    .add_layer(Box::new(Activation::new(ActivationType::Tanh)))
+    .add_layer(Box::new(Linear::new(hl, 2 * hl, rng))) // Expansion layer
+    .add_layer(Box::new(Activation::new(ActivationType::Tanh)))
+    .add_layer(Box::new(Linear::new(2 * hl, hl, rng))) // Contraction layer
+    .add_layer(Box::new(Activation::new(ActivationType::Tanh)))
+    .add_layer(Box::new(Linear::new(hl, hl / 2, rng)))
+    .add_layer(Box::new(Activation::new(ActivationType::Tanh)))
+    .add_layer(Box::new(Linear::new(hl / 2, 1, rng)))
+    .add_layer(Box::new(Activation::new(ActivationType::Sigmoid))) // Final Sigmoid for pixel intensity
+    .loss_gradient(bce_sigmoid_delta)
+    .build()
+    .map_err(|e| e.to_string())?;
+```
+
+This architecture looks like the following:
+
+```plotly
+{
+    "title": "Image Reconstructor Network Architecture",
+    "removeGrid": true,
+    "traces":[
+        {
+      "type": "scatter",
+      "x": [0,0, 1,1,1,1,1,1,1,1, 2,2,2,2,2,2,2,2, 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3, 4,4,4,4,4,4,4,4, 5,5,5,5,5,5,5,5, 6],
+      "y": [0.5,-0.5, 3.5,2.5,1.5,0.5,-0.5,-1.5,-2.5,-3.5, 3.5,2.5,1.5,0.5,-0.5,-1.5,-2.5,-3.5, 7.5,6.5,5.5,4.5,3.5,2.5,1.5,0.5,-0.5,-1.5,-2.5,-3.5,-4.5,-5.5,-6.5,-7.5, 3.5,2.5,1.5,0.5,-0.5,-1.5,-2.5,-3.5, 3.5,2.5,1.5,0.5,-0.5,-1.5,-2.5,-3.5, 0],
+      "hoverinfo": "none",
+      "marker": {
+        "size": 16,
+        "color": [
+          "white", "white", 
+          "cyan", "cyan", "cyan", "cyan","cyan","cyan","cyan","cyan",
+          "cyan", "cyan", "cyan", "cyan","cyan","cyan","cyan","cyan",
+          "cyan", "cyan", "cyan", "cyan", "cyan", "cyan","cyan","cyan",
+          "cyan", "cyan", "cyan", "cyan","cyan","cyan","cyan","cyan",
+          "cyan", "cyan", "cyan", "cyan", "cyan","cyan","cyan","cyan",
+          "cyan", "cyan", "cyan", "cyan", "cyan","cyan","cyan","cyan",
+          "red"
+        ],
+        "line": { "width": 2, "color": "white" },
+        "symbol": "circle-open"
+      }
+    }]
+}
+```
+
+I later discovered, this particular architecture is known as `Bottleneck Architecture`.
+
+## Thermal Overload
+
+While within the training phase, the network performs giant matrix multiplication and remember, although we may get hardware parallelization support, this operationg itself if a $O(n^3)$ operation and even if we divide the load in different processors, still the load would be very high.
+
+To avoid abrupt shutdown due to thermal cooling failure, we let the CPU have some breathing time. For that, every certain number of epochs, we allow the CPU to stop working hard on the problem and takes a small rest:
+
+```rust
+if epoch % 5 == 0 {
+    // Let the CPU breath, otherwise thermal breakdown is possibl
+    std::thread::sleep(std::time::Duration::from_millis(20000));
+}
+```
+
+We actually should add a serialization and deserialization pair to save the network's parameters every cerain checkpoint. We can add it as enhancement.
+
+## The Release Build
+
+We spent quite some time explaining and developing the program SIMD and Cache friendly. However, if we use `cargo run` to run the program, we are not taking the advantage. It's like, you build a motorcycle for speed but walking instead.
+
+Always run either of the following:
+
+```shell
+cargo run --release
+```
+
+```shell
+cargo build --release
+target/release/build-your-own-nn
+```
+This way, wherever possible compiler would provide performance tweaks to help the program run faster.
+
+Another few points:
+
+1. Always provide the program in a smaller dataset first
+2. Always run for a shorter epoch first to check the behavioiur first. Otherwise, it may so happen that your machine learnt to draw the image after 5 hours of training but you forgot to add the file saving logic.
+3. If you target large dataset, always do it when you are leaving the system for some time idle
+
+
+## Conclustion
+
+This brings us to the end of our journey. I personally enjoyed writing this guide very much. It is an eye opening experience altogether.
+
 
 # Extras
 
@@ -3093,4 +3579,4 @@ If any of the following ticks for you, please feel free to skip the rest:
 
 ## PBM Generator tool
 ## Plotter Tool
-## Image console drawer
+## Image Renderer

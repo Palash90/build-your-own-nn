@@ -1,10 +1,5 @@
 use crate::{
-    Rng,
-    activation::{Activation, ActivationType},
-    image_utils::{PlotColor, Trace, render_plot},
-    linear::Linear,
-    loss::bce_sigmoid_delta,
-    tensor::{Tensor, TensorError},
+    Layer, Rng, activation::{Activation, ActivationType}, image_utils::{PlotColor, Trace, render_plot}, linear::Linear, loss::bce_sigmoid_delta, tensor::{Tensor, TensorError}
 };
 use std::thread;
 use std::time::Duration;
@@ -39,7 +34,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
 
         let d_z2 = bce_sigmoid_delta(&pred, &actual)?; 
         let d_h1 = l2.backward(&d_z2, learning_rate)?;
-        let d_z1 = a1.backward(&d_h1)?;
+        let d_z1 = a1.backward(&d_h1, learning_rate)?;
         let _ = l1.backward(&d_z1, learning_rate)?;
 
         if epoch % 100 == 0 {

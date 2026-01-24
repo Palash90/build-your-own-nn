@@ -5,7 +5,7 @@ use crate::{Layer, Rng, image_utils::{PlotColor, Trace, render_plot}, linear::Li
 pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     let mut linear = Linear::new(2, 1, rng);
 
-    let far_weights = Tensor::new(vec![-2.0, 45.0], vec![2, 1])?; 
+    let far_weights = Tensor::new(vec![-2.0, 12.0], vec![2, 1])?; 
     linear.set_weight(far_weights); 
 
     let num_points = 40;
@@ -46,6 +46,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
         linear.backward(&grad, 0.0005)?;
 
         if epoch % 10 == 0 {
+            print!("\x1b[2J\x1b[1;1H");
             let line_pred = linear.forward(&line_input)?;
 
             let trace_actual = Trace {
@@ -67,8 +68,6 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
             render_plot(&[trace_actual, trace_pred], 100, 35, bounds, String::from("Linear Regression"));
             thread::sleep(Duration::from_millis(3));
         }
-        print!("\x1b[2J\x1b[1;1H");
     }
-
     Ok(())
 }

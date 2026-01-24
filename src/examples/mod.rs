@@ -1,7 +1,8 @@
 pub mod linear_regression;
 pub mod linear_regression_animated;
-pub mod neural_network_or;
-pub mod neural_network_or_animated;
+pub mod neural_network_logic;
+pub mod neural_network_logic_animated;
 pub mod neural_network_xor;
 pub mod neural_network_xor_animated;
 pub mod image_reconstructor;
+pub mod neural_network_not_animated;

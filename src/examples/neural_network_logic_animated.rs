@@ -1,12 +1,33 @@
 use crate::{
-    Layer, Rng, activation::{Activation, ActivationType}, image_utils::{PlotColor, Trace, render_plot}, linear::Linear, loss::bce_sigmoid_delta, tensor::{Tensor, TensorError}
+    Layer, Rng,
+    activation::{Activation, ActivationType},
+    image_utils::{PlotColor, Trace, render_plot},
+    linear::Linear,
+    loss::bce_sigmoid_delta,
+    tensor::{Tensor, TensorError},
 };
 use std::thread;
 use std::time::Duration;
 
-pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
+#[derive(Debug)]
+pub enum AnimatedGate {
+    AND,
+    NAND,
+    OR,
+    NOR,
+}
+
+pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), TensorError> {
     let mut linear_layer = Linear::new(3, 1, rng);
-    linear_layer.set_weight(Tensor::new(vec![1.0, 20.0, 2.0], vec![3, 1])?);
+
+    let weight_init = match gate {
+        AnimatedGate::AND => vec![10.0, -100.0, -15.0],
+        AnimatedGate::NAND => vec![-8.0, -8.0, 5.0],
+        AnimatedGate::OR => vec![35.0, 50.0, -10.0],
+        AnimatedGate::NOR => vec![-15.0, -15.0, 10.0],
+    };
+
+    linear_layer.set_weight(Tensor::new(weight_init, vec![3, 1])?);
     let mut activation_layer = Activation::new(ActivationType::Sigmoid);
 
     let input = Tensor::new(
@@ -15,12 +36,17 @@ pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
         ],
         vec![4, 3],
     )?;
-    let actual = Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?;
+    let actual = match gate {
+        AnimatedGate::AND => Tensor::new(vec![0.0, 0.0, 0.0, 1.0], vec![4, 1])?,
+        AnimatedGate::NAND => Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?,
+        AnimatedGate::OR => Tensor::new(vec![0.0, 1.0, 1.0, 1.0], vec![4, 1])?,
+        AnimatedGate::NOR => Tensor::new(vec![0.0, 0.0, 0.0, 1.0], vec![4, 1])?,
+    };
 
     let learning_rate = 0.015;
     let bounds = Some((0.0, 20.0, 0.0, 20.0));
 
-    for epoch in 0..5000 {
+    for epoch in 0..8000 {
         let linear_output = linear_layer.forward(&input)?;
         let activation_output = activation_layer.forward(&linear_output)?;
 
@@ -105,8 +131,14 @@ pub fn or_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 });
             }
 
-            render_plot(&traces, 70, 25, bounds, String::from("Binary Classification"));
-            thread::sleep(Duration::from_millis(40));
+            render_plot(
+                &traces,
+                70,
+                25,
+                bounds,
+                format!("Binary Classification({:?} Gate)", gate),
+            );
+            thread::sleep(Duration::from_millis(20));
         }
 
         let delta = bce_sigmoid_delta(&activation_output, &actual)?;

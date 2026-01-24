@@ -1,11 +1,14 @@
 use crate::{
-    Layer, Rng, linear::Linear, loss::{mse_loss, mse_loss_gradient}, tensor::{Tensor, TensorError}
+    Layer, Rng,
+    linear::Linear,
+    loss::{mse_loss, mse_loss_gradient},
+    tensor::{Tensor, TensorError},
 };
 
 pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     let mut linear = Linear::new(2, 1, rng);
 
-    println!("Weights:");
+    println!("Initial Weights:");
     println!("{}", linear.weight());
 
     let input = Tensor::new(
@@ -24,9 +27,6 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
 
     let actual = Tensor::new(vec![5.6, 6.6, 9.5, 10.2, 14.0], vec![5, 1])?;
 
-    println!("Actual:");
-    println!("{}", actual);
-
     let loss = mse_loss(&output, &actual)?;
 
     println!("Initial MSE Loss:");
@@ -35,7 +35,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     println!();
     println!();
 
-    let epochs = 5000;
+    let epochs = 8000;
 
     for _ in 0..epochs {
         let predicted = linear.forward(&input)?;
@@ -54,8 +54,11 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     println!("Final weights");
     println!("{}", linear.weight());
 
-    println!("Final Output");
+    println!("Final Prediction");
     println!("{}", output);
+
+    println!("Actual Output:");
+    println!("{}", actual);
 
     Ok(())
 }

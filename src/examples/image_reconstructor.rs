@@ -46,13 +46,14 @@ pub fn reconstruct_image(
         .build()
         .map_err(|e| e.to_string())?;
 
-    let total_epochs = 1000;
+    let total_epochs = 25;
     let mut learning_rate = 0.1;
 
     // To perform back of the envelop calculation on how much time is required
     let mut last_checkpoint = Instant::now();
 
-    for epoch in 0..total_epochs {
+    for epoch in 1..=total_epochs {
+        println!("\nTraining...");
         if epoch % 10 == 0 {
             learning_rate -= 0.002;
 
@@ -71,17 +72,18 @@ pub fn reconstruct_image(
             render_image(w, h, &y_train.data());
 
             println!("Rescaled Network Drawing after epoch {}:", epoch * 1000);
-            draw_save_network_image(
-                size,
-                &mut nn,
-                &format!("output/{source}/reconstructed_{epoch}.pbm"),
-            )?;
+            draw_save_network_image(size, &mut nn, &format!("output/reconstructed_{epoch}.pbm"))?;
 
             // Trace time
             let duration = last_checkpoint.elapsed();
             println!("\n==============================");
-            println!("Epoch: {}", epoch);
-            println!("Time since last checkpoint: {:.2?}", duration);
+            println!("Epoch: {}", epoch * 1000);
+            println!(
+                "Time taken to run {} - {}: {:.2?}",
+                (epoch - 5) * 1000,
+                epoch * 1000,
+                duration
+            );
             println!("==============================");
             // Reset the timer for the next block
             last_checkpoint = Instant::now();
@@ -94,11 +96,7 @@ pub fn reconstruct_image(
     // We use the original data for comparison
     render_image(w, h, &y_train.data());
     println!("Final Image Reconstruction");
-    draw_save_network_image(
-        size,
-        &mut nn,
-        &format!("output/{source}/reconstructed_final.pbm"),
-    )?;
+    draw_save_network_image(size, &mut nn, &format!("output/reconstructed_final.pbm"))?;
 
     Ok(())
 }

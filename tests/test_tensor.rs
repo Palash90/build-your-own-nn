@@ -4,11 +4,34 @@ use build_your_own_nn::tensor::{Tensor, TensorError};
 mod tests {
     use super::*;
 
+    // The happy path test
+    #[test]
+    fn test_tensor_creation() {
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let shape = vec![2, 2];
+        let tensor = Tensor::new(data.clone(), shape.clone()).unwrap();
+
+        assert_eq!(tensor.data(), &data);
+        assert_eq!(tensor.shape(), &shape);
+    }
+
+    // Test the invariant; ensure data and shape are consistent with each other
     #[test]
     fn test_invalid_shape_creation() {
         let result = Tensor::new(vec![1.0], vec![2, 2]);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), TensorError::InconsistentData);
+    }
+
+    // To test our self imposed restriction to allow only up to 2D
+    // When we'll allow more dimensions, this test should be removed
+    #[test]
+    fn test_rank_limits() {
+        // We currently don't support 3D tensors (Rank 3)
+        let result = Tensor::new(vec![1.0; 8], vec![2, 2, 2]);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TensorError::InvalidRank);
     }
 
     #[test]

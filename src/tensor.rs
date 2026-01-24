@@ -29,7 +29,7 @@ pub struct Tensor {
 
 impl std::fmt::Display for Tensor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // As we are dealing with 2D tensors max, we can simply return the debug format for 1D tensors
+        // Use default debug format for 1D vectors
         if self.shape.len() != 2 {
             return write!(f, "{:?}", self.data);
         }

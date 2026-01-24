@@ -4,15 +4,16 @@
 
 Modern machine learning tools have become remarkably easy to use and increasingly difficult to understand.
 
-Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you can train a model.
+Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you start training a model.
 
-These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric calculations and assumptions - none visible to users. Models work; gradients flow; losses decrease; and the machinery underneath fades into abstraction.
+These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric computations and assumptions - none of which are visible to users. Models work; gradients flow; losses decrease; and the machinery underneath fades into abstraction.
 
 This guide is an attempt to reverse that process. We build a minimal machine-learning engine from first principles, exposing every step along the way.
 
 Please note, we are not building a drop‑in replacement for PyTorch or ndarray.
 
 The goal is not performance.
+
 The goal is _understanding_.
 
 ## What We'll Build
@@ -36,7 +37,7 @@ If you are curious what the final system looks like, you can run it today. To ru
 
 This guide is written for the curious readers who want to go beneath the surface.
 
-It is for those who want to gain a deeper understanding about how tensors are represented in memory, how matrix multiplications are executed on hardware and how gradients actually flow through the data structures. In a nutshell, you will understand how a stream of $0$s and $1$s make machines learn. It assumes you are comfortable reading code and willing to reason carefully about both mathematics and machines.
+It is for those who want to gain a deeper understanding of how tensors are represented in memory, how matrix multiplications are executed on hardware and how gradients actually flow through the data structures. In a nutshell, you will understand how a stream of $0$s and $1$s makes machines learn. It assumes you are comfortable reading code and willing to reason carefully about both mathematics and machines.
 
 It is especially suited for:
 
@@ -95,7 +96,9 @@ And that’s where the story begins...
 
 # The Tensor: From Math to Memory
 
-To build a neural network from scratch, we need to construct its foundational building block first. Any machine learning library performs the operations on a data structure known as **Tensor**. We also will build our own tensor.
+<!-- No more edit to this chapter. -->
+
+To build a neural network from scratch, we need to construct its foundational building block first. Any machine learning library performs the operations on a data structure known as **Tensor**. We will also build our own tensor.
 
 **Chapter Goals**
 
@@ -104,13 +107,13 @@ To build a neural network from scratch, we need to construct its foundational bu
 - **Implement the Core:** Build a Tensor struct in Rust that avoids the "pointer-chasing" performance traps of nested vectors.
 - **Visualize the Data:** Create a formatting engine to inspect our matrices in a human-readable way.
 
-## Journey from Scalar to Tensor
+## Journey from Scalars to Tensors
 
-Before typing a single line of code, we'll share a mental model of the data structure. Tensors are categorized by their **Rank**, which simply describes its dimensions.
+Before typing a single line of code, we'll share a mental model of the data structure. Tensors are categorized by their **Rank**, which simply describes the number of dimensions it has.
 
-- **Scalar (Rank 0):** A single number (e.g. 5.3), used in day to day calculations. In code, this is a single variable like `x = 5.3`.
-- **Vector (Rank 1):** When we arrange a collection of numbers in a lineaer fashion, we get a `Vector`. In code, this is a flat array or `Vec` like `a = [1, 2, 3]`
-- **Matrix (Rank 2):** When we arrange a collection of vectors in linear fashion, we get a matrix. In code, this would be an array of arrays (or `Vec` of `Vec`s): `a = [[1, 2], [3, 4]]`. Our workspace revolves around this.
+- **Scalar (Rank 0):** A single number (e.g. 5.3), used in day-to-day calculations. In code, this is a single variable like `x = 5.3`.
+- **Vector (Rank 1):** When we arrange a collection of numbers in a linear fashion, we get a `Vector`. In code, this is represented as a flat array or `Vec` like `a = [1.0, 2.0, 3.0]`
+- **Matrix (Rank 2):** When we stack multiple vectors together, we get a Matrix. In code, this would be an array of arrays (or `Vec` of `Vec`s): `a = [[1.0, 2.0], [3.0, 4.0]]`. Our workspace revolves around this.
 - **Tensor:** When we arrange multiple matrices in an array or `Vec`, we get higher rank tensors. This would be beyond our scope in this guide and we will keep things simple by restricting ourselves to _2D_ tensors only.
 
 Here is a visual representation of the concept:
@@ -140,30 +143,34 @@ a = [[1, 2], [3, 4]];
 println!("{}", a[0][0]); // Output: 1
 ```
 
-> Note on Indexing: Mathematics typically uses 1-based indexing (1…n), while Rust uses 0-based indexing (0…n−1). Throughout this guide, our code will always follow the 0-based programming convention.
+> Note on Indexing: Mathematics typically uses 1-based indexing $(1...n)$, while Rust uses 0-based indexing `(0...n−1)`. Throughout this guide, our code will always follow the 0-based programming convention.
 
+## Design and Memory Layout
 
+With the mathematical background, now we'll design our `Tensor`. We need a fast, flexible and easy to index data structure to store multiple data points.
 
-## Designing and Memory Layout
+An array matches most of our requirements but Rust arrays can't grow or shrink dynamically at run time. 
 
-With the mathematical background, now we'll design and implement the `Tensor`. We need a way to store multiple data points and we should be able to index the data structure to access or modify the data inside.
+To maintain flexibility, we'll use `Vec` instead. A naive Rust implementation may look like this: `Vec<Vec<f32>>`. However, that won't be an efficient design for two reasons:
 
-An array matches our requirements and is super fast. However, in Rust, arrays can't grow or shrink dynamically at run time. To maintain flexibility, we'll use `Vec` instead. A basic implementation of our `Tensor` can work well with `Vec<Vec<f32>>`. However, there are two problems in that approach.
+1. **Indirection (Pointer Chasing):** A `Vec` of `Vec` is a very performance-intensive structure. Each inner `Vec` is a separate allocation on the heap. Accessing elements requires jumping to different memory locations. 
 
-1. **Indirection (Pointer Chasing):** A `Vec` of `Vec`s is a very performance-intensive structure. Each inner `Vec` is a separate heap allocation. Accessing elements requires jumping to different memory locations. 
+    $$
+    \begin{array}{c|l}
+    \text{Outer Index} & \text{Pointer to Inner Vec} \\\\ \hline
+    0 & \color{#3498DB}{\rightarrow [v_{0,0}, v_{0,1}, v_{0,2}]} \\\\
+    1 & \color{#E74C3C}{\rightarrow [v_{1,0}, v_{1,1}, v_{1,2}]} \\\\
+    2 & \color{#2ECC71}{\rightarrow [v_{2,0}, v_{2,1}, v_{2,2}]} \\\\
+    \end{array}
+    $$
 
-$$
-\begin{array}{c|l}
-\text{Outer Index} & \text{Pointer to Inner Vec} \\\\ \hline
-0 & \color{#3498DB}{\rightarrow [v_{0,0}, v_{0,1}, v_{0,2}]} \\\\
-1 & \color{#E74C3C}{\rightarrow [v_{1,0}, v_{1,1}, v_{1,2}]} \\\\
-2 & \color{#2ECC71}{\rightarrow [v_{2,0}, v_{2,1}, v_{2,2}]} \\\\
-\end{array}
-$$
+2. **Rigidity:** `Vec` of `Vec` would permanently limit our application to a 2D matrix and `reshape` or `transpose` would be difficult to handle.
 
-1. **Rigidity:** `Vec` of `Vec` would permanently limit our application to a 2D matrix and later, if we want to support higher dimension tensors, we would have to change our code.
+These costs are invisible at small scales but dominate performance and correctness as models grow.
 
-To avoid these problems, we'll use two `Vec`s instead. One will hold the data in a flat _1D_ structure and the other will hold the _shape_ definition like this:
+**Solution: Flat Buffer**
+
+Instead we will store all the numbers in a `Vec`, allowing **cache locality** for efficient access patterns, and keep a separate `shape` vector to guide us on how to interpret the flat list.
 
 ```rust
 pub struct Tensor {
@@ -172,24 +179,15 @@ pub struct Tensor {
 }
 ```
 
-These two fields should not be accessible directly, we need to define accessors for them, we'll also use the `TensorError` enum for error handling.
-
 ## Implementation
 
-Let's first kick off the project and then we'll add elements to it. We'll use the default `cargo new` command for this:
-
-
+Let's get our hands dirty and initialize the project:
 
 ```shell
 $ cargo new build_your_own_nn
-    Creating binary (application) `build_your_own_nn` package
-note: see more `Cargo.toml` keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
-
 ```
 
-That's it. Nothing else. Let's begin translating our design into code.
-
-Let's write these definitions first in a new file `tensor.rs`. Later, we'll implement them one by one.
+We'll define our tensor and a custom error type `TensorError` in `src/tensor.rs`. We must define a few errors and handle them while working with tensors.
 
 ```rust
 use std::error::Error;
@@ -213,6 +211,10 @@ impl std::fmt::Display for TensorError {
     }
 }
 
+pub struct Tensor {
+    data: Vec<f32>,
+    shape: Vec<usize>,
+}
 
 impl Tensor {
     pub fn new(data: Vec<f32>, shape: Vec<usize>) -> Result<Tensor, TensorError> {
@@ -229,30 +231,61 @@ impl Tensor {
 }
 ```
 
-Once the definitions are written, we should expose the `struct` publicly. To do that, we create another file `lib.rs` and write the following line in it:
+To make this accessible, we expose the module in `src/lib.rs`:
 
 ```rust
 pub mod tensor;
 ```
 
-Now we have defined our data structure, required functions and methods. Let's write a few tests now.
+## Verifying Tensors
 
-We put all the tests outside `src` directory; in a separate directory named `tests`.
+Tensors are at the heart of our engine. We'll follow a Test Driven Development approach for our `Tensor`. This ensures our thinking around the tensors and every time we make a change, we ensure we are not breaking the core.
+
+We will place our tests in a dedicated tests/ directory at the root of the project. This treats our library as an external crate, exactly how a user would interact with it.
+
+Create a file at `tests/test_tensor.rs`:
 
 ```rust
 use build_your_own_nn::tensor::Tensor;
 use build_your_own_nn::tensor::TensorError;
 
 #[cfg(test)]
-#[test]
-fn test_invalid_shape_creation() {
-    let result = Tensor::new(vec![1.0], vec![2, 2]);
-    assert!(result.is_err());
-    assert_eq!(result.unwrap_err(), TensorError::InconsistentData);
+mod tests {
+    use super::*;
+
+    // The happy path test
+    #[test]
+    fn test_tensor_creation() {
+        let data = vec![1.0, 2.0, 3.0, 4.0];
+        let shape = vec![2, 2];
+        let tensor = Tensor::new(data.clone(), shape.clone()).unwrap();
+
+        assert_eq!(tensor.data(), &data);
+        assert_eq!(tensor.shape(), &shape);
+    }
+
+    // Test the invariant; ensure data and shape are consistent with each other
+    #[test]
+    fn test_invalid_shape_creation() {
+        let result = Tensor::new(vec![1.0], vec![2, 2]);
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TensorError::InconsistentData);
+    }
+
+    // To test our self imposed restriction of allowing only up to 2D
+    // When we'll allow more dimensions, this test should be removed
+    #[test]
+    fn test_rank_limits() {
+        // We currently don't support 3D tensors (Rank 3)
+        let result = Tensor::new(vec![1.0; 8], vec![2, 2, 2]);
+
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), TensorError::InvalidRank);
+    }
 }
 ```
 
-If we try to run the tests now, it will break. We need to first complete the implementations.
+The tests will fail if we run `cargo test`. Now, let's replace those placeholders with our logic in `tensor.rs`:
 
 ```rust
 impl Tensor {
@@ -280,31 +313,14 @@ impl Tensor {
 Now, if we run the tests, we can see the tests passing.
 
 ```text
-~/git/build-your-own-nn$ cargo test
-   Compiling build-your-own-nn v0.1.0 (/home/palash/git/build-your-own-nn)
-    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.30s
-     Running unittests src/lib.rs (target/debug/deps/build_your_own_nn-8e7fc48103748a00)
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-     Running unittests src/main.rs (target/debug/deps/build_your_own_nn-fb385501dec7dedb)
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+$ cargo test
+...
 
      Running tests/test_tensor.rs (target/debug/deps/test_tensor-25b5f99a2a90f9bb)
 
-test result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
-   Doc-tests build_your_own_nn
-
-running 0 tests
-
-test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
-
+test tests::test_tensor_creation ... ok
+test tests::test_invalid_shape_creation ... ok
+test tests::test_rank_limits ... ok
 ```
 
 > **NOTE**
@@ -323,44 +339,25 @@ tests
 Cargo.toml
 ```
 
-## Display: Pretty Printing Matrix
+## Visualizing the Memory in Math Format
 
-The definition and implementation of the tensor is now clear. But how can we intuitively inspect the data if we need to. Looking at the data directly from `Vec` isn't very intuitive.
+The definition and implementation of the tensor are now clear. We now need a way to intuitively inspect the data. Inspecting a `Vec` of floating-point numbers in a single line is not very helpful for 2D data.
 
-Let's first try to understand the problem and then we'll fix it. We rewrite the `main` function to inspect the data inside the tensor:
+To fix this, we will implement the `std::fmt::Display` trait for our Tensor. This will allow us to print tensors in a recognizable matrix format and ensure our understanding of one dimensional data to $2D$ matrix transformation.
 
-```rust
-use build_your_own_nn::tensor::Tensor;
-use build_your_own_nn::tensor::TensorError;
+**Visualization Rules**
 
-fn main() -> Result<(), TensorError> {
-    let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
+1. **1D (Vector):** We’ll use the default debug format (e.g., [1.0, 2.0, 3.0]).
+1. **2D (Matrix):** We’ll use the **Row-Major** convention $(row \times cols + col)$ to pick elements and wrap them in a grid.
 
-    println!("Tensor data: {:?} {:?}", a.data(), a.shape()); // Output: Tensor data: [1.0, 2.0, 3.0, 4.0] [2, 2]
+    Let's take an example,
 
-    Ok(())
-}
+    $$\begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{purple}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{purple}4_{(3)} \end{bmatrix}$$
 
-```
+    Here, we have a `Vec` of length 4 with 2 rows and 2 columns. The first row is formed by the elements at index 0 and index 1 and the second row is formed by the elements at index 2 and index 3.
+1. We'll output only up to four decimal points ensuring uniformity and alignment
 
-As you can see, the output is a linear array of data. It does not preserve the dimensionality of the tensor. To fix this linear display of tensors and a nice matrix-like format, we'll implement the `Display` trait for our `Tensor` struct, such that any time we want to display the tensor, it will show in a nice formatted way.
-
-The shape `Vec` will help us here. First we define what do the elements map to and here we decide the rules:
-
-1. If the length of `shape` is 1, it is a _vector_, we can simply return the default debug formatted data.
-1. If the length of `shape` is 2, it is a _matrix_, the first element of the `shape` vector defines number of rows and the second element defines number of columns. By the way, this convention of defining matrix order is known as **Row-major**.
-1. We won't go beyond _2D_
-1. For each row we'll pick out elements matching column length indexing $(\mathbf{row} \times \mathbf{cols}) + \mathbf{col}$
-
-Let's take an example,
-
-$$\begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{purple}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{purple}4_{(3)} \end{bmatrix}$$
-
-Here, we have a `Vec` of length 4 with 2 rows and 2 columns. The first row is formed by the elements at index 0 and index 1 and the second row is formed by the elements at index 2 and index 3.
-
-Let's implement these rules for our tensor now.
-
-First we add the tests as per our desirable matrix look:
+Based on these intuitions, we first write the tests:
 
 ```rust
 #[test]
@@ -394,12 +391,12 @@ fn test_tensor_display_1d() -> Result<(), TensorError> {
 }
 ```
 
-And then we implement the `Display` trait for our `Tensor`, matching the rules to make the tests pass.
+Then we implement the `Display` trait for our `Tensor`:
 
 ```rust
 impl std::fmt::Display for Tensor {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        // As we are dealing with 2D tensors max, we can simply return the debug format for 1D tensors
+        // Use default debug format for 1D vectors
         if self.shape.len() != 2 {
             return write!(f, "{:?}", self.data);
         }
@@ -424,42 +421,60 @@ impl std::fmt::Display for Tensor {
 }
 ```
 
-Let's rewrite the `main` function and look at our tensor getting displayed:
+Finally, we see it in action:
 
 ```rust
 use build_your_own_nn::tensor::{Tensor, TensorError};
 
 fn main() -> Result<(), TensorError> {
-    let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
+    // One dimensional vector
+    let v = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![4]).unwrap();
 
+    // Two dimensional 2 * 2 Matrix
+    let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]).unwrap();
+
+    // Two dimensional 3 * 3 Matrix
     let b = Tensor::new(
         vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0],
         vec![3, 3],
-    )?;
+    ).unwrap();
 
-    println!("{}", a);
+    println!("1D Vector: \n{}", v);
 
-    println!("{}", b);
-    Ok(())
+    println!("2D 2*2: \n{}", a);
+
+    println!("2D 3*3 \n{}", b);
 }
 ```
 
 ```text
+1D Vector: 
+[1.0, 2.0, 3.0, 4.0]
+2D 2*2: 
   |  1.0000,   2.0000|
   |  3.0000,   4.0000|
 
+2D 3*3 
   |  1.0000,   2.0000,   3.0000|
   |  4.0000,   5.0000,   6.0000|
   |  7.0000,   8.0000,   9.0000|
-
 ```
 
-**Challenge to the readers:** I encourage the readers to implement their own formatting. I chose this formatting because I like it, you don't have to stick to this.
+**Challenge: Personalize Your Visualization**
 
-> **Checkpoint**
+The formatting we implemented is just one way to view the data. Designing a clear visualization is a great way to deepen your understanding of the underlying structure. I encourage you to experiment with your own `Display` implementation.
 
+For instance, could you add row/column headers? Or perhaps truncate very large matrices so they don't overwhelm your terminal? There is no correct style. There is only the one that helps you debug your neural network most effectively.
 
-If you understand why this formatting works, you now understand how a 2D tensor is mapped onto a 1D memory buffer. Everything that follows—transpose, matmul, reduction—builds on this idea.
+## Checkpoint: The Mental Leap
+
+You have reached a critical milestone. By implementing the `Display` trait, you’ve moved beyond treating data as an abstract list and started treating it as a geometric structure.
+
+If you understand how the formula $(row×cols)+col$ folds a flat buffer into a $2D$ grid, you have mastered the foundational logic of all modern machine learning.
+
+Every operation that follows: whether it is transposing a matrix, performing a dot product, or reducing a loss function—is simply a strategic way of traversing this flat list of numbers.
+
+<!-- Locked In, no more edits -->
 
 # Basic Tensor Arithmetic
 If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).

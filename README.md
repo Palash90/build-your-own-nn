@@ -28,7 +28,8 @@ If you are curious what the final system looks like, you can run it today. To ru
 3. Run a release version - `$ cargo run --release`
 4. Follow the instructions on screen
 
-> **WARNING**
+> **caution**
+> 
 > If you choose Image Reconstruction example, it will take a long time to converge depending on your machine's architecture.
 
 ## Who This Guide Is For (and Who It Is Not)
@@ -45,8 +46,6 @@ It is especially suited for:
 
 It is not written for readers looking for a conceptual overview without implementation, for those seeking production-grade performance, or for complete beginners to programming or mathematics.
 
-This guide rewards patience.
-
 ## How to Use This Guide
 
 The chapters are meant to be read sequentially. Each concept builds directly on the ones before it.
@@ -62,7 +61,7 @@ Optionally:
 
 - While using the visualizer tools, I encourage you to pause and verify the underlying data
 
-Do not rush. This guide is designed for depth, not speed.
+This guide rewards patience. Do not rush. It is designed for depth, not speed.
 
 ## Prerequisites and Philosophy
 
@@ -149,8 +148,9 @@ a = [[1, 2], [3, 4]];
 println!("{}", a[0][0]); // Output: 1
 ```
 
->**NOTE**
->Mathematical notation and programming differ in how they index a collection of numbers. Conventionally Mathematics uses 1-based indexing, whereas programming uses 0-based indexing.
+> **NOTE**
+>
+> Mathematical notation and programming differ in how they index a collection of numbers. Conventionally Mathematics uses 1-based indexing, whereas programming uses 0-based indexing.
 
 ## Implementation: Memory Buffers and Layout
 
@@ -311,8 +311,9 @@ test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; fini
 
 ```
 
->**NOTE**
->We will be using standard Rust module system throughout.
+> **NOTE**
+> 
+> We will be using standard Rust module system throughout.
 
 Currently the directory structure should look like the following:
 
@@ -460,9 +461,9 @@ fn main() -> Result<(), TensorError> {
 **Challenge to the readers:** I encourage the readers to implement their own formatting. I chose this formatting because I like it, you don't have to stick to this.
 
 > **Checkpoint**
-> If you understand why this formatting works, you now understand how a 2D tensor
-> is mapped onto a 1D memory buffer.
-> Everything that follows—transpose, matmul, reduction—builds on this idea.
+
+
+If you understand why this formatting works, you now understand how a 2D tensor is mapped onto a 1D memory buffer. Everything that follows—transpose, matmul, reduction—builds on this idea.
 
 # Basic Tensor Arithmetic
 If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).
@@ -615,8 +616,9 @@ $$
 \begin{bmatrix} 1 & 2 \\\ 3 & 4 \\\ 5 & 6 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 & 3 & 5 \\\ 2 & 4 & 6 \end{bmatrix}
 $$
 
->**NOTE**
->In the matrix transpose examples, take a note that the main diagonal elements ($A_{i,j}$ where $i=j$) stay in their positions and don't move. Additionally, in the case of rectangular matrix transposition the shape changes. 
+> **NOTE**
+> 
+> In the matrix transpose examples, take a note that the main diagonal elements ($A_{i,j}$ where $i=j$) stay in their positions and don't move. Additionally, in the case of rectangular matrix transposition the shape changes. 
 
 For example, here transposition converts $(3 \times 2) \xrightarrow{} (2 \times 3)$.
 
@@ -679,8 +681,9 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
 
 1. The 2D Re-map: We create a new Vec of the same size. Then, we use a nested loop to visit every "cell" of our grid.
 
->**NOTE**
->The Index Swap: In our original data, we find an element at $row * cols + col$. In our new data, the dimensions are swapped, so the position becomes $col * rows + row$.
+> **NOTE**
+> 
+> The Index Swap: In our original data, we find an element at $row * cols + col$. In our new data, the dimensions are swapped, so the position becomes $col * rows + row$.
 
 ```rust
     pub fn transpose(&self) -> Result<Tensor, TensorError> {
@@ -858,8 +861,9 @@ You’re not expected to memorize these combinations—only to recognize the pat
 
 #### The Naive Implementation (IJK)
 
->**TIP** 
->We will not use this function, this is here for reference and validation purposes. You may skip to the [next section](#the-optimized-implementation-ikj) if you want to.
+> **TIP** 
+> 
+> We will not use this function, this is here for reference and validation purposes. You may skip to the [next section](#the-optimized-implementation-ikj) if you want to.
 
 In a standard textbook, you learn to calculate one cell of the result matrix at a time by taking the dot product of a row from $A$ and a column from $B$. In code, it looks like this:
 
@@ -1260,8 +1264,9 @@ Final Result:
 
 ```
 
->**NOTE** 
->We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
+> **NOTE** 
+>
+> We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
 
 If you only remember one thing from this section, remember this: changing loop order does not change math—but it completely changes performance. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
 
@@ -1550,8 +1555,9 @@ impl Rng for SimpleRng {
 }
 ```
 
->**WARNING**
->in real life scenarios, we would rather use optmized and more flexible libraries like `rand`, `rand_distr` etc. and I endourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
+> **WARNING**
+> 
+> In real life scenarios, we would rather use optmized and more flexible libraries like `rand`, `rand_distr` etc. and I endourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
 
 We'll now create a new module (`linear.rs`) in our project to implement the linear regression. It will be a `struct` to hold the weights. The `impl` block will have the initiation, accessor and prediction methods. We'll name our prediction method as `forward` and very soon we'll see why such a naming convention is used.
 
@@ -1659,8 +1665,9 @@ The output gives us the predicted $y$ values or $\hat(y)$. Let's visualize the g
 }
 ```
 
->**NOTE**
->as the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
+> **NOTE**
+> 
+> As the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
 >A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fasctinating by nature. If you spare some time, I would encourage you to look further.
 
 ## The Loss Function
@@ -2223,7 +2230,10 @@ Now, let's verify our predicted line along with data:
   ]
 }
 ```
->**TIP**: If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
+
+> **TIP**: 
+> 
+> If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
 
 # Neural Network
 
@@ -3001,7 +3011,9 @@ This combination is now enough to not only bend the straight line in one directi
 
 We have already used $calculus$ to derive the nearest values of the slope and bias by calculating the loss from actual data. Here also we do the same. We derive the correct slopes and biases which shapes any function. Hence, **Deep Learning** is Reverse Engineering on steroids.
 
-> **TIP** It is a bit more involved. I recommend visiting [Desmos](https://www.desmos.com/calculator) and plotting a few of the techniques discussed in this section by plotting the stacked functions yourselves to get hands on experience.
+> **TIP** 
+> 
+> It is a bit more involved. I recommend visiting [Desmos](https://www.desmos.com/calculator) and plotting a few of the techniques discussed in this section by plotting the stacked functions yourselves to get hands on experience.
 
 
 ## Implementation
@@ -3263,7 +3275,9 @@ No matter which path you take next, the fundamentals remain the same. Even a tri
 
 To see these basics in action, we will now move from theoretical models to a practical application. In the next chapter, we will build a neural network that learns to perform **Image Reconstruction**, transforming a low-resolution 25×25 spiral into a sharp, high-fidelity 200×200 image.
 
->**TIP** I have built a Neural Network Visualizer for you to tinker around. If you want to quickly verify how Neural Network works under the hood, head over to the hosted [Neural Network Visualizer](/visualizers/neural-network.html).
+> **TIP**
+> 
+> I have built a Neural Network Visualizer for you to tinker around. If you want to quickly verify how Neural Network works under the hood, head over to the hosted [Neural Network Visualizer](/visualizers/neural-network.html).
 
 # Image Reconstruction: From Data to Geometry
 

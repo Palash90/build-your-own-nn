@@ -185,7 +185,7 @@ layout: default
         margin: 1.5em 0 !important;
         background-color: rgba(56, 139, 253, 0.1) !important;
         /* GitHub's blue tint */
-        border-left: 0.25em solid #1f6feb !important;
+        border-left: 0.25em solid #85a1c7 !important;
         /* GitHub's blue border */
         border-radius: 6px !important;
         color: #c9d1d9 !important;
@@ -199,6 +199,8 @@ layout: default
         letter-spacing: 0.5px !important;
         display: inline-flex !important;
         align-items: center !important;
+        margin-bottom: 8px !important;
+        text-transform: uppercase;
     }
 
     /* 3. Optional: Add the GitHub info icon */
@@ -206,6 +208,33 @@ layout: default
         content: "ⓘ";
         margin-right: 8px;
         font-size: 1.1em;
+    }
+
+    /* Note - Info Icon */
+    .bq-note strong::before {
+        content: "ⓘ";
+    }
+
+    /* Tip - Lightbulb Icon */
+    .bq-tip strong::before {
+        content: "💡";
+    }
+
+    /* Warning - Warning Triangle Icon */
+    .bq-warning strong::before {
+        content: "⚠️";
+    }
+
+    /* Checkpoint - Checkmark or Trophy Icon */
+    .bq-checkpoint strong::before {
+        content: "🏁";
+        /* Or use "✅" */
+    }
+
+    /* Specific Icon for Caution */
+    .bq-caution strong::before {
+        content: "🚫";
+        /* You can also use "❗" or "⚠️" */
     }
 
     /* Note/Blue (Default) */
@@ -242,10 +271,23 @@ layout: default
         background-color: rgba(138, 18, 218, 0.34) !important;
         border-left: 0.25em solid #a11edd !important;
     }
+
     .bq-checkpoint strong {
         color: #772a9b !important;
     }
-    
+
+    /* Caution/Red Alert */
+    .bq-caution {
+        background-color: rgba(248, 81, 73, 0.1) !important;
+        /* GitHub's red tint */
+        border-left: 0.25em solid #da3633 !important;
+        /* GitHub's red border */
+    }
+
+    .bq-caution strong {
+        color: #f85149 !important;
+        /* Bold red text */
+    }
 </style>
 
 <style>
@@ -422,27 +464,26 @@ layout: default
 </style>
 
 <style>
-.page-header {
-    max-width: 900px;
-    margin-bottom: 40px;
-}
+    .page-header {
+        max-width: 900px;
+        margin-bottom: 40px;
+    }
 
-.page-title {
-    font-size: 2.4rem;
-    font-weight: 700;
-    line-height: 1.2;
-    margin-bottom: 10px;
-}
+    .page-title {
+        font-size: 2.4rem;
+        font-weight: 700;
+        line-height: 1.2;
+        margin-bottom: 10px;
+    }
 
-.page-subtitle {
-    font-size: 1rem;
-    color: #86c1ff;
-    font-weight: 400;
-    text-align: right;
-    font-style: oblique;
-    margin-bottom: 100px;
-}
-
+    .page-subtitle {
+        font-size: 1rem;
+        color: #86c1ff;
+        font-weight: 400;
+        text-align: right;
+        font-style: oblique;
+        margin-bottom: 100px;
+    }
 </style>
 
 <script>
@@ -475,7 +516,7 @@ layout: default
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 
 <header class="page-header">
-  <p class="page-subtitle">{{ site.subtitle }}</p>
+    <p class="page-subtitle">{{ site.subtitle }}</p>
 </header>
 
 * TOC
@@ -497,8 +538,10 @@ layout: default
             bq.classList.add('bq-tip');
         } else if (type.includes('WARNING') || type.includes('IMPORTANT')) {
             bq.classList.add('bq-warning');
-        }else if (type.includes('CHECKPOINT') || type.includes('IMPORTANT')) {
+        } else if (type.includes('CHECKPOINT') || type.includes('IMPORTANT')) {
             bq.classList.add('bq-checkpoint');
+        } else if (type.includes('CAUTION') || type.includes('IMPORTANT')) {
+            bq.classList.add('bq-caution');
         }
     });
 </script>
@@ -697,9 +740,9 @@ layout: default
             return { ...t }; // Return the original trace if it's not a line or scatter
         });
 
-        if(data.removeGrid) {
-            layout = {...layout, xaxis:{showGrid: false, visible:false}, yaxis:{showGrid:false, visible: false}}
-       }
+        if (data.removeGrid) {
+            layout = { ...layout, xaxis: { showGrid: false, visible: false }, yaxis: { showGrid: false, visible: false } }
+        }
 
         const plotDiv = document.createElement('div');
         plotDiv.className = 'plotly';

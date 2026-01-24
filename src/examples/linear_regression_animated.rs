@@ -5,7 +5,7 @@ use crate::{Layer, Rng, image_utils::{PlotColor, Trace, render_plot}, linear::Li
 pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     let mut linear = Linear::new(2, 1, rng);
 
-    let far_weights = Tensor::new(vec![-2.0, 12.0], vec![2, 1])?; 
+    let far_weights = Tensor::new(vec![-2.0, 25.0], vec![2, 1])?; 
     linear.set_weight(far_weights); 
 
     let num_points = 40;
@@ -36,7 +36,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
     }
     let line_input = Tensor::new(line_input_vec, vec![50, 2])?;
 
-    let epochs = 10_000;
+    let epochs = 15_000;
     let bounds = Some((0.0, 20.0, 0.0, 50.0)); 
     for epoch in 0..epochs {
         let predicted = linear.forward(&input)?;

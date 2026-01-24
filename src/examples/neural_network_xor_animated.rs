@@ -122,7 +122,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 bounds,
                 format!("{} Gate Approximation", if xnor { "XNOR" } else { "XOR" }),
             );
-            thread::sleep(Duration::from_millis(30));
+            thread::sleep(Duration::from_millis(10));
         }
     }
 

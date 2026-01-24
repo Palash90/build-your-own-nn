@@ -138,7 +138,7 @@ pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), Te
                 bounds,
                 format!("Binary Classification({:?} Gate)", gate),
             );
-            thread::sleep(Duration::from_millis(20));
+            thread::sleep(Duration::from_millis(10));
         }
 
         let delta = bce_sigmoid_delta(&activation_output, &actual)?;

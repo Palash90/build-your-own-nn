@@ -86,7 +86,7 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
             13 => neural_network_xor_animated::xor_neural_network(rng, false)?,
             14 => neural_network_xor_animated::xor_neural_network(rng, true)?,
 
-            15 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 200, rng) {
+            15 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 150, rng) {
                 Ok(_) => println!("Done"),
                 Err(err) => println!("Error: {:?}", err),
             },

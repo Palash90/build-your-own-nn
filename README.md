@@ -28,7 +28,7 @@ If you are curious what the final system looks like, you can run it today. To ru
 3. Run a release version - `$ cargo run --release`
 4. Follow the instructions on screen
 
-> **caution**
+> **warning**
 > 
 > If you choose Image Reconstruction example, it will take a long time to converge depending on your machine's architecture.
 
@@ -93,23 +93,24 @@ And that’s where the story begins...
 
 <!-- Locked In, no more edits -->
 
-# The Tensor
-To build a neural network from scratch, we need to construct the fundamental building blocks first.
+# The Tensor: From Math to Memory
 
-If you’ve ever used tensors in PyTorch and felt comfortable using them but uneasy about what they actually are, this chapter is for you.
+To build a neural network from scratch, we need to construct its foundational building block first. Any machine learning library performs the operations on a data structure known as **Tensor**. We also will build our own tensor.
+
+**Chapter Goals**
+
+- **Develop the Intuition:** Trace the journey from a single number to multi-dimensional data structures.
+- **Bridge the Gap:** Map abstract mathematical notation (Ai,j​) to physical RAM addresses.
+- **Implement the Core:** Build a Tensor struct in Rust that avoids the "pointer-chasing" performance traps of nested vectors.
+- **Visualize the Data:** Create a formatting engine to inspect our matrices in a human-readable way.
 
 ## Journey from Scalar to Tensor
-To understand the data structure we are building, we need to develop an intuition first. Let's start building it from scratch as well.
 
-- **Scalar:** We are familiar with this and use it every time we perform arithmetic operations: a single number (e.g. 5). 
-    In the world of tensors, we would define them as a tensor of rank 0.
-    In programming, this would be a single numeric variable: `x=5`
-- **Vector:** When we arrange a collection of numbers, we get a `Vector`.
-    In the world of tensors, we would define them as a tensor of rank 1.
-    In programming, this would be an array or `Vec` of numeric variables: `a = [1, 2, 3]`
-- **Matrix:** When we arrange multiple vectors in an array, we get a matrix.
-    In the world of tensors, we would define them as a tensor of rank 2.
-    In programming, this would be an array of arrays (or `Vec` of `Vec`s): `a = [[1, 2], [3, 4]]`
+Before typing a single line of code, we'll share a mental model of the data structure. Tensors are categorized by their **Rank**, which simply describes its dimensions.
+
+- **Scalar (Rank 0):** A single number (e.g. 5.3), used in day to day calculations. In code, this is a single variable like `x = 5.3`.
+- **Vector (Rank 1):** When we arrange a collection of numbers in a lineaer fashion, we get a `Vector`. In code, this is a flat array or `Vec` like `a = [1, 2, 3]`
+- **Matrix (Rank 2):** When we arrange a collection of vectors in linear fashion, we get a matrix. In code, this would be an array of arrays (or `Vec` of `Vec`s): `a = [[1, 2], [3, 4]]`. Our workspace revolves around this.
 - **Tensor:** When we arrange multiple matrices in an array or `Vec`, we get higher rank tensors. This would be beyond our scope in this guide and we will keep things simple by restricting ourselves to _2D_ tensors only.
 
 Here is a visual representation of the concept:
@@ -121,22 +122,13 @@ $$
 \end{array}
 $$
 
-> **Who This Is For**
-> If you’ve used tensors in PyTorch but never questioned what they *are* in memory,
-> this section is written for you.
-> If you’re comfortable in Rust but new to linear algebra, don’t worry—we’ll build intuition first.
+While tensors can theoretically have infinite rank, we will focus our engine on **Rank 2 (Matrices)** to keep our implementation lean and easy to understand.
 
 ## Matrix Notation and Indexing
 
-When we want to refer to an element inside the matrix, we need a notation to identify a specific element.
+In mathematics, a matrix $A$ with $m$ rows and $n$ columns is referred to as an $m \times n$ matrix. We identify an individual element within that matrix using subscripts $A_{i,j}$ 
 
-A matrix $A$ with $m$ rows and $n$ columns is referred to as an $m \times n$ matrix. We denote an individual element within that matrix using subscripts:
-
-$$
-A_{i,j}
-$$
-
-Where:
+Where:  
 
 - _i_ is the row index (1 ≤ _i_ ≤ _m_)
 - _j_ is the column index (1 ≤ _j_ ≤ _n_)
@@ -148,24 +140,13 @@ a = [[1, 2], [3, 4]];
 println!("{}", a[0][0]); // Output: 1
 ```
 
-> **NOTE**
->
-> Mathematical notation and programming differ in how they index a collection of numbers. Conventionally Mathematics uses 1-based indexing, whereas programming uses 0-based indexing.
+> Note on Indexing: Mathematics typically uses 1-based indexing (1…n), while Rust uses 0-based indexing (0…n−1). Throughout this guide, our code will always follow the 0-based programming convention.
 
-## Implementation: Memory Buffers and Layout
 
-With the mathematical background, now we'll design and implement the `Tensor`. Let's first kick off the project and then we'll add elements to it. We'll use the default `cargo new` command for this:
 
-```shell
-$ cargo new build_your_own_nn
-    Creating binary (application) `build_your_own_nn` package
-note: see more `Cargo.toml` keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+## Designing and Memory Layout
 
-```
-
-That's it. Nothing else. Let's begin translating our design into code.
-
-We need a way to store multiple data points and we should be able to index the data structure to access or modify the data inside.
+With the mathematical background, now we'll design and implement the `Tensor`. We need a way to store multiple data points and we should be able to index the data structure to access or modify the data inside.
 
 An array matches our requirements and is super fast. However, in Rust, arrays can't grow or shrink dynamically at run time. To maintain flexibility, we'll use `Vec` instead. A basic implementation of our `Tensor` can work well with `Vec<Vec<f32>>`. However, there are two problems in that approach.
 
@@ -192,6 +173,21 @@ pub struct Tensor {
 ```
 
 These two fields should not be accessible directly, we need to define accessors for them, we'll also use the `TensorError` enum for error handling.
+
+## Implementation
+
+Let's first kick off the project and then we'll add elements to it. We'll use the default `cargo new` command for this:
+
+
+
+```shell
+$ cargo new build_your_own_nn
+    Creating binary (application) `build_your_own_nn` package
+note: see more `Cargo.toml` keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+```
+
+That's it. Nothing else. Let's begin translating our design into code.
 
 Let's write these definitions first in a new file `tensor.rs`. Later, we'll implement them one by one.
 

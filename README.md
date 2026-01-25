@@ -1052,56 +1052,42 @@ You’re not expected to memorize these combinations—only try to recognize the
         let c = a.matmul_naive(&b)?;
         assert_eq!(c.data(), &[19.0, 22.0, 43.0, 50.0]);
         assert_eq!(c.shape(), &[2, 2]);
-        assert_eq!(c.data(), c1.data());
-        assert_eq!(c.shape(), c1.shape());
 
         let d = Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3])?;
         let e = Tensor::new(vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0], vec![3, 2])?;
         let f = d.matmul_naive(&e)?;
         assert_eq!(f.data(), &[58.0, 64.0, 139.0, 154.0]);
         assert_eq!(f.shape(), &[2, 2]);
-        assert_eq!(f.data(), f1.data());
-        assert_eq!(f.shape(), f1.shape());
 
         let g = Tensor::new(vec![1.0, 2.0, 3.0], vec![3, 1])?;
         let h = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
         let i = g.matmul_naive(&h)?;
         assert_eq!(i.data(), &[4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 12.0, 15.0, 18.0]);
         assert_eq!(i.shape(), &[3, 3]);
-        assert_eq!(i.data(), i1.data());
-        assert_eq!(i.shape(), i1.shape());
 
         let j = Tensor::new(vec![1.0, 2.0, 3.0], vec![1, 3])?;
         let k = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
         let l = j.matmul_naive(&k)?;
         assert_eq!(l.data(), &[32.0]);
         assert_eq!(l.shape(), &[1, 1]);
-        assert_eq!(l.data(), l1.data());
-        assert_eq!(l.shape(), l1.shape());
 
         let m = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
         let n = Tensor::new(vec![4.0, 5.0, 6.0], vec![3])?;
         let o = m.matmul_naive(&n)?;
         assert_eq!(o.data(), &[32.0]);
         assert_eq!(o.shape(), &[1]);
-        assert_eq!(o.data(), o1.data());
-        assert_eq!(o.shape(), o1.shape());
 
         let p = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
         let q = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
         let r = q.matmul_naive(&p)?;
         assert_eq!(r.data(), &[32.0]);
         assert_eq!(r.shape(), &[1]);
-        assert_eq!(r.data(), r1.data());
-        assert_eq!(r.shape(), r1.shape());
 
         let s = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
         let t = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
         let u = s.matmul_naive(&t)?;
         assert_eq!(u.data(), &[32.0]);
         assert_eq!(u.shape(), &[1]);
-        assert_eq!(u.data(), u1.data());
-        assert_eq!(u.shape(), u1.shape());
 
         Ok(())
     }
@@ -2167,6 +2153,7 @@ pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         Ok(Tensor { data, shape: out_shape })
  }
  ```
+ <!-- Relay the tests from matmul and make it double duty -->
 
 Before looking at the numbers, it’s worth setting expectations.
 

@@ -2,9 +2,12 @@ title: "A First-Principles Guide to Deep Learning in Rust."
 subtitle: "— A systems-level journey through tensor math"
 markdown: kramdown
 highlighter: rouge
+github_repo: "build-your-own-nn"
 
 author_name: "Palash Kanti Kundu"
 author_bio: "Software Engineer & Architect with 14 years of experience across Java, Python, and Rust. I bridge the gap between complex system design and creative guitar tutorials."
 github_username: "palash90"
 linkedin_username: "palash90"
 devto_username: "palash90"
+data_repo_id: "R_kgDOQ42YxA"
+category_id: "DIC_kwDOQ42YxM4C1DHo"

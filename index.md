@@ -531,23 +531,30 @@ layout: default
 
 
 <style>
-    /* Base style: This applies to Mobile first */
-    .sticky-author-container {
-        position: fixed;
-        bottom: 0;
-        left: 0;
-        width: 100%;
-        height: 60px;
-        background: var(--sidebar-bg);
-        border-top: 1px solid var(--border-color);
-        display: flex;
-        flex-direction: row !important;
-        align-items: center;
-        padding: 0 15px;
-        gap: 6px;
-        z-index: 1000;
-        box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
-    }
+    /* Base style: Mobile First (Horizontal Bar) */
+.sticky-author-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 40px;
+    background: var(--sidebar-bg);
+    border-top: 1px solid var(--border-color);
+    z-index: 1000;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+    display: flex;
+    align-items: center;
+}
+
+.sticky-author-container a {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center;
+    width: 100%;
+    padding: 0 15px;
+    gap: 10px;
+    text-decoration: none;
+}
 
     .sticky-author-image {
         width: 25px;
@@ -557,38 +564,49 @@ layout: default
         flex-shrink: 0;
     }
 
-    .sticky-author-name {
-        font-size: 0.9em;
-        font-weight: bold;
-        color: var(--text-color);
-        margin: 0;
-        white-space: nowrap;
+.sticky-author-name {
+    font-size: 0.9em;
+    font-weight: bold;
+    color: var(--text-color);
+    margin: 0;
+    /* Mobile: prevent wrapping to keep bar slim */
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+/* Desktop override: Sidebar Card (Vertical Stack) */
+@media screen and (min-width: 1012px) {
+    .sticky-author-container {
+        top: calc(85vh + 20px); /* Position below TOC */
+        left: 20px;
+        bottom: auto;
+        width: var(--toc-width);
+        height: auto; /* Let it expand vertically */
+        background: var(--sidebar-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        padding: 15px 0;
     }
 
-    /* Desktop override: Move it back to the side */
-    @media screen and (min-width: 1012px) {
-        .sticky-author-container {
-            top: calc(85vh + 20px);
-            /* Adjust based on your TOC height */
-            left: 20px;
-            bottom: auto;
-            width: var(--toc-width);
-            height: auto;
-            flex-direction: column !important;
-            padding: 15px;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            text-align: center;
-        }
-
-        .sticky-author-image {
-            width: 25px;
-            height: 25px;
-            margin-bottom: 8px;
-        }
+    .sticky-author-container a {
+        flex-direction: column !important; /* Stack image over name */
+        gap: 8px;
+        text-align: center;
     }
+
+    .sticky-author-image {
+        width: 50px;
+        height: 50px;
+    }
+
+    .sticky-author-name {
+        white-space: normal; /* Allow name to wrap on desktop if long */
+        overflow: visible;
+        font-size: 0.95em;
+        line-height: 1.2;
+    }
+}
 </style>
 <style>
     .author-card {
@@ -692,11 +710,12 @@ layout: default
 
 <div class="sticky-author-container">
     <a href="https://github.com/{{ site.github_username }}">
+    <div>
         <img src="https://github.com/{{ site.github_username }}.png" alt="Author" class="sticky-author-image">
+        </div>
         <div style="flex-grow: 1;">
             <p class="sticky-author-name">{{ site.author_name }}</p>
-            <div class="author-socials" style="font-size: 0.75em; opacity: 0.8;">
-            </div>
+           
         </div>
     </a>
 </div>

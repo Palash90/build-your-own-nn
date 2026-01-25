@@ -477,50 +477,39 @@ Every operation that follows: whether it is transposing a matrix, performing a d
 <!-- Locked In, no more edits -->
 
 # Basic Tensor Arithmetic
+
+<!-- No more edit to this chapter. -->
+
 If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).
 
-We have defined our tensor and established its notation. Now let's see how we operate on them.
+Moving to the next phase of our journey, we step into the machinery of movement: **Basic Tensor Arithmetic**. If tensors are the bones of our system, operations are muscles. In this chapter, we transition from merely storing data to transforming it. We begin with the most intuitive operations—element wise arithmetic.
 
-For tensors of any size or rank, we define the following operations:
+## The Element Wise Foundation
 
-## Element Wise Addition
-Element wise addition is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A+B$ is calculated as:
+We treat matrices as fluid containers. For the most basic operations - Addition, Subtraction, Multiplication (the **Hadamard Product**) and Division—we follow a strict rule: the matrices must be of identical shape. We don't just operate on numbers; we operate on neighborhoods.
 
-$$
-C_{i,j}​=A_{i,j}​ + B_{i,j}​
-$$
-
-Let's take an example,
-
-$$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} + \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} = \begin{bmatrix} \color{cyan}6 & \color{magenta}8 \\\ \color{#D4A017}10 & \color{#2ECC71}12 \end{bmatrix} $$
-
-
-## Element Wise Subtraction
-Element wise subtraction is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A-B$ is calculated as:
+Mathematically, if $A$ and $B$ are both $m \times n$, then any operation $g$ on $A$ and $B$ is defined as:
 
 $$
-C_{i,j}​=A_{i,j}​ - B_{i,j}​
+C_{i,j}​=g(A_{i,j}​, B_{i,j}​)
 $$
 
-Let's take an example,
+where $g$ is either $+$, $-$, $\odot$ or $\oslash$.
 
-$$ \begin{bmatrix} \color{cyan}{5} & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}7 \end{bmatrix} - \begin{bmatrix} \color{cyan}1 & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} = \begin{bmatrix} \color{cyan}4 & \color{magenta}4\\\ \color{#D4A017}4 & \color{#2ECC71}4 \end{bmatrix} $$
+Thus we get the following,
 
-## Element Wise Multiplication
-Element wise multiplication (a.k.a. _Hadamard Product_) is only defined for two matrices of the same shape. If $A$ and $B$ are both $m \times n$, then $C=A \odot B$ is calculated as:
+$$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} + \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} =  \begin{bmatrix} \color{cyan} 1 + 5 & \color{magenta} 2+6 \\\ \color{#D4A017}3 + 7 & \color{#2ECC71}4 + 8 \end{bmatrix} = \begin{bmatrix} \color{cyan}6 & \color{magenta}8 \\\ \color{#D4A017}10 & \color{#2ECC71}12 \end{bmatrix} $$
 
-$$
-C_{i,j}​=A_{i,j}​ \odot B_{i,j}​
-$$
+$$ \begin{bmatrix} \color{cyan}{5} & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} - \begin{bmatrix} \color{cyan}1 & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} = \begin{bmatrix} \color{cyan} 5 - 1 & \color{magenta} 6 - 2\\\ \color{#D4A017} 7 - 3 & \color{#2ECC71} 8 - 4 \end{bmatrix} = \begin{bmatrix} \color{cyan}4 & \color{magenta}4\\\ \color{#D4A017}4 & \color{#2ECC71}4 \end{bmatrix} $$
 
-Let's take an example,
+$$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} \odot \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} = \begin{bmatrix} \color{cyan}1 \cdot 5 & \color{magenta}2 \cdot 6\\\ \color{#D4A017}3 \cdot 7 & \color{#2ECC71}4 \cdot 8 \end{bmatrix} = \begin{bmatrix} \color{cyan}5 & \color{magenta}12\\\ \color{#D4A017}21 & \color{#2ECC71}32 \end{bmatrix} $$
 
-$$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} \odot \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} = \begin{bmatrix} \color{cyan}5 & \color{magenta}12\\\ \color{#D4A017}21 & \color{#2ECC71}32 \end{bmatrix} $$
+$$ \begin{bmatrix} \color{cyan}{1} & \color{magenta}2 \\\ \color{#D4A017}3 & \color{#2ECC71}4 \end{bmatrix} \oslash \begin{bmatrix} \color{cyan}5 & \color{magenta}6 \\\ \color{#D4A017}7 & \color{#2ECC71}8 \end{bmatrix} = \begin{bmatrix} \color{cyan} \frac{1} {5} & \color{magenta}\frac{2}{6}\\\ \color{#D4A017}\frac{3}{7} & \color{#2ECC71}\frac{4}{8} \end{bmatrix} = \begin{bmatrix} \color{cyan}0.2000 & \color{magenta}0.3333\\\ \color{#D4A017}0.4286 & \color{#2ECC71}0.5000 \end{bmatrix} $$
 
-Now that we have the mathematical blueprint, let's translate these concepts into Rust code.
+We have the mathematical blueprint, let's translate these concepts into Rust code.
 
 ## Implementation
-We should expose methods for `add`, `sub` and `mul`. We'll first add these method definitions into our existing tensor `impl` block.
+We should expose methods for `add`, `sub`, `mul` and `div`. We'll first add these method definitions into our existing tensor `impl` block.
 
 ```rust
     pub fn add(&self, other: &Tensor) -> Result<Tensor, TensorError> {
@@ -532,6 +521,10 @@ We should expose methods for `add`, `sub` and `mul`. We'll first add these metho
     }
 
     pub fn mul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        todo!()
+    }
+
+    pub fn div(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         todo!()
     }
 ```
@@ -557,16 +550,27 @@ pub fn test_tensor_operations() -> Result<(), TensorError>  {
     let e = a.mul(&b)?;
     assert_eq!(e.data(), &[5.0, 12.0, 21.0, 32.0]);
     assert_eq!(e.shape(), &[2, 2]);
+
+    let f = a.div(&b)?;
+    let epsilon = 1e-4;
+    for (l, r) in f.data().iter().zip([0.2000, 0.3333, 0.4286, 0.5000].iter()) {
+        assert!(
+            (l - r).abs() < epsilon,
+            "Values {} and {} are not close enough",
+            l,
+            r
+        );
+    }
 }
 ```
 
-These operations all share the same structural constraint: identical shapes. So, we will add a common method inside the `impl` block and use it to unify all the element wise logic using function pointers:
+The tests need concrete implementations to pass. We will add a common method inside the `impl` block and use it to unify all the element wise operations using function pointers:
 
 ```rust
     fn _element_wise_op(
         &self,
         other: &Tensor,
-        op: fn(f32, f32) -> f32,
+        op: impl Fn(f32, f32) -> f32,
     ) -> Result<Tensor, TensorError> {
         if self.shape != other.shape {
             return Err(TensorError::ShapeMismatch);
@@ -576,14 +580,13 @@ These operations all share the same structural constraint: identical shapes. So,
             .data
             .iter()
             .zip(other.data.iter())
-            .map(|(a, b)| op(*a, *b))
+            .map(|(&a, &b)| op(a, b))
             .collect();
 
         Tensor::new(data, self.shape.clone())
     }
-	
-	
-	pub fn add(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+
+    pub fn add(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a + b)
     }
 
@@ -594,7 +597,62 @@ These operations all share the same structural constraint: identical shapes. So,
     pub fn mul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
         self._element_wise_op(other, |a, b| a * b)
     }
+
+    pub fn div(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        self._element_wise_op(other, |a, b| a / b)
+    }
 ```
+
+Let's end this chapter by visualizing the result exactly we have defined the operations:
+
+```rust
+fn main() {
+    let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2]).unwrap();
+    let b = Tensor::new(vec![5.0, 6.0, 7.0, 8.0], vec![2, 2]).unwrap();
+
+    println!("Matrix A:\n{a}");
+    println!("Matrix B:\n{b}");
+
+    println!("A + B\n{}", a.add(&b).unwrap());
+    println!("A - B\n{}", a.sub(&b).unwrap());
+    println!("A ☉ B\n{}", a.mul(&b).unwrap());
+    println!("A ø B\n{}", a.div(&b).unwrap());
+}
+```
+
+```text
+Matrix A:
+  |  1.0000,   2.0000|
+  |  3.0000,   4.0000|
+
+Matrix B:
+  |  5.0000,   6.0000|
+  |  7.0000,   8.0000|
+
+A + B
+  |  6.0000,   8.0000|
+  | 10.0000,  12.0000|
+
+A - B
+  | -4.0000,  -4.0000|
+  | -4.0000,  -4.0000|
+
+A ☉ B
+  |  5.0000,  12.0000|
+  | 21.0000,  32.0000|
+
+A ø B
+  |  0.2000,   0.3333|
+  |  0.4286,   0.5000|
+```
+
+## Beyond Neighbors: The Road to Connectivity
+
+We have mastered element wise arithmetic, where tensors interact only with their mirror images in the opposing container. For a neural network to identify a pattern though, it must be able to look across, not just it's mirror match.
+
+In the next chapter, we introduce the operations that enable this global view. We will learn to flip our perspective with **Transpose**, condense our knowledge with **Sum**, and finally, implement Matrix Multiplication—the engine’s heart.
+
+<!-- Locked In, no more edits -->
 
 # Linear Transformations and Aggregations
 In the previous operations, we treated matrices like rigid containers—adding or multiplying elements that lived in the exact same "neighborhood." However, to build a neural network, we need to support a few _2D_ operations as well. To perform these, we need to move around a little.
@@ -2613,14 +2671,6 @@ pub fn one(shape: Vec<usize>) -> Result<Tensor, TensorError> {
     let data = vec![1.0; shape.iter().product()];
     
     Ok(Tensor { data, shape })
-}
-```
-
-We'll also need to implement element wise division, which was not needed till now. It works just the same as element wise addition or subtraction.
-
-```rust
-pub fn div(&self, other: &Tensor) -> Result<Tensor, TensorError> {
-    self._element_wise_op(other, |a, b| a / b)
 }
 ```
 

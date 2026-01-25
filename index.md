@@ -44,6 +44,7 @@ layout: default
         }
     }
 </style>
+
 <style>
     :root {
         --bg-color: #0d1117;
@@ -93,6 +94,7 @@ layout: default
         text-decoration: none;
     }
 </style>
+
 <style>
     /* --- 2. Navigation & Alerts --- */
     #markdown-toc {
@@ -219,7 +221,6 @@ layout: default
         margin: 1.5em 0;
     }
 </style>
-
 
 <style>
     /* 1. The GitHub Alert Box */
@@ -464,6 +465,7 @@ layout: default
         }
     }
 </style>
+
 <style>
     /* Container for the code block and button */
     .highlight {
@@ -528,7 +530,6 @@ layout: default
         margin-bottom: 100px;
     }
 </style>
-
 
 <style>
     /* Base style: Mobile First (Horizontal Bar) */
@@ -608,6 +609,7 @@ layout: default
     }
 }
 </style>
+
 <style>
     .author-card {
         display: flex;
@@ -743,6 +745,7 @@ layout: default
         }
     });
 </script>
+
 <script>
     document.querySelectorAll('pre.highlight').forEach((codeBlock) => {
         // 1. Ensure the parent container is relative so the button sticks to it

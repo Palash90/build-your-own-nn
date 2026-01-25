@@ -49,6 +49,17 @@ mod tests {
         let e = a.mul(&b)?;
         assert_eq!(e.data(), &[5.0, 12.0, 21.0, 32.0]);
 
+        let f = a.div(&b)?;
+        let epsilon = 1e-4;
+        for (l, r) in f.data().iter().zip([0.2000, 0.3333, 0.4286, 0.5000].iter()) {
+            assert!(
+                (l - r).abs() < epsilon,
+                "Values {} and {} are not close enough",
+                l,
+                r
+            );
+        }
+
         Ok(())
     }
 

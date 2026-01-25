@@ -57,7 +57,7 @@ impl Tensor {
     fn _element_wise_op(
         &self,
         other: &Tensor,
-        op: fn(f32, f32) -> f32,
+        op: impl Fn(f32, f32) -> f32,
     ) -> Result<Tensor, TensorError> {
         if self.shape != other.shape {
             return Err(TensorError::ShapeMismatch);
@@ -67,7 +67,7 @@ impl Tensor {
             .data
             .iter()
             .zip(other.data.iter())
-            .map(|(a, b)| op(*a, *b))
+            .map(|(&a, &b)| op(a, b))
             .collect();
 
         Tensor::new(data, self.shape.clone())

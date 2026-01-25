@@ -352,7 +352,7 @@ To fix this, we will implement the `std::fmt::Display` trait for our Tensor. Thi
 
     Let's take an example,
 
-    $$\begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{purple}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{purple}4_{(3)} \end{bmatrix}$$
+    $$\begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{#D4A017}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{#D4A017}4_{(3)} \end{bmatrix}$$
 
     Here, we have a `Vec` of length 4 with 2 rows and 2 columns. The first row is formed by the elements at index 0 and index 1 and the second row is formed by the elements at index 2 and index 3.
 1. We'll output only up to four decimal points ensuring uniformity and alignment
@@ -655,11 +655,13 @@ In the next chapter, we introduce the operations that enable this global view. W
 <!-- Locked In, no more edits -->
 
 # Linear Transformations and Aggregations
-In the previous operations, we treated matrices like rigid containers—adding or multiplying elements that lived in the exact same "neighborhood." However, to build a neural network, we need to support a few _2D_ operations as well. To perform these, we need to move around a little.
 
-The following are a few operations we are going to describe, write tests for and implement in our `Tensor`.
+In the previous set of operations, we treated matrices like containers—adding or multiplying elements that lived in the exact same neighborhood. However, to build a neural network, we need to support a few _2D_ operations as well, which transfers elements across different neighbourhoods.
+
+Following are the three operations we'll need for Machine Learning.
 
 ## Transpose
+
 One of the most fundamental transformations in linear algebra involves changing the very orientation of the data. This is known as **Transpose**. In a transposition operation, the rows of the matrix become columns and the columns become rows.
 
 $$
@@ -671,18 +673,18 @@ Let's take a few examples:
 ### Vector Transpose
 
 $$
-\begin{bmatrix} 1 & 2 & 3 & 4 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 \\\ 2 \\\ 3 \\\ 4 \end{bmatrix}
+\begin{bmatrix} \color{cyan}{1} & \color{magenta}{2} & \color{gold}{3} & \color{lime}{4} \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} \\\ \color{magenta}{2} \\\ \color{gold}{3} \\\ \color{lime}{4} \end{bmatrix}
 $$
 
 ### Square Matrix Transpose
 
 $$
-\begin{bmatrix} 1 & 2 \\\ 3 & 4 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 & 3 \\\ 2 & 4 \end{bmatrix}
+\begin{bmatrix} \color{cyan}{1} & \color{cyan}{2} \\\ \color{magenta}{3} & \color{magenta}{4} \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} & \color{magenta}{3} \\\ \color{cyan}{2} & \color{magenta}{4} \end{bmatrix}
 $$
 
 ### Rectangular Matrix Transpose
 $$
-\begin{bmatrix} 1 & 2 \\\ 3 & 4 \\\ 5 & 6 \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} 1 & 3 & 5 \\\ 2 & 4 & 6 \end{bmatrix}
+\begin{bmatrix} \color{cyan}{1} & \color{cyan}{2} \\\ \color{magenta}{3} & \color{magenta}{4} \\\ \color{gold}{5} & \color{gold}{6}\end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} & \color{magenta}{3} & \color{gold}{5} \\\ \color{cyan}{2} & \color{magenta}{4} & \color{gold}{6} \end{bmatrix}
 $$
 
 > **NOTE**
@@ -779,565 +781,6 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
 ```
 
 
-## Dot Product
-
-At this point, the guide splits readers into two camps:
-
-- ML practitioners who know *what* matrix multiplication does
-- systems programmers who know *how* memory works
-The goal of the next section is to bridge that gap.
-
-We have already seen how to multiply two matrices or vectors element wise. However, there is another multiplication operation we can perform on tensors, known as the **Dot Product**. It is slightly more involved, as it combines element wise multiplication and a reduction operation into a single step.
-
-The dot product of two vectors $A$ and $B$ of length n is defined as:
-
-$$
-A \cdot B = \sum_{i=1}^{n} A_i B_i
-$$
-
-Let's take a few examples.
-
-### Vector Vector Dot Product
-Here is an example of a dot product between two vectors:
-
-$$
-\begin{bmatrix} \color{#2ECC71}{1} \\\ \color{cyan}{2} \\\ \color{magenta}{3} \\\ \color{#D4A017}{4} \end{bmatrix} \cdot \begin{bmatrix} \color{#2ECC71}1 \\\ \color{cyan}2 \\\ \color{magenta}3 \\\ \color{#D4A017}4 \end{bmatrix} = \color{#2ECC71}{(1 \times 1)} \color{white}+ \color{cyan}{(2 \times 2)} \color{white}+ \color{magenta}{(3 \times 3)} \color{white}+ \color{#D4A017}{(4 \times 4)}\color{white}=30
-$$
-
-### Matrix Vector Dot Product
-In a Matrix Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
-
-To perform a dot product between a matrix $A$ and a vector $v$, the number of columns in the matrix must equal the number of elements (rows) in the vector.
-
-If matrix $A$ has the shape $(m \times n)$ and vector $v$ has the shape $(n \times 1)$, the resulting vector w will have the shape $(m \times 1)$.
-
-Matrix Vector dot product is defined as:
-
-$$
-C_{m,1} = A_{m, n}v_{n, 1}
-$$
-
-Let's take an example:
-
-$$
-\begin{bmatrix} \color{#2ECC71}{1} & \color{#2ECC71}{2} & \color{#2ECC71}{3} \\\ \color{#D4A017}{4} & \color{#D4A017}{5} & \color{#D4A017}{6} \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}{7} \\\ \color{cyan}{8} \\\ \color{cyan}{9} \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 8, 9]} \\\ \color{#D4A017}{[4, 5, 6]} \cdot \color{cyan}{[7, 8, 9]} \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{8} + \color{#2ECC71}{3} \times \color{cyan}{9}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{8} + \color{#D4A017}{6} \times \color{cyan}{9})
-\end{bmatrix} = \begin{bmatrix} 50 \\\ 122 \end{bmatrix}
-$$
-
-### Matrix Matrix Dot Product
-In a Matrix-Matrix dot product (often simply called **Matrix Multiplication**), we don't just multiply corresponding "neighborhoods." Instead, we calculate the dot product of every row from the first matrix with every column of the second matrix.
-
-To perform a dot product between matrix $A$ and matrix $B$, the number of columns in $A$ must equal the number of rows in $B$.
-
-If $A$ is $(m \times n)$ and $B$ is $(n \times p)$, the resulting matrix $C$ will have the shape $(m \times p)$.
-
-Matrix Multiplication is defined as:
-
-$$
-C_{m,p} = A_{m, n}B_{n, p}
-$$
-
-Let's take an example:
-
-$$
-\begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 9, 11]} & \color{#2ECC71}{[1, 2, 3]}\cdot \color{magenta}{[8, 10, 12]} \\\ \color{#D4A017}[4, 5, 6] \cdot \color{cyan}{[7, 9, 11]} & \color{#D4A017}[4, 5, 6] \cdot \color{magenta}{[8, 10, 12]} \\\ \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{9} + \color{#2ECC71}{3} \times \color{cyan}{11}) & (\color{#2ECC71}{1} \times \color{magenta}{8} + \color{#2ECC71}{2} \times \color{magenta}{10} + \color{#2ECC71}{3} \times \color{magenta}{12}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{9} + \color{#D4A017}{6} \times \color{cyan}{11}) & (\color{#D4A017}{4} \times \color{magenta}{8} + \color{#D4A017}{5} \times \color{magenta}{10} + \color{#D4A017}{6} \times \color{magenta}{12}) \end{bmatrix} = \begin{bmatrix} 58 & 64 \\\ 139 & 154 \end{bmatrix}
-$$
-
-### Implementation
-Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the most simple network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
-
-Unfortunately, by nature, matrix multiplication is an $O(n^3)$ operation. Tons of optimizations have been done over the decades on this operation both on Software front as well as Hardware front. Those optimization techniques are themselves worthy of their own book.
-
-However, to make our tensor useful, we'll avoid the textbook naive implementation technique and will use a bit sophisticated technique with compiler optimizations. To understand the basics, we'll keep both the versions in our library.
-
-First we'll write tests for matrix multiplications with correct assumptions and then we'll jump into both the implementations.
-
-#### Tests for Matrix Multiplication
-This test captures a wide range of scenarios: vectors, matrices, and mixed shapes.
-
-Don’t worry if the full set of cases feels overwhelming at first.
-You’re not expected to memorize these combinations—only to recognize the patterns as they emerge.
-
-```rust
-    #[test]
-    fn test_matmul() -> Result<(), TensorError> {
-        let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
-        let b = Tensor::new(vec![5.0, 6.0, 7.0, 8.0], vec![2, 2])?;
-        let c = a.matmul_naive(&b)?;
-        let c1 = a.matmul(&b)?;  
-        assert_eq!(c.data(), &[19.0, 22.0, 43.0, 50.0]);
-        assert_eq!(c.shape(), &[2, 2]);
-        assert_eq!(c.data(), c1.data());
-        assert_eq!(c.shape(), c1.shape());
-
-        let d = Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3])?;
-        let e = Tensor::new(vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0], vec![3, 2])?;
-        let f = d.matmul_naive(&e)?;
-        let f1 = d.matmul(&e)?;
-        assert_eq!(f.data(), &[58.0, 64.0, 139.0, 154.0]);
-        assert_eq!(f.shape(), &[2, 2]);
-        assert_eq!(f.data(), f1.data());
-        assert_eq!(f.shape(), f1.shape());
-
-        let g = Tensor::new(vec![1.0, 2.0, 3.0], vec![3, 1])?;
-        let h = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
-        let i = g.matmul_naive(&h)?;
-        let i1 = g.matmul(&h)?;
-        assert_eq!(i.data(), &[4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 12.0, 15.0, 18.0]);
-        assert_eq!(i.shape(), &[3, 3]);
-        assert_eq!(i.data(), i1.data());
-        assert_eq!(i.shape(), i1.shape());
-
-        let j = Tensor::new(vec![1.0, 2.0, 3.0], vec![1, 3])?;
-        let k = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
-        let l = j.matmul_naive(&k)?;
-        let l1 = j.matmul(&k)?;
-        assert_eq!(l.data(), &[32.0]);
-        assert_eq!(l.shape(), &[1, 1]);
-        assert_eq!(l.data(), l1.data());
-        assert_eq!(l.shape(), l1.shape());
-
-        let m = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
-        let n = Tensor::new(vec![4.0, 5.0, 6.0], vec![3])?;
-        let o = m.matmul_naive(&n)?;
-        let o1 = m.matmul(&n)?;
-        assert_eq!(o.data(), &[32.0]);
-        assert_eq!(o.shape(), &[1]);
-        assert_eq!(o.data(), o1.data());
-        assert_eq!(o.shape(), o1.shape());
-
-        let p = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
-        let q = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
-        let r = q.matmul_naive(&p)?;
-        let r1 = q.matmul(&p)?;
-        assert_eq!(r.data(), &[32.0]);
-        assert_eq!(r.shape(), &[1]);
-        assert_eq!(r.data(), r1.data());
-        assert_eq!(r.shape(), r1.shape());
-
-        let s = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
-        let t = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
-        let u = s.matmul_naive(&t)?;
-        let u1 = s.matmul(&t)?;
-        assert_eq!(u.data(), &[32.0]);
-        assert_eq!(u.shape(), &[1]);
-        assert_eq!(u.data(), u1.data());
-        assert_eq!(u.shape(), u1.shape());
-
-        Ok(())
-    }
-```
-
-#### The Naive Implementation (IJK)
-
-> **TIP** 
-> 
-> We will not use this function, this is here for reference and validation purposes. You may skip to the [next section](#the-optimized-implementation-ikj) if you want to.
-
-In a standard textbook, you learn to calculate one cell of the result matrix at a time by taking the dot product of a row from $A$ and a column from $B$. In code, it looks like this:
-
-```rust
-    pub fn matmul_naive(&self, other: &Tensor) -> Result<Tensor, TensorError> {
-        let (a_rows, a_cols) = match self.shape.len() {
-            1 => (1, self.shape[0]),
-            2 => (self.shape[0], self.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
-
-        let (b_rows, b_cols) = match other.shape.len() {
-            1 => (other.shape[0], 1),
-            2 => (other.shape[0], other.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
-
-        if a_cols != b_rows {
-            return Err(TensorError::ShapeMismatch);
-        }
-
-        let mut result_data = vec![0.0; a_rows * b_cols];
-
-        for i in 0..a_rows {
-            for j in 0..b_cols {
-                for k in 0..a_cols {
-                    result_data[i * b_cols + j] +=
-                        self.data[i * a_cols + k] * other.data[k * b_cols + j];
-                }
-            }
-        }
-
-        let out_shape = match (self.shape.len(), other.shape.len()) {
-            (1, 1) => vec![1],
-            (1, 2) => vec![b_cols],
-            (2, 1) => vec![a_rows],
-            _ => vec![a_rows, b_cols],
-        };
-
-        Tensor::new(result_data, out_shape)
-    }
-```
-
-This exactly mirrors the math. We perform shape normalizations and then directly go into a three-level nested for loop to calculate each cell of the resulting matrix (or vector).
-
-Let's use our previous example. To find just the first element (top-left) of the result:
-
-$$
-A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix},
-B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
-$$
-
-##### Calculation of $C_{0,0}$​ (Top Left)
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{0,0} & i=0  & j=0 & k=0 & 0 + (\color{#2ECC71}A_{0,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​= 0 + (\color{#2ECC71}1 \times \color{cyan}7\color{white}) = 7 \\
-\hline
-C_{0,0} & i=0  & j=0 & k=1 & 7 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 7+(\color{#2ECC71}2 \times \color{cyan}9\color{white}) = 25 \\
-\hline
-C_{0,0} & i=0  & j=0 & k=2 & 25 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= (\color{#2ECC71}3 \times \color{cyan}11\color{white}) = 58 \\
-\end{array}
-\implies
-\begin{bmatrix}
-\mathbf{\color{lightgray}58} & 0 \\\
-0 & 0
-\end{bmatrix}
-\end{array}
-$$
-
-##### Calculation of $C_{0,1}$​ (Top Right)
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{0,1} & i=0  & j=1 & k=0 & 0 +(\color{#2ECC71}A_{0,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0 +(\color{#2ECC71}1 \times \color{magenta}8) \color{white}= 8 \\
-\hline
-C_{0,1} & i=0  & j=1 & k=1 & 8 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 8+(\color{#2ECC71}2 \times \color{magenta}10\color{white}) = 28 \\
-\hline
-C_{0,1} & i=0  & j=1 & k=2 & 28 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{magenta}B_{1,2}\color{white}) ​= 28+(\color{#2ECC71}3 \times \color{magenta}12\color{white}) = 64\\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & \mathbf{\color{lightgray}64} \\\
-0 & 0
-\end{bmatrix}
-\end{array}
-$$
-
-
-##### Calculation of $C_{1,0}$​ (Bottom Left)
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{1,0} & i=1  & j=0 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​=0+ (\color{#D4A017}4 \times \color{cyan}7\color{white}) = 28 \\
-\hline
-C_{1,0} & i=1  & j=0 & k=1 & 28 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 28+(\color{#D4A017}5 \times \color{cyan}9\color{white}) = 73 \\
-\hline
-C_{1,0} & i=1  & j=0 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{cyan}11\color{white}) = 139 \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-\mathbf{\color{lightgray}139} & 0
-\end{bmatrix}
-\end{array}
-$$
-
-##### Calculation of $C_{1,1}$​ (Bottom Right)
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{1,1} & i=1  & j=1 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0+ (\color{#D4A017}4 \times \color{magenta}8\color{white}) = 32 \\
-\hline
-C_{1,1} & i=1  & j=1 & k=1 & 32 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 32+(\color{#D4A017}5 \times \color{magenta}10\color{white}) = 82 \\
-\hline
-C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{magenta}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{magenta}12\color{white}) = 154 \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-139 & \mathbf{\color{lightgray}154}
-\end{bmatrix}
-\end{array}
-$$
-
-#### The Optimized Implementation (IKJ)
-
-This loop order matters more than the math itself.
-
-Many libraries compress this entire operation into a single function call. Here, we’re going to expand it fully: not because it’s efficient, but because this is where understanding is built.
-
-Take your time. You’re supposed to.
-
-We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
-
-1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
-1. Modern CPU cores use SIMD (Single Instruction, Multiple Data) to perform the same operation on multiple values simultaneously as long as the operations can be performed independently of each other. The naive implementation is sequential. So, it cannot leverage the parallel processing power of the CPU.
-
-To avoid these two problems, we can re-arrange the multiplication code a little bit and it will boost performance significantly. 
-
-```rust
-for i in 0..a_rows {
-    let out_row_offset = i * b_cols;
-
-    for k in 0..a_cols {
-        let aik = self.data[i * a_cols + k];
-        let rhs_row_offset = k * b_cols;
-        let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
-        let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
-
-        for j in 0..b_cols {
-            out_slice[j] = out_slice[j] + aik * rhs_slice[j];
-        }
-    }
-}
-```
-
-Up to this point, nothing “mathematical” has changed. We are still computing the same dot products, summing the same values, and producing the same result matrix.
-
-What has changed is how the CPU walks through memory.
-
-1. **Improved Cache Locality:** In the IKJ order, the innermost loop moves across index `j`. This means we are reading `other.data` and writing to data in a straight, continuous line. The CPU can predict this "streaming" access and pre-fetch the data into the cache avoiding the RAM fetch.
-
-1. **Autovectorization (SIMD) Potential:** Because the inner loop operates on contiguous slices of memory and applies the same arithmetic operation independently across elements, this loop structure is amenable to compiler autovectorization. In such cases, the Rust compiler (via LLVM) may choose to emit SIMD instructions, allowing multiple values from matrix $B$ to be loaded, multiplied by the scalar `aik`, and accumulated into the output slice in parallel.
-It is important to note that SIMD usage is **not guaranteed**. However, this implementation aligns with the access patterns that modern compilers are most capable of optimizing.
-
-We have an intuition how it will work under the hood but we also need to make sure that the mathematics involved is intact and we end up in same result. Let's verify the mathematics in this case to ensure we are not missing any crucial point:
-
-$$
-A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix}, 
-B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
-$$
-
-##### Processing Row $i = 0$ (First row of A)
-We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|}
-C_{row 0} & k = 0 & C_{row 0} + (A_{0,0} \times B_{row0}) & [0, 0] + \color{#2ECC71}1 \color{white}\times [\color{cyan}7, \color{magenta}8\color{white}] = [7, 8] \\
-\hline
-C_{row 0} & k = 1 & C_{row 0} + (A_{0,1} \times B_{row1}) & [7, 8] + \color{#2ECC71}2 \color{white}\times [\color{cyan}9, \color{magenta}10\color{white}] = [7+18, 8+20] = [25, 28] \\
-\hline
-C_{row 0} & k = 2 & C_{row 0} + (A_{0,2} \times B_{row2}) & [25, 28] + \color{#2ECC71}3 \times [\color{cyan}11, \color{magenta}12\color{white}] = [25+33, 28+36] = \mathbf{[58, 64]}
-\end{array}
-\implies
-\begin{bmatrix}
-\mathbf{\color{lightgray}{58}} & \mathbf{\color{lightgray}{64}} \\\
-0 & 0
-\end{bmatrix}
-\end{array}
-$$
-
-##### Processing Row $i = 1$ (Second row of A)
-We move to the second row of our result $C$.
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c}
-C_{row 1} & k = 0 & C_{row 1} + (A_{1,0} \times B_{row0}) & [0, 0] + \color{#D4A017}4 \times [\color{cyan}7, \color{magenta}8\color{white}] = [28, 32] \\
-\hline
-C_{row 1} & k = 1 & C_{row 1} + (A_{1,1} \times B_{row1}) & [28, 32] + \color{#D4A017}5 \times [\color{cyan}9, \color{magenta}10\color{white}] = [28+45, 32+50] = [73, 82] \\
-\hline
-C_{row 1} & k = 2 & C_{row 1} + (A_{1,2} \times B_{row2}) & [73, 82] + \color{#D4A017}6 \times [\color{cyan}11, \color{magenta}12]\color{white} = [73+66, 82+72] = \mathbf{[139, 154]} \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-\mathbf{\color{lightgray}139} & \mathbf{\color{lightgray}154}
-\end{bmatrix}
-\end{array}
-$$
- 
-#### Full Implementation
-Here is the full implementation of the optimized method:
-
-```rust
-pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
-        let (a_rows, a_cols) = match self.shape.len() {
-            1 => (1, self.shape[0]),
-            2 => (self.shape[0], self.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
-
-        let (b_rows, b_cols) = match other.shape.len() {
-            1 => (other.shape[0], 1),
-            2 => (other.shape[0], other.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
-
-        if a_cols != b_rows {
-            return Err(TensorError::ShapeMismatch);
-        }
-
-        let mut data = vec![0.0; a_rows * b_cols];
-
-        for i in 0..a_rows {
-            let out_row_offset = i * b_cols;
-
-            for k in 0..a_cols {
-                let aik = self.data[i * a_cols + k];
-                let rhs_row_offset = k * b_cols;
-                let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
-                let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
-
-                for j in 0..b_cols {
-                    out_slice[j] = out_slice[j] + aik * rhs_slice[j];
-                }
-            }
-        }
-
-        let out_shape = match (self.shape.len(), other.shape.len()) {
-            (1, 1) => vec![1],
-            (1, 2) => vec![b_cols],
-            (2, 1) => vec![a_rows],
-            _ => vec![a_rows, b_cols],
-        };
-
-        Ok(Tensor { data, shape: out_shape })
- }
- ```
-
-Before looking at the numbers, it’s worth setting expectations.
-
-We haven’t used unsafe code.
-We haven’t used SIMD intrinsics.
-We haven’t used parallelism.
-
-All we did was change loop order.
-
-That alone is enough to produce a dramatic difference.
-
- ```text
-$ target/release/build-your-own-nn 
-Input Tensor A:
-  |  1.0000,   2.0000,   3.0000|
-  |  4.0000,   5.0000,   6.0000|
-
-Input Tensor B:
-  |  7.0000,   8.0000|
-  |  9.0000,  10.0000|
-  | 11.0000,  12.0000|
-
-
-Matrix Multiplication using naive method:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-Time taken (naive): 61.729µs
-
-Matrix Multiplication using optimized method:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-Time taken (optimized): 12.845µs
-```
-
-In programming, performance means nothing without accuracy. Here is the verification of the accuracy.
-
-```text
-$ target/release/build-your-own-nn 
-Input Tensor A Dimensions:
-[50, 60]
-Input Tensor B Dimensions:
-[60, 40]
-
-Matrix Multiplication using naive method:
-Time taken (naive): 396.712µs
-
-Matrix Multiplication using optimized method:
-Time taken (optimized): 26.23µs
-
-Results match!
-```
-
-Here is how both the methods performed the calculations:
-
-```text
-Matrix Multiplication using naive method:
-    Processing row 0
-        Processing column 0
-            Multiplying A[0,0] = 1 with B[0,0] = 7
-            Multiplying A[0,1] = 2 with B[1,0] = 9
-            Multiplying A[0,2] = 3 with B[2,0] = 11
-        Completed row 0, column 0, data now [58.0, 0.0, 0.0, 0.0]
-        
-        Processing column 1
-            Multiplying A[0,0] = 1 with B[0,1] = 8
-            Multiplying A[0,1] = 2 with B[1,1] = 10
-            Multiplying A[0,2] = 3 with B[2,1] = 12
-        Completed row 0, column 1, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Completed row 0, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Processing row 1
-        Processing column 0
-            Multiplying A[1,0] = 4 with B[0,0] = 7
-            Multiplying A[1,1] = 5 with B[1,0] = 9
-            Multiplying A[1,2] = 6 with B[2,0] = 11
-        Completed row 1, column 0, data now [58.0, 64.0, 139.0, 0.0]
-        
-        Processing column 1
-            Multiplying A[1,0] = 4 with B[0,1] = 8
-            Multiplying A[1,1] = 5 with B[1,1] = 10
-            Multiplying A[1,2] = 6 with B[2,1] = 12
-        Completed row 1, column 1, data now [58.0, 64.0, 139.0, 154.0]
-    
-    Completed row 1, data now [58.0, 64.0, 139.0, 154.0]
-
-Final Result:
-    | 58.0000,  64.0000|
-    |139.0000, 154.0000|
-
-Matrix Multiplication using optimized method:
-    Processing row 0 of A
-        Multiplying A[0,0] = 1 with row 0 of B
-            Adding 1 * 7 to output position (0,0)
-            Adding 1 * 8 to output position (0,1)
-        Completed processing A[0,0], output row now [7.0, 8.0]
-        
-        Multiplying A[0,1] = 2 with row 1 of B
-            Adding 2 * 9 to output position (0,0)
-            Adding 2 * 10 to output position (0,1)
-        Completed processing A[0,1], output row now [25.0, 28.0]
-        
-        Multiplying A[0,2] = 3 with row 2 of B
-            Adding 3 * 11 to output position (0,0)
-            Adding 3 * 12 to output position (0,1)
-        Completed processing A[0,2], output row now [58.0, 64.0]
-    
-    Completed row 0 of A, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Processing row 1 of A
-        Multiplying A[1,0] = 4 with row 0 of B
-            Adding 4 * 7 to output position (1,0)
-            Adding 4 * 8 to output position (1,1)
-        Completed processing A[1,0], output row now [28.0, 32.0]
-        
-        Multiplying A[1,1] = 5 with row 1 of B
-            Adding 5 * 9 to output position (1,0)
-            Adding 5 * 10 to output position (1,1)
-        Completed processing A[1,1], output row now [73.0, 82.0]
-        
-        Multiplying A[1,2] = 6 with row 2 of B
-            Adding 6 * 11 to output position (1,0)
-            Adding 6 * 12 to output position (1,1)
-        Completed processing A[1,2], output row now [139.0, 154.0]
-    
-    Completed row 1 of A, data now [58.0, 64.0, 139.0, 154.0]
-
-Final Result:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-```
-
-> **NOTE** 
->
-> We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
-
-If you only remember one thing from this section, remember this: changing loop order does not change math—but it completely changes performance. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
 
 ## Reduction
 A matrix or a vector gives us information about individual elements, but at times we need an aggregation of those individual elements.
@@ -1512,6 +955,288 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 ```
 
 That's all the heavy mathematics that we care for now and all the implementations are completed. A few minor functions will still be needed, we'll implement them as required. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
+
+## Dot Product
+
+At this point, the guide splits readers into two camps:
+
+- ML practitioners who know *what* matrix multiplication does
+- systems programmers who know *how* memory works
+The goal of the next section is to bridge that gap.
+
+We have already seen how to multiply two matrices or vectors element wise. However, there is another multiplication operation we can perform on tensors, known as the **Dot Product**. It is slightly more involved, as it combines element wise multiplication and a reduction operation into a single step.
+
+The dot product of two vectors $A$ and $B$ of length n is defined as:
+
+$$
+A \cdot B = \sum_{i=1}^{n} A_i B_i
+$$
+
+Let's take a few examples.
+
+### Vector Vector Dot Product
+Here is an example of a dot product between two vectors:
+
+$$
+\begin{bmatrix} \color{#2ECC71}{1} \\\ \color{cyan}{2} \\\ \color{magenta}{3} \\\ \color{#D4A017}{4} \end{bmatrix} \cdot \begin{bmatrix} \color{#2ECC71}1 \\\ \color{cyan}2 \\\ \color{magenta}3 \\\ \color{#D4A017}4 \end{bmatrix} = \color{#2ECC71}{(1 \times 1)} \color{white}+ \color{cyan}{(2 \times 2)} \color{white}+ \color{magenta}{(3 \times 3)} \color{white}+ \color{#D4A017}{(4 \times 4)}\color{white}=30
+$$
+
+### Matrix Vector Dot Product
+In a Matrix Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
+
+To perform a dot product between a matrix $A$ and a vector $v$, the number of columns in the matrix must equal the number of elements (rows) in the vector.
+
+If matrix $A$ has the shape $(m \times n)$ and vector $v$ has the shape $(n \times 1)$, the resulting vector w will have the shape $(m \times 1)$.
+
+Matrix Vector dot product is defined as:
+
+$$
+C_{m,1} = A_{m, n}v_{n, 1}
+$$
+
+Let's take an example:
+
+$$
+\begin{bmatrix} \color{#2ECC71}{1} & \color{#2ECC71}{2} & \color{#2ECC71}{3} \\\ \color{#D4A017}{4} & \color{#D4A017}{5} & \color{#D4A017}{6} \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}{7} \\\ \color{cyan}{8} \\\ \color{cyan}{9} \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 8, 9]} \\\ \color{#D4A017}{[4, 5, 6]} \cdot \color{cyan}{[7, 8, 9]} \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{8} + \color{#2ECC71}{3} \times \color{cyan}{9}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{8} + \color{#D4A017}{6} \times \color{cyan}{9})
+\end{bmatrix} = \begin{bmatrix} 50 \\\ 122 \end{bmatrix}
+$$
+
+### Matrix Matrix Dot Product
+In a Matrix-Matrix dot product (often simply called **Matrix Multiplication**), we don't just multiply corresponding "neighborhoods." Instead, we calculate the dot product of every row from the first matrix with every column of the second matrix.
+
+To perform a dot product between matrix $A$ and matrix $B$, the number of columns in $A$ must equal the number of rows in $B$.
+
+If $A$ is $(m \times n)$ and $B$ is $(n \times p)$, the resulting matrix $C$ will have the shape $(m \times p)$.
+
+Matrix Multiplication is defined as:
+
+$$
+C_{m,p} = A_{m, n}B_{n, p}
+$$
+
+Let's take an example:
+
+$$
+\begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 9, 11]} & \color{#2ECC71}{[1, 2, 3]}\cdot \color{magenta}{[8, 10, 12]} \\\ \color{#D4A017}[4, 5, 6] \cdot \color{cyan}{[7, 9, 11]} & \color{#D4A017}[4, 5, 6] \cdot \color{magenta}{[8, 10, 12]} \\\ \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{9} + \color{#2ECC71}{3} \times \color{cyan}{11}) & (\color{#2ECC71}{1} \times \color{magenta}{8} + \color{#2ECC71}{2} \times \color{magenta}{10} + \color{#2ECC71}{3} \times \color{magenta}{12}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{9} + \color{#D4A017}{6} \times \color{cyan}{11}) & (\color{#D4A017}{4} \times \color{magenta}{8} + \color{#D4A017}{5} \times \color{magenta}{10} + \color{#D4A017}{6} \times \color{magenta}{12}) \end{bmatrix} = \begin{bmatrix} 58 & 64 \\\ 139 & 154 \end{bmatrix}
+$$
+
+### Implementation
+
+Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the most simple network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
+
+Unfortunately, by nature, matrix multiplication is an $O(n^3)$ operation. Tons of optimizations have been done over the decades on this operation both on Software front as well as Hardware front. Those optimization techniques are themselves worthy of their own book.
+
+First we'll add the method definition in our tensor implementation, write tests for matrix multiplications with correct assumptions and then we'll jump into the textbook definition.
+
+This definition goes into `impl` of `Tensor` in `tensor.rs`:
+
+```rust
+pub fn matmul_naive(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+    todo!();
+}
+
+```
+
+##### Tests for Matrix Multiplication
+
+This test captures a wide range of scenarios: vectors, matrices, and mixed shapes.
+
+Don’t worry if the full set of cases feels overwhelming at first.
+You’re not expected to memorize these combinations—only try to recognize the patterns as they emerge.
+
+```rust
+    #[test]
+    fn test_matmul() -> Result<(), TensorError> {
+        let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0], vec![2, 2])?;
+        let b = Tensor::new(vec![5.0, 6.0, 7.0, 8.0], vec![2, 2])?;
+        let c = a.matmul_naive(&b)?;
+        assert_eq!(c.data(), &[19.0, 22.0, 43.0, 50.0]);
+        assert_eq!(c.shape(), &[2, 2]);
+        assert_eq!(c.data(), c1.data());
+        assert_eq!(c.shape(), c1.shape());
+
+        let d = Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![2, 3])?;
+        let e = Tensor::new(vec![7.0, 8.0, 9.0, 10.0, 11.0, 12.0], vec![3, 2])?;
+        let f = d.matmul_naive(&e)?;
+        assert_eq!(f.data(), &[58.0, 64.0, 139.0, 154.0]);
+        assert_eq!(f.shape(), &[2, 2]);
+        assert_eq!(f.data(), f1.data());
+        assert_eq!(f.shape(), f1.shape());
+
+        let g = Tensor::new(vec![1.0, 2.0, 3.0], vec![3, 1])?;
+        let h = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
+        let i = g.matmul_naive(&h)?;
+        assert_eq!(i.data(), &[4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 12.0, 15.0, 18.0]);
+        assert_eq!(i.shape(), &[3, 3]);
+        assert_eq!(i.data(), i1.data());
+        assert_eq!(i.shape(), i1.shape());
+
+        let j = Tensor::new(vec![1.0, 2.0, 3.0], vec![1, 3])?;
+        let k = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
+        let l = j.matmul_naive(&k)?;
+        assert_eq!(l.data(), &[32.0]);
+        assert_eq!(l.shape(), &[1, 1]);
+        assert_eq!(l.data(), l1.data());
+        assert_eq!(l.shape(), l1.shape());
+
+        let m = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
+        let n = Tensor::new(vec![4.0, 5.0, 6.0], vec![3])?;
+        let o = m.matmul_naive(&n)?;
+        assert_eq!(o.data(), &[32.0]);
+        assert_eq!(o.shape(), &[1]);
+        assert_eq!(o.data(), o1.data());
+        assert_eq!(o.shape(), o1.shape());
+
+        let p = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
+        let q = Tensor::new(vec![4.0, 5.0, 6.0], vec![1, 3])?;
+        let r = q.matmul_naive(&p)?;
+        assert_eq!(r.data(), &[32.0]);
+        assert_eq!(r.shape(), &[1]);
+        assert_eq!(r.data(), r1.data());
+        assert_eq!(r.shape(), r1.shape());
+
+        let s = Tensor::new(vec![1.0, 2.0, 3.0], vec![3])?;
+        let t = Tensor::new(vec![4.0, 5.0, 6.0], vec![3, 1])?;
+        let u = s.matmul_naive(&t)?;
+        assert_eq!(u.data(), &[32.0]);
+        assert_eq!(u.shape(), &[1]);
+        assert_eq!(u.data(), u1.data());
+        assert_eq!(u.shape(), u1.shape());
+
+        Ok(())
+    }
+```
+
+##### The Naive Implementation
+
+In a standard textbook, you learn to calculate one cell of the result matrix at a time by taking the dot product of a row from $A$ and a column from $B$. In code, it looks like this:
+
+```rust
+    pub fn matmul_naive(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        let (a_rows, a_cols) = match self.shape.len() {
+            1 => (1, self.shape[0]),
+            2 => (self.shape[0], self.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        let (b_rows, b_cols) = match other.shape.len() {
+            1 => (other.shape[0], 1),
+            2 => (other.shape[0], other.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        if a_cols != b_rows {
+            return Err(TensorError::ShapeMismatch);
+        }
+
+        let mut result_data = vec![0.0; a_rows * b_cols];
+
+        for i in 0..a_rows {
+            for j in 0..b_cols {
+                for k in 0..a_cols {
+                    result_data[i * b_cols + j] +=
+                        self.data[i * a_cols + k] * other.data[k * b_cols + j];
+                }
+            }
+        }
+
+        let out_shape = match (self.shape.len(), other.shape.len()) {
+            (1, 1) => vec![1],
+            (1, 2) => vec![b_cols],
+            (2, 1) => vec![a_rows],
+            _ => vec![a_rows, b_cols],
+        };
+
+        Tensor::new(result_data, out_shape)
+    }
+```
+
+This exactly mirrors the math. We perform shape normalizations and then directly go into a three-level nested `for` loop to calculate each cell of the resulting matrix (or vector).
+
+Let's use our previous example:
+
+$$
+A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix},
+B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
+$$
+
+**Calculation of $C_{0,0}$​ (Top Left)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{0,0} & i=0  & j=0 & k=0 & 0 + (\color{#2ECC71}A_{0,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​= 0 + (\color{#2ECC71}1 \times \color{cyan}7\color{white}) = 7 \\
+\hline
+C_{0,0} & i=0  & j=0 & k=1 & 7 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 7+(\color{#2ECC71}2 \times \color{cyan}9\color{white}) = 25 \\
+\hline
+C_{0,0} & i=0  & j=0 & k=2 & 25 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= (\color{#2ECC71}3 \times \color{cyan}11\color{white}) = 58 \\
+\end{array}
+\implies
+\begin{bmatrix}
+\mathbf{\color{lightgray}58} & 0 \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{0,1}$​ (Top Right)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{0,1} & i=0  & j=1 & k=0 & 0 +(\color{#2ECC71}A_{0,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0 +(\color{#2ECC71}1 \times \color{magenta}8) \color{white}= 8 \\
+\hline
+C_{0,1} & i=0  & j=1 & k=1 & 8 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 8+(\color{#2ECC71}2 \times \color{magenta}10\color{white}) = 28 \\
+\hline
+C_{0,1} & i=0  & j=1 & k=2 & 28 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{magenta}B_{1,2}\color{white}) ​= 28+(\color{#2ECC71}3 \times \color{magenta}12\color{white}) = 64\\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & \mathbf{\color{lightgray}64} \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{1,0}$​ (Bottom Left)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{1,0} & i=1  & j=0 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​=0+ (\color{#D4A017}4 \times \color{cyan}7\color{white}) = 28 \\
+\hline
+C_{1,0} & i=1  & j=0 & k=1 & 28 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 28+(\color{#D4A017}5 \times \color{cyan}9\color{white}) = 73 \\
+\hline
+C_{1,0} & i=1  & j=0 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{cyan}11\color{white}) = 139 \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+\mathbf{\color{lightgray}139} & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{1,1}$​ (Bottom Right)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{1,1} & i=1  & j=1 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0+ (\color{#D4A017}4 \times \color{magenta}8\color{white}) = 32 \\
+\hline
+C_{1,1} & i=1  & j=1 & k=1 & 32 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 32+(\color{#D4A017}5 \times \color{magenta}10\color{white}) = 82 \\
+\hline
+C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{magenta}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{magenta}12\color{white}) = 154 \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+139 & \mathbf{\color{lightgray}154}
+\end{bmatrix}
+\end{array}
+$$
+
+
 
 # Linear Regression
 Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. A machine learns the rules from data, thus the term "Machine Learning".
@@ -2303,6 +2028,285 @@ Now, let's verify our predicted line along with data:
 > **TIP**: 
 > 
 > If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
+
+
+# Matrix Multiplication Revisited
+#### The Optimized Implementation (IKJ)
+
+This loop order matters more than the math itself.
+
+Many libraries compress this entire operation into a single function call. Here, we’re going to expand it fully: not because it’s efficient, but because this is where understanding is built.
+
+Take your time. You’re supposed to.
+
+We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
+
+1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
+1. Modern CPU cores use SIMD (Single Instruction, Multiple Data) to perform the same operation on multiple values simultaneously as long as the operations can be performed independently of each other. The naive implementation is sequential. So, it cannot leverage the parallel processing power of the CPU.
+
+To avoid these two problems, we can re-arrange the multiplication code a little bit and it will boost performance significantly. 
+
+```rust
+for i in 0..a_rows {
+    let out_row_offset = i * b_cols;
+
+    for k in 0..a_cols {
+        let aik = self.data[i * a_cols + k];
+        let rhs_row_offset = k * b_cols;
+        let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
+        let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
+
+        for j in 0..b_cols {
+            out_slice[j] = out_slice[j] + aik * rhs_slice[j];
+        }
+    }
+}
+```
+
+Up to this point, nothing “mathematical” has changed. We are still computing the same dot products, summing the same values, and producing the same result matrix.
+
+What has changed is how the CPU walks through memory.
+
+1. **Improved Cache Locality:** In the IKJ order, the innermost loop moves across index `j`. This means we are reading `other.data` and writing to data in a straight, continuous line. The CPU can predict this "streaming" access and pre-fetch the data into the cache avoiding the RAM fetch.
+
+1. **Autovectorization (SIMD) Potential:** Because the inner loop operates on contiguous slices of memory and applies the same arithmetic operation independently across elements, this loop structure is amenable to compiler autovectorization. In such cases, the Rust compiler (via LLVM) may choose to emit SIMD instructions, allowing multiple values from matrix $B$ to be loaded, multiplied by the scalar `aik`, and accumulated into the output slice in parallel.
+It is important to note that SIMD usage is **not guaranteed**. However, this implementation aligns with the access patterns that modern compilers are most capable of optimizing.
+
+We have an intuition how it will work under the hood but we also need to make sure that the mathematics involved is intact and we end up in same result. Let's verify the mathematics in this case to ensure we are not missing any crucial point:
+
+$$
+A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix}, 
+B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
+$$
+
+##### Processing Row $i = 0$ (First row of A)
+We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|}
+C_{row 0} & k = 0 & C_{row 0} + (A_{0,0} \times B_{row0}) & [0, 0] + \color{#2ECC71}1 \color{white}\times [\color{cyan}7, \color{magenta}8\color{white}] = [7, 8] \\
+\hline
+C_{row 0} & k = 1 & C_{row 0} + (A_{0,1} \times B_{row1}) & [7, 8] + \color{#2ECC71}2 \color{white}\times [\color{cyan}9, \color{magenta}10\color{white}] = [7+18, 8+20] = [25, 28] \\
+\hline
+C_{row 0} & k = 2 & C_{row 0} + (A_{0,2} \times B_{row2}) & [25, 28] + \color{#2ECC71}3 \times [\color{cyan}11, \color{magenta}12\color{white}] = [25+33, 28+36] = \mathbf{[58, 64]}
+\end{array}
+\implies
+\begin{bmatrix}
+\mathbf{\color{lightgray}{58}} & \mathbf{\color{lightgray}{64}} \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+##### Processing Row $i = 1$ (Second row of A)
+We move to the second row of our result $C$.
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c}
+C_{row 1} & k = 0 & C_{row 1} + (A_{1,0} \times B_{row0}) & [0, 0] + \color{#D4A017}4 \times [\color{cyan}7, \color{magenta}8\color{white}] = [28, 32] \\
+\hline
+C_{row 1} & k = 1 & C_{row 1} + (A_{1,1} \times B_{row1}) & [28, 32] + \color{#D4A017}5 \times [\color{cyan}9, \color{magenta}10\color{white}] = [28+45, 32+50] = [73, 82] \\
+\hline
+C_{row 1} & k = 2 & C_{row 1} + (A_{1,2} \times B_{row2}) & [73, 82] + \color{#D4A017}6 \times [\color{cyan}11, \color{magenta}12]\color{white} = [73+66, 82+72] = \mathbf{[139, 154]} \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+\mathbf{\color{lightgray}139} & \mathbf{\color{lightgray}154}
+\end{bmatrix}
+\end{array}
+$$
+ 
+#### Full Implementation
+Here is the full implementation of the optimized method:
+
+```rust
+pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
+        let (a_rows, a_cols) = match self.shape.len() {
+            1 => (1, self.shape[0]),
+            2 => (self.shape[0], self.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        let (b_rows, b_cols) = match other.shape.len() {
+            1 => (other.shape[0], 1),
+            2 => (other.shape[0], other.shape[1]),
+            _ => return Err(TensorError::InvalidRank),
+        };
+
+        if a_cols != b_rows {
+            return Err(TensorError::ShapeMismatch);
+        }
+
+        let mut data = vec![0.0; a_rows * b_cols];
+
+        for i in 0..a_rows {
+            let out_row_offset = i * b_cols;
+
+            for k in 0..a_cols {
+                let aik = self.data[i * a_cols + k];
+                let rhs_row_offset = k * b_cols;
+                let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
+                let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
+
+                for j in 0..b_cols {
+                    out_slice[j] = out_slice[j] + aik * rhs_slice[j];
+                }
+            }
+        }
+
+        let out_shape = match (self.shape.len(), other.shape.len()) {
+            (1, 1) => vec![1],
+            (1, 2) => vec![b_cols],
+            (2, 1) => vec![a_rows],
+            _ => vec![a_rows, b_cols],
+        };
+
+        Ok(Tensor { data, shape: out_shape })
+ }
+ ```
+
+Before looking at the numbers, it’s worth setting expectations.
+
+We haven’t used unsafe code.
+We haven’t used SIMD intrinsics.
+We haven’t used parallelism.
+
+All we did was change loop order.
+
+That alone is enough to produce a dramatic difference.
+
+ ```text
+$ target/release/build-your-own-nn 
+Input Tensor A:
+  |  1.0000,   2.0000,   3.0000|
+  |  4.0000,   5.0000,   6.0000|
+
+Input Tensor B:
+  |  7.0000,   8.0000|
+  |  9.0000,  10.0000|
+  | 11.0000,  12.0000|
+
+
+Matrix Multiplication using naive method:
+  | 58.0000,  64.0000|
+  |139.0000, 154.0000|
+
+Time taken (naive): 61.729µs
+
+Matrix Multiplication using optimized method:
+  | 58.0000,  64.0000|
+  |139.0000, 154.0000|
+
+Time taken (optimized): 12.845µs
+```
+
+In programming, performance means nothing without accuracy. Here is the verification of the accuracy.
+
+```text
+$ target/release/build-your-own-nn 
+Input Tensor A Dimensions:
+[50, 60]
+Input Tensor B Dimensions:
+[60, 40]
+
+Matrix Multiplication using naive method:
+Time taken (naive): 396.712µs
+
+Matrix Multiplication using optimized method:
+Time taken (optimized): 26.23µs
+
+Results match!
+```
+
+Here is how both the methods performed the calculations:
+
+```text
+Matrix Multiplication using naive method:
+    Processing row 0
+        Processing column 0
+            Multiplying A[0,0] = 1 with B[0,0] = 7
+            Multiplying A[0,1] = 2 with B[1,0] = 9
+            Multiplying A[0,2] = 3 with B[2,0] = 11
+        Completed row 0, column 0, data now [58.0, 0.0, 0.0, 0.0]
+        
+        Processing column 1
+            Multiplying A[0,0] = 1 with B[0,1] = 8
+            Multiplying A[0,1] = 2 with B[1,1] = 10
+            Multiplying A[0,2] = 3 with B[2,1] = 12
+        Completed row 0, column 1, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Completed row 0, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Processing row 1
+        Processing column 0
+            Multiplying A[1,0] = 4 with B[0,0] = 7
+            Multiplying A[1,1] = 5 with B[1,0] = 9
+            Multiplying A[1,2] = 6 with B[2,0] = 11
+        Completed row 1, column 0, data now [58.0, 64.0, 139.0, 0.0]
+        
+        Processing column 1
+            Multiplying A[1,0] = 4 with B[0,1] = 8
+            Multiplying A[1,1] = 5 with B[1,1] = 10
+            Multiplying A[1,2] = 6 with B[2,1] = 12
+        Completed row 1, column 1, data now [58.0, 64.0, 139.0, 154.0]
+    
+    Completed row 1, data now [58.0, 64.0, 139.0, 154.0]
+
+Final Result:
+    | 58.0000,  64.0000|
+    |139.0000, 154.0000|
+
+Matrix Multiplication using optimized method:
+    Processing row 0 of A
+        Multiplying A[0,0] = 1 with row 0 of B
+            Adding 1 * 7 to output position (0,0)
+            Adding 1 * 8 to output position (0,1)
+        Completed processing A[0,0], output row now [7.0, 8.0]
+        
+        Multiplying A[0,1] = 2 with row 1 of B
+            Adding 2 * 9 to output position (0,0)
+            Adding 2 * 10 to output position (0,1)
+        Completed processing A[0,1], output row now [25.0, 28.0]
+        
+        Multiplying A[0,2] = 3 with row 2 of B
+            Adding 3 * 11 to output position (0,0)
+            Adding 3 * 12 to output position (0,1)
+        Completed processing A[0,2], output row now [58.0, 64.0]
+    
+    Completed row 0 of A, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Processing row 1 of A
+        Multiplying A[1,0] = 4 with row 0 of B
+            Adding 4 * 7 to output position (1,0)
+            Adding 4 * 8 to output position (1,1)
+        Completed processing A[1,0], output row now [28.0, 32.0]
+        
+        Multiplying A[1,1] = 5 with row 1 of B
+            Adding 5 * 9 to output position (1,0)
+            Adding 5 * 10 to output position (1,1)
+        Completed processing A[1,1], output row now [73.0, 82.0]
+        
+        Multiplying A[1,2] = 6 with row 2 of B
+            Adding 6 * 11 to output position (1,0)
+            Adding 6 * 12 to output position (1,1)
+        Completed processing A[1,2], output row now [139.0, 154.0]
+    
+    Completed row 1 of A, data now [58.0, 64.0, 139.0, 154.0]
+
+Final Result:
+  | 58.0000,  64.0000|
+  |139.0000, 154.0000|
+
+```
+
+> **NOTE** 
+>
+> We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
+
+If you only remember one thing from this section, remember this: changing loop order does not change math—but it completely changes performance. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
 
 # Neural Network
 

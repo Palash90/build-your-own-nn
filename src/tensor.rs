@@ -229,15 +229,15 @@ impl Tensor {
     }
 
     pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
-        let (a_rows, a_cols) = match self.shape.len() {
-            1 => (1, self.shape[0]),
-            2 => (self.shape[0], self.shape[1]),
+        let (a_rows, a_cols) = match self.shape.as_slice() {
+            [c] => (1, *c),
+            [r, c] => (*r, *c),
             _ => return Err(TensorError::InvalidRank),
         };
 
-        let (b_rows, b_cols) = match other.shape.len() {
-            1 => (other.shape[0], 1),
-            2 => (other.shape[0], other.shape[1]),
+        let (b_rows, b_cols) = match other.shape.as_slice() {
+            [r] => (*r, 1),
+            [r, c] => (*r, *c),
             _ => return Err(TensorError::InvalidRank),
         };
 
@@ -247,17 +247,22 @@ impl Tensor {
 
         let mut data = vec![0.0; a_rows * b_cols];
 
-        for i in 0..a_rows {
-            let out_row_offset = i * b_cols;
+        // The core optimization: IKJ order with Iterators
+        for (i, a_row) in self.data.chunks_exact(a_cols).enumerate() {
+            let out_row_start = i * b_cols;
+            let out_row = &mut data[out_row_start..out_row_start + b_cols];
 
-            for k in 0..a_cols {
-                let aik = self.data[i * a_cols + k];
-                let rhs_row_offset = k * b_cols;
-                let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
-                let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
+            for (k, &aik) in a_row.iter().enumerate() {
+                if aik == 0.0 {
+                    continue;
+                } // Skip zeros for a small speed boost
 
-                for j in 0..b_cols {
-                    out_slice[j] = out_slice[j] + aik * rhs_slice[j];
+                let b_row_start = k * b_cols;
+                let b_row = &other.data[b_row_start..b_row_start + b_cols];
+
+                // This zip() is the key to SIMD and removing bounds checks
+                for (out_val, &b_val) in out_row.iter_mut().zip(b_row.iter()) {
+                    *out_val += aik * b_val;
                 }
             }
         }

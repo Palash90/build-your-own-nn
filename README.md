@@ -1947,289 +1947,112 @@ Now, let's verify our predicted line along with data:
 
 <!-- Locked In -->
 
-# Matrix Multiplication Revisited
+# Matrix Multiplication Revisited: The Need for Speed
 
-#### The Optimized Implementation (IKJ)
+In our initial exploration of Linear Regression, we implemented a straightforward matrix multiplication. It was a literal translation of the mathematical definition—a triple-nested loop that worked perfectly for small datasets.
 
-This loop order matters more than the math itself.
+However, as we move toward **Neural Networks**, the scale changes. A single training session for a deep network requires performing hundreds to thousands of matrix multiplications per epoch. Although, we are not chasing peak performance in this guide, at this scale, the difference between "mathematically correct" and "machine-optimized" is the difference between training a model in minutes versus hours.
 
-Many libraries compress this entire operation into a single function call. Here, we’re going to expand it fully: not because it’s efficient, but because this is where understanding is built.
+## The Bottleneck: Why Naive is Slow
 
-Take your time. You’re supposed to.
-
-We have seen the naive implementation and how the math unfolds. While the naive version is mathematically intuitive, it is a nightmare to work with for the following reasons:
-
-1. In the standard implementation, to calculate one element, the CPU has to jump across different rows of Matrix $B$ (`other.data[k * b_cols + j]`). Because memory itself is a one-dimensional array, jumping between rows means the CPU has to constantly fetch new data from the slow RAM into its fast Cache.
-1. Modern CPU cores use SIMD (Single Instruction, Multiple Data) to perform the same operation on multiple values simultaneously as long as the operations can be performed independently of each other. The naive implementation is sequential. So, it cannot leverage the parallel processing power of the CPU.
-
-To avoid these two problems, we can re-arrange the multiplication code a little bit and it will boost performance significantly. 
+In standard textbooks, we learn the `ijk` order: iterate over rows of $A$ (the `i` loop), then columns of $B$ (the `j` loop), then sum the products (the `k` loop).
 
 ```rust
 for i in 0..a_rows {
-    let out_row_offset = i * b_cols;
-
-    for k in 0..a_cols {
-        let aik = self.data[i * a_cols + k];
-        let rhs_row_offset = k * b_cols;
-        let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
-        let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
-
-        for j in 0..b_cols {
-            out_slice[j] = out_slice[j] + aik * rhs_slice[j];
+    for j in 0..b_cols {
+        for k in 0..a_cols {
+            result_data[i * b_cols + j] +=
+                self.data[i * a_cols + k] * other.data[k * b_cols + j];
         }
     }
 }
 ```
 
-Up to this point, nothing “mathematical” has changed. We are still computing the same dot products, summing the same values, and producing the same result matrix.
+This implementation suffers from a classic hardware performance trap: **Cache Locality**.
 
-What has changed is how the CPU walks through memory.
+**The Problem: Jumping Across the Flat Buffer**
 
-1. **Improved Cache Locality:** In the IKJ order, the innermost loop moves across index `j`. This means we are reading `other.data` and writing to data in a straight, continuous line. The CPU can predict this "streaming" access and pre-fetch the data into the cache avoiding the RAM fetch.
+In Rust, our `Tensor` data is a `Vec<f32>`, which is a **Flat Buffer**. Even though we think of a matrix as a square, the computer sees it as a single line.
 
-1. **Autovectorization (SIMD) Potential:** Because the inner loop operates on contiguous slices of memory and applies the same arithmetic operation independently across elements, this loop structure is amenable to compiler autovectorization. In such cases, the Rust compiler (via LLVM) may choose to emit SIMD instructions, allowing multiple values from matrix $B$ to be loaded, multiplied by the scalar `aik`, and accumulated into the output slice in parallel.
-It is important to note that SIMD usage is **not guaranteed**. However, this implementation aligns with the access patterns that modern compilers are most capable of optimizing.
-
-We have an intuition how it will work under the hood but we also need to make sure that the mathematics involved is intact and we end up in same result. Let's verify the mathematics in this case to ensure we are not missing any crucial point:
+Let's look at a  matrix :
 
 $$
-A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix}, 
-B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
+B\ =\ \begin{bmatrix} \color{cyan}{1} & \color{magenta}{2} & 3 \\\ \color{cyan}{4} & \color{magenta}{5} & 6 \end{bmatrix} 
 $$
 
-##### Processing Row $i = 0$ (First row of A)
-We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
+In memory (RAM), it is laid out like this:
 
 $$
-\begin{array}{}
-\begin{array}{c|c|c|c|}
-C_{row 0} & k = 0 & C_{row 0} + (A_{0,0} \times B_{row0}) & [0, 0] + \color{#2ECC71}1 \color{white}\times [\color{cyan}7, \color{magenta}8\color{white}] = [7, 8] \\
-\hline
-C_{row 0} & k = 1 & C_{row 0} + (A_{0,1} \times B_{row1}) & [7, 8] + \color{#2ECC71}2 \color{white}\times [\color{cyan}9, \color{magenta}10\color{white}] = [7+18, 8+20] = [25, 28] \\
-\hline
-C_{row 0} & k = 2 & C_{row 0} + (A_{0,2} \times B_{row2}) & [25, 28] + \color{#2ECC71}3 \times [\color{cyan}11, \color{magenta}12\color{white}] = [25+33, 28+36] = \mathbf{[58, 64]}
-\end{array}
-\implies
-\begin{bmatrix}
-\mathbf{\color{lightgray}{58}} & \mathbf{\color{lightgray}{64}} \\\
-0 & 0
-\end{bmatrix}
-\end{array}
+\text{RAM Index: }\underbrace{[\color{cyan}{1}\ \color{magenta}{2}\ \color{white}{3}]}_{Row 0}\ \underbrace{[\color{cyan}{4}\ \color{magenta}{5}\ \color{white}{6}]}_{Row 1}
 $$
 
-##### Processing Row $i = 1$ (Second row of A)
-We move to the second row of our result $C$.
+Even though we visualize a matrix as a square, the computer sees it as a Flat Buffer in memory. When we jump across different rows of matrix $B$ to calculate a single element, the CPU is forced to constantly fetch new data from the slow RAM into its fast Cache.
 
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c}
-C_{row 1} & k = 0 & C_{row 1} + (A_{1,0} \times B_{row0}) & [0, 0] + \color{#D4A017}4 \times [\color{cyan}7, \color{magenta}8\color{white}] = [28, 32] \\
-\hline
-C_{row 1} & k = 1 & C_{row 1} + (A_{1,1} \times B_{row1}) & [28, 32] + \color{#D4A017}5 \times [\color{cyan}9, \color{magenta}10\color{white}] = [28+45, 32+50] = [73, 82] \\
-\hline
-C_{row 1} & k = 2 & C_{row 1} + (A_{1,2} \times B_{row2}) & [73, 82] + \color{#D4A017}6 \times [\color{cyan}11, \color{magenta}12]\color{white} = [73+66, 82+72] = \mathbf{[139, 154]} \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-\mathbf{\color{lightgray}139} & \mathbf{\color{lightgray}154}
-\end{bmatrix}
-\end{array}
-$$
- 
-#### Full Implementation
-Here is the full implementation of the optimized method:
+## The Evolution: From Loops to Iterators
+
+To fix this, we need to rethink how we traverse memory. By rearranging our loops to an ikj order and utilizing Rust’s idiomatic iterators, we can transform our matmul function into a high-performance engine.
+
+This loop order matters more than the math itself.
 
 ```rust
+//src/tensor.rs
 pub fn matmul(&self, other: &Tensor) -> Result<Tensor, TensorError> {
-        let (a_rows, a_cols) = match self.shape.len() {
-            1 => (1, self.shape[0]),
-            2 => (self.shape[0], self.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
+    // Shape Check and Normalization, same as naive multiplication
 
-        let (b_rows, b_cols) = match other.shape.len() {
-            1 => (other.shape[0], 1),
-            2 => (other.shape[0], other.shape[1]),
-            _ => return Err(TensorError::InvalidRank),
-        };
+    // The core optimization: IKJ order with Iterators
+    for (i, a_row) in self.data.chunks_exact(a_cols).enumerate() {
+        let out_row_start = i * b_cols;
+        let out_row = &mut data[out_row_start..out_row_start + b_cols];
 
-        if a_cols != b_rows {
-            return Err(TensorError::ShapeMismatch);
-        }
+        for (k, &aik) in a_row.iter().enumerate() {
+            if aik == 0.0 {
+                continue;
+            } // Skip zeros for a small speed boost
 
-        let mut data = vec![0.0; a_rows * b_cols];
+            let b_row_start = k * b_cols;
+            let b_row = &other.data[b_row_start..b_row_start + b_cols];
 
-        for i in 0..a_rows {
-            let out_row_offset = i * b_cols;
-
-            for k in 0..a_cols {
-                let aik = self.data[i * a_cols + k];
-                let rhs_row_offset = k * b_cols;
-                let rhs_slice = &other.data[rhs_row_offset..rhs_row_offset + b_cols];
-                let out_slice = &mut data[out_row_offset..out_row_offset + b_cols];
-
-                for j in 0..b_cols {
-                    out_slice[j] = out_slice[j] + aik * rhs_slice[j];
-                }
+            // This zip() is the key to SIMD and removing bounds checks
+            for (out_val, &b_val) in out_row.iter_mut().zip(b_row.iter()) {
+                *out_val += aik * b_val;
             }
         }
+    }
 
-        let out_shape = match (self.shape.len(), other.shape.len()) {
-            (1, 1) => vec![1],
-            (1, 2) => vec![b_cols],
-            (2, 1) => vec![a_rows],
-            _ => vec![a_rows, b_cols],
-        };
-
-        Ok(Tensor { data, shape: out_shape })
- }
- ```
- <!-- Relay the tests from matmul and make it double duty -->
-
-Before looking at the numbers, it’s worth setting expectations.
-
-We haven’t used unsafe code.
-We haven’t used SIMD intrinsics.
-We haven’t used parallelism.
-
-All we did was change loop order.
-
-That alone is enough to produce a dramatic difference.
-
- ```text
-$ target/release/build-your-own-nn 
-Input Tensor A:
-  |  1.0000,   2.0000,   3.0000|
-  |  4.0000,   5.0000,   6.0000|
-
-Input Tensor B:
-  |  7.0000,   8.0000|
-  |  9.0000,  10.0000|
-  | 11.0000,  12.0000|
-
-
-Matrix Multiplication using naive method:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-Time taken (naive): 61.729µs
-
-Matrix Multiplication using optimized method:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-Time taken (optimized): 12.845µs
+    // Forming return tensor
+}
 ```
 
-In programming, performance means nothing without accuracy. Here is the verification of the accuracy.
+Up to this point, nothing mathematically has changed. We are still computing the same dot products, summing the same values, and producing the same result matrix.
 
-```text
-$ target/release/build-your-own-nn 
-Input Tensor A Dimensions:
-[50, 60]
-Input Tensor B Dimensions:
-[60, 40]
+To review the full mathematical derivation and how the optimized method performs the  calculation, check [Appendix B](#appendix-b)
+ 
+**Why This Is Faster**
 
-Matrix Multiplication using naive method:
-Time taken (naive): 396.712µs
+1. **Cache-Friendly Access (IKJ Order):** By moving the `k` loop outside the `j` loop, we process Matrix  row by row. Since  is stored in Row-Major order in our flat buffer, the CPU reads contiguous blocks of memory. This allows the hardware to pre-fetch data efficiently, minimizing "cache misses."
+2. **Eliminating Bounds Checks:** In the naive version, every access like `data[i * b_cols + j]` requires the Rust runtime to verify the index is within bounds. By using `.chunks_exact()` and `.zip()`, we provide the compiler with proof of the slice lengths, allowing it to strip away those expensive safety checks.
+3. **Enabling SIMD:** The `zip()` iterator over contiguous slices is a signal to the LLVM compiler. It can often "auto-vectorize" this loop, using **SIMD (Single Instruction, Multiple Data)** instructions to multiply 4 or 8 floating-point numbers in a single CPU cycle.
+4. **Zero-Skipping:** In neural networks, many weights or activations (especially after a ReLU layer) are exactly zero. A simple `if aik == 0.0 { continue; }` allows us to skip an entire row-worth of multiplications and additions.
 
-Matrix Multiplication using optimized method:
-Time taken (optimized): 26.23µs
+## Benchmark: The Reality of Optimization
 
-Results match!
-```
+When we compare our naive implementation against the optimized version, the performance gap widens drastically as the scale increases:
 
-Here is how both the methods performed the calculations:
+| Matrix Size | Naive Time | Optimized Time | Speedup |
+| --- | --- | --- | --- |
+| **2 x 2** | 742 ns | 741 ns | 1.00x |
+| **16 x 16** | 9.648 µs | 1.533 µs | 6.29x |
+| **128 x 128** | 7.859 ms | 350.634 µs | **22.42x** |
 
-```text
-Matrix Multiplication using naive method:
-    Processing row 0
-        Processing column 0
-            Multiplying A[0,0] = 1 with B[0,0] = 7
-            Multiplying A[0,1] = 2 with B[1,0] = 9
-            Multiplying A[0,2] = 3 with B[2,0] = 11
-        Completed row 0, column 0, data now [58.0, 0.0, 0.0, 0.0]
-        
-        Processing column 1
-            Multiplying A[0,0] = 1 with B[0,1] = 8
-            Multiplying A[0,1] = 2 with B[1,1] = 10
-            Multiplying A[0,2] = 3 with B[2,1] = 12
-        Completed row 0, column 1, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Completed row 0, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Processing row 1
-        Processing column 0
-            Multiplying A[1,0] = 4 with B[0,0] = 7
-            Multiplying A[1,1] = 5 with B[1,0] = 9
-            Multiplying A[1,2] = 6 with B[2,0] = 11
-        Completed row 1, column 0, data now [58.0, 64.0, 139.0, 0.0]
-        
-        Processing column 1
-            Multiplying A[1,0] = 4 with B[0,1] = 8
-            Multiplying A[1,1] = 5 with B[1,1] = 10
-            Multiplying A[1,2] = 6 with B[2,1] = 12
-        Completed row 1, column 1, data now [58.0, 64.0, 139.0, 154.0]
-    
-    Completed row 1, data now [58.0, 64.0, 139.0, 154.0]
+While absolute timings vary by hardware, the relative speedup remains consistent. You can run the demo to see these benchmarks on your own machine.
 
-Final Result:
-    | 58.0000,  64.0000|
-    |139.0000, 154.0000|
+## Checkpoint
 
-Matrix Multiplication using optimized method:
-    Processing row 0 of A
-        Multiplying A[0,0] = 1 with row 0 of B
-            Adding 1 * 7 to output position (0,0)
-            Adding 1 * 8 to output position (0,1)
-        Completed processing A[0,0], output row now [7.0, 8.0]
-        
-        Multiplying A[0,1] = 2 with row 1 of B
-            Adding 2 * 9 to output position (0,0)
-            Adding 2 * 10 to output position (0,1)
-        Completed processing A[0,1], output row now [25.0, 28.0]
-        
-        Multiplying A[0,2] = 3 with row 2 of B
-            Adding 3 * 11 to output position (0,0)
-            Adding 3 * 12 to output position (0,1)
-        Completed processing A[0,2], output row now [58.0, 64.0]
-    
-    Completed row 0 of A, data now [58.0, 64.0, 0.0, 0.0]
-    
-    Processing row 1 of A
-        Multiplying A[1,0] = 4 with row 0 of B
-            Adding 4 * 7 to output position (1,0)
-            Adding 4 * 8 to output position (1,1)
-        Completed processing A[1,0], output row now [28.0, 32.0]
-        
-        Multiplying A[1,1] = 5 with row 1 of B
-            Adding 5 * 9 to output position (1,0)
-            Adding 5 * 10 to output position (1,1)
-        Completed processing A[1,1], output row now [73.0, 82.0]
-        
-        Multiplying A[1,2] = 6 with row 2 of B
-            Adding 6 * 11 to output position (1,0)
-            Adding 6 * 12 to output position (1,1)
-        Completed processing A[1,2], output row now [139.0, 154.0]
-    
-    Completed row 1 of A, data now [58.0, 64.0, 139.0, 154.0]
-
-Final Result:
-  | 58.0000,  64.0000|
-  |139.0000, 154.0000|
-
-```
-
-> **NOTE** 
->
-> We use raw loops here for educational clarity, though Rust iterators can offer similar or better performance via bounds-check elimination. If we switch to `chunk`, we can even squeeze some more performance.
-
-If you only remember one thing from this section, remember this: changing loop order does not change math—but it completely changes performance. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
+If you only remember one thing from this section, remember this: **changing loop order does not change math—but it completely changes performance**. This is the difference between *knowing linear algebra* and *thinking like a systems programmer*.
 
 # Neural Network
 
-In the previous chapter, we saw how a machine "learns" the building blocks of a linear equation. By adjusting $m$ (slope) and $c$ (intercept), we could fit a straight line to our data. This technique is incredibly powerful for simple predictions, but the real world is rarely a straight line.
+In the previous chapters, we saw how a machine "learns" the building blocks of a linear equation. By adjusting $m$ (slope) and $c$ (intercept), we could fit a straight line to our data. This technique is incredibly powerful for simple predictions, but the real world is rarely a straight line.
 
 **The Limitation of Linearity**
 
@@ -3565,31 +3388,6 @@ Another few points:
 This brings us to the end of our journey. I personally enjoyed writing this guide very much. It is an eye opening experience altogether.
 
 
-# Extras
-
-While working on this project, I have come up with few ways to visualize the data. These are some console tricks that I used to visuallize the data on console. This guide was written with one single idea - radical transparency. As a result, during the course, we never installed any dependency. Yet during the course of writing this guide, I had to view the data plots. Visualization of data is a necessity in Machine Learning projects. Consequently, to bridge the gap, I had to discover ideas which made the visualization easy for me without breaking the rule of transparency.
-
-In this section, I will unveil those tools.
-
-**Who this section is for**
-
-If any of the following ticks for you, please read on:
-
-- This section is for motivated readers who want to uncover the tools that helped shaping this guide
-- This section is for readers who loves to build small scale tools to understand the nitty-gritties of the system
-- To look how some funny ideas got shaped as a tool
-
-**Who this section is not for**
-
-If any of the following ticks for you, please feel free to skip the rest:
-
-- If you are looking for another Machine Learning concept, this section is not about that
-- If you rather spend time building another Machine Learning Solution
-- If you have time crunch
-
-## PBM Generator tool
-## Plotter Tool
-## Image Renderer
 
 # Appendix A
 
@@ -3693,3 +3491,138 @@ C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times
 \end{array}
 $$
 
+# Appendix B
+
+In this Appendix, we go over the step by step deduction of the optimized implementations of matrix multiplication which we discussed in [Matrix Multiplication Revisited](#matrix-multiplication-revisited-the-need-for-speed).
+
+The mathematical correctness of the optimized matrix multiplication:
+
+$$
+A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix}, 
+B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
+$$
+
+**Processing Row $i = 0$ (First row of A)**
+
+We work on the first row of the result $C$. The inner loop $j$ updates the entire row slice at once.
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|}
+C_{row 0} & k = 0 & C_{row 0} + (A_{0,0} \times B_{row0}) & [0, 0] + \color{#2ECC71}1 \color{white}\times [\color{cyan}7, \color{magenta}8\color{white}] = [7, 8] \\
+\hline
+C_{row 0} & k = 1 & C_{row 0} + (A_{0,1} \times B_{row1}) & [7, 8] + \color{#2ECC71}2 \color{white}\times [\color{cyan}9, \color{magenta}10\color{white}] = [7+18, 8+20] = [25, 28] \\
+\hline
+C_{row 0} & k = 2 & C_{row 0} + (A_{0,2} \times B_{row2}) & [25, 28] + \color{#2ECC71}3 \times [\color{cyan}11, \color{magenta}12\color{white}] = [25+33, 28+36] = \mathbf{[58, 64]}
+\end{array}
+\implies
+\begin{bmatrix}
+\mathbf{\color{lightgray}{58}} & \mathbf{\color{lightgray}{64}} \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Processing Row $i = 1$ (Second row of A)**
+
+We move to the second row of our result $C$.
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c}
+C_{row 1} & k = 0 & C_{row 1} + (A_{1,0} \times B_{row0}) & [0, 0] + \color{#D4A017}4 \times [\color{cyan}7, \color{magenta}8\color{white}] = [28, 32] \\
+\hline
+C_{row 1} & k = 1 & C_{row 1} + (A_{1,1} \times B_{row1}) & [28, 32] + \color{#D4A017}5 \times [\color{cyan}9, \color{magenta}10\color{white}] = [28+45, 32+50] = [73, 82] \\
+\hline
+C_{row 1} & k = 2 & C_{row 1} + (A_{1,2} \times B_{row2}) & [73, 82] + \color{#D4A017}6 \times [\color{cyan}11, \color{magenta}12]\color{white} = [73+66, 82+72] = \mathbf{[139, 154]} \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+\mathbf{\color{lightgray}139} & \mathbf{\color{lightgray}154}
+\end{bmatrix}
+\end{array}
+$$
+
+Here is how both the methods performed the calculations:
+
+```text
+Matrix Multiplication using naive method:
+    Processing row 0
+        Processing column 0
+            Multiplying A[0,0] = 1 with B[0,0] = 7
+            Multiplying A[0,1] = 2 with B[1,0] = 9
+            Multiplying A[0,2] = 3 with B[2,0] = 11
+        Completed row 0, column 0, data now [58.0, 0.0, 0.0, 0.0]
+        
+        Processing column 1
+            Multiplying A[0,0] = 1 with B[0,1] = 8
+            Multiplying A[0,1] = 2 with B[1,1] = 10
+            Multiplying A[0,2] = 3 with B[2,1] = 12
+        Completed row 0, column 1, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Completed row 0, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Processing row 1
+        Processing column 0
+            Multiplying A[1,0] = 4 with B[0,0] = 7
+            Multiplying A[1,1] = 5 with B[1,0] = 9
+            Multiplying A[1,2] = 6 with B[2,0] = 11
+        Completed row 1, column 0, data now [58.0, 64.0, 139.0, 0.0]
+        
+        Processing column 1
+            Multiplying A[1,0] = 4 with B[0,1] = 8
+            Multiplying A[1,1] = 5 with B[1,1] = 10
+            Multiplying A[1,2] = 6 with B[2,1] = 12
+        Completed row 1, column 1, data now [58.0, 64.0, 139.0, 154.0]
+    
+    Completed row 1, data now [58.0, 64.0, 139.0, 154.0]
+
+Final Result:
+    | 58.0000,  64.0000|
+    |139.0000, 154.0000|
+
+Matrix Multiplication using optimized method:
+    Processing row 0 of A
+        Multiplying A[0,0] = 1 with row 0 of B
+            Adding 1 * 7 to output position (0,0)
+            Adding 1 * 8 to output position (0,1)
+        Completed processing A[0,0], output row now [7.0, 8.0]
+        
+        Multiplying A[0,1] = 2 with row 1 of B
+            Adding 2 * 9 to output position (0,0)
+            Adding 2 * 10 to output position (0,1)
+        Completed processing A[0,1], output row now [25.0, 28.0]
+        
+        Multiplying A[0,2] = 3 with row 2 of B
+            Adding 3 * 11 to output position (0,0)
+            Adding 3 * 12 to output position (0,1)
+        Completed processing A[0,2], output row now [58.0, 64.0]
+    
+    Completed row 0 of A, data now [58.0, 64.0, 0.0, 0.0]
+    
+    Processing row 1 of A
+        Multiplying A[1,0] = 4 with row 0 of B
+            Adding 4 * 7 to output position (1,0)
+            Adding 4 * 8 to output position (1,1)
+        Completed processing A[1,0], output row now [28.0, 32.0]
+        
+        Multiplying A[1,1] = 5 with row 1 of B
+            Adding 5 * 9 to output position (1,0)
+            Adding 5 * 10 to output position (1,1)
+        Completed processing A[1,1], output row now [73.0, 82.0]
+        
+        Multiplying A[1,2] = 6 with row 2 of B
+            Adding 6 * 11 to output position (1,0)
+            Adding 6 * 12 to output position (1,1)
+        Completed processing A[1,2], output row now [139.0, 154.0]
+    
+    Completed row 1 of A, data now [58.0, 64.0, 139.0, 154.0]
+
+Final Result:
+  | 58.0000,  64.0000|
+  |139.0000, 154.0000|
+
+```
+
+Here you can see, why the mathematical derivation matches but with modern CPU tricks, we have minimized the execution time.

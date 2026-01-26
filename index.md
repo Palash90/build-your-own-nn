@@ -670,6 +670,42 @@ layout: default
     }
 </style>
 
+<style>
+    /* Table Styling for Dark Mode */
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 20px 0;
+        color: var(--text-color);
+        border: none;
+        border-radius: 6px;
+        overflow: hidden; /* Ensures background stays within rounded corners */
+    }
+
+    th, td {
+        padding: 12px 15px;
+        text-align: left;
+        border: 1px solid var(--border-color);
+        background-color:  var(--sidebar-bg); /* Slightly lighter/different dark for headers */
+    }
+
+    /* Header styling */
+    th {
+        background-color: #1c2128; /* Slightly lighter/different dark for headers */
+        font-weight: bold;
+        color: #58a6ff; /* Blue accent for headers */
+    }
+
+    /* zebra stripes for better readability */
+    tr:nth-child(even) {
+        background-color: rgba(48, 54, 61, 0.3);
+    }
+
+    /* Hover effect on rows */
+    tr:hover {
+        background-color: rgba(56, 139, 253, 0.1);
+    }
+</style>
 
 <script>
     window.MathJax = {
@@ -957,7 +993,8 @@ layout: default
 
     });
 </script>
-
+<script data-goatcounter="https://palash90.goatcounter.com/count"
+        async src="//gc.zgo.at/count.js"></script>
 
 <div class="github-corner-wrap">
     <a href="https://github.com/{{ site.github_username }}/{{ site.github_repo }}" class="github-corner"

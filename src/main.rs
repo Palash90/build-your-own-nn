@@ -1,4 +1,5 @@
 use build_your_own_nn::Rng;
+use build_your_own_nn::examples::benchmark::run_benchmark;
 use build_your_own_nn::examples::image_reconstructor;
 use build_your_own_nn::examples::linear_regression;
 use build_your_own_nn::examples::linear_regression_animated;
@@ -52,6 +53,7 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
         "Animated XOR Decision Boundary",
         "Animated XNOR Decision Boundary",
         "Image Reconstructor",
+        "Run Matrix Multiplication Benchmark",
         "Exit",
     ];
 
@@ -90,7 +92,8 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 Ok(_) => println!("Done"),
                 Err(err) => println!("Error: {:?}", err),
             },
-            16 | _ => {
+            16 => run_benchmark(),
+            17 | _ => {
                 println!("Goodbye!");
                 break;
             }

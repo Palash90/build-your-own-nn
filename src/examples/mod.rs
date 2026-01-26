@@ -6,3 +6,4 @@ pub mod neural_network_xor;
 pub mod neural_network_xor_animated;
 pub mod image_reconstructor;
 pub mod neural_network_not_animated;
+pub mod benchmark;

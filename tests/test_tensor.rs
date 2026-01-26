@@ -224,7 +224,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reduce_sum_axis_0_brand_total() {
+    fn test_reduce_sum_axis_0_total() {
         let tensor = setup_matrix_for_reduction();
         let res = tensor.sum(Some(0)).unwrap();
 
@@ -233,7 +233,7 @@ mod tests {
     }
 
     #[test]
-    fn test_reduce_sum_axis_1_monthly_total() {
+    fn test_reduce_sum_axis_1_total() {
         let tensor = setup_matrix_for_reduction();
         let res = tensor.sum(Some(1)).unwrap();
 

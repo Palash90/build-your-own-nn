@@ -31,7 +31,7 @@ If you are curious what the final system looks like, you can run it today. To ru
 
 > **warning**
 > 
-> If you choose Image Reconstruction example, it will take a long time to converge depending on your machine's architecture.
+> If you choose Image Reconstruction example, it will take a long time to train depending on your machine's architecture.
 
 ## Who This Guide Is For (and Who It Is Not)
 
@@ -352,7 +352,9 @@ To fix this, we will implement the `std::fmt::Display` trait for our Tensor. Thi
 
     Let's take an example,
 
-    $$\begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{#D4A017}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{#D4A017}4_{(3)} \end{bmatrix}$$
+    $$
+    \begin{bmatrix} \color{cyan}1_{0} & \color{magenta}2_{1} & \color{#2ECC71}3_{2} & \color{#D4A017}4_{3} \end{bmatrix} \implies \begin{bmatrix} \color{cyan}1_{(0)} & \color{magenta}2_{(1)} \\\ \color{#2ECC71}3_{(2)} & \color{#D4A017}4_{(3)} \end{bmatrix}
+    $$
 
     Here, we have a `Vec` of length 4 with 2 rows and 2 columns. The first row is formed by the elements at index 0 and index 1 and the second row is formed by the elements at index 2 and index 3.
 1. We'll output only up to four decimal points ensuring uniformity and alignment
@@ -648,7 +650,7 @@ A ø B
 
 ## Beyond Neighbors: The Road to Connectivity
 
-We have mastered element wise arithmetic, where tensors interact only with their mirror images in the opposing container. For a neural network to identify a pattern though, it must be able to look across, not just it's mirror match.
+We have mastered element wise arithmetic, where tensors interact only with their mirror images in the opposing container. For a neural network to identify a pattern though, it must be able to look across, not just its mirror match.
 
 In the next chapter, we introduce the operations that enable this global view. We will learn to flip our perspective with **Transpose**, condense our knowledge with **Sum**, and finally, implement Matrix Multiplication—the engine’s heart.
 
@@ -656,19 +658,17 @@ In the next chapter, we introduce the operations that enable this global view. W
 
 # Linear Transformations and Aggregations
 
-In the previous set of operations, we treated matrices like containers—adding or multiplying elements that lived in the exact same neighborhood. However, to build a neural network, we need to support a few _2D_ operations as well, which transfers elements across different neighbourhoods.
+Previously, we treated matrices as containers, adding or multiplying elements in the same neighborhood. To build a neural network, we need operations that move data across different neighborhoods.
 
-Following are the three operations we'll need for Machine Learning.
+Below are the three operations we'll need for Machine Learning.
 
 ## Transpose
 
-One of the most fundamental transformations in linear algebra involves changing the very orientation of the data. This is known as **Transpose**. In a transposition operation, the rows of the matrix become columns and the columns become rows.
+The Transpose operation changes the orientation of a matrix: rows become columns, and columns become rows. Mathematically, this is expressed as:
 
 $$
-(A^T​)_{i,j}=A_{j,i}​
+(A^T​)_{\color{cyan}{i},\color{magenta}{j}}=A_{\color{magenta}{j},\color{cyan}{i}}​
 $$
-
-Let's take a few examples:
 
 ### Vector Transpose
 
@@ -676,25 +676,15 @@ $$
 \begin{bmatrix} \color{cyan}{1} & \color{magenta}{2} & \color{gold}{3} & \color{lime}{4} \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} \\\ \color{magenta}{2} \\\ \color{gold}{3} \\\ \color{lime}{4} \end{bmatrix}
 $$
 
-### Square Matrix Transpose
+### Matrix Transpose
 
-$$
-\begin{bmatrix} \color{cyan}{1} & \color{cyan}{2} \\\ \color{magenta}{3} & \color{magenta}{4} \end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} & \color{magenta}{3} \\\ \color{cyan}{2} & \color{magenta}{4} \end{bmatrix}
-$$
-
-### Rectangular Matrix Transpose
 $$
 \begin{bmatrix} \color{cyan}{1} & \color{cyan}{2} \\\ \color{magenta}{3} & \color{magenta}{4} \\\ \color{gold}{5} & \color{gold}{6}\end{bmatrix} \xrightarrow{transpose} \begin{bmatrix} \color{cyan}{1} & \color{magenta}{3} & \color{gold}{5} \\\ \color{cyan}{2} & \color{magenta}{4} & \color{gold}{6} \end{bmatrix}
 $$
 
-> **NOTE**
-> 
-> In the matrix transpose examples, take a note that the main diagonal elements ($A_{i,j}$ where $i=j$) stay in their positions and don't move. Additionally, in the case of rectangular matrix transposition the shape changes. 
-
-For example, here transposition converts $(3 \times 2) \xrightarrow{} (2 \times 3)$.
-
 ### Implementation
-With this mathematical background, we can now understand what transpose operation will transform the data. With that understanding, we'll first add these tests:
+
+With this mathematical background, we can now understand how the transpose operation will transform the data. Based on the understanding, we start writing the tests and implement the operation:
 
 ```rust
     #[test]
@@ -727,6 +717,8 @@ With this mathematical background, we can now understand what transpose operatio
         let swapped = a.transpose()?;
 
         assert_eq!(swapped.data(), &[1.0, 4.0, 2.0, 5.0, 3.0, 6.0]);
+
+        // The row, column should be reversed
         assert_eq!(swapped.shape(), &[3, 2]);
         Ok(())
     }
@@ -736,25 +728,22 @@ With this mathematical background, we can now understand what transpose operatio
         let a = Tensor::new(vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0], vec![6])?;
         let swapped = a.transpose()?;
 
+        // No change for 1D
         assert_eq!(swapped.data(), &[1.0, 2.0, 3.0, 4.0, 5.0, 6.0]);
         assert_eq!(swapped.shape(), &[6]);
         Ok(())
     }
 ```
 
-To implement transpose, we have to physically move our numbers into a new Vec. While some advanced libraries just change the "metadata" (using something called strides), we are going to actually rebuild the data. This keeps our memory "contiguous," which makes our other operations faster because the CPU can predict where the next number is.
+To transpose matrices in Rust, we physically rebuild the data in a new `Vec`. While some libraries use "strides" (metadata changes), rebuilding keeps our memory contiguous, which makes subsequent operations faster for the CPU to predict.
 
 **The Logic:**
 
 1. Check the Rank: We only support transposing 1D or 2D tensors.
 
-1. The 1D Shortcut: If it's a 1D vector, there's no "grid" to flip, so we just return a copy.
+2. The 1D Shortcut: In a 1D vector, there's no "grid" to flip and we simply return a copy.
 
-1. The 2D Re-map: We create a new Vec of the same size. Then, we use a nested loop to visit every "cell" of our grid.
-
-> **NOTE**
-> 
-> The Index Swap: In our original data, we find an element at $row * cols + col$. In our new data, the dimensions are swapped, so the position becomes $col * rows + row$.
+3. The 2D Re-map: We use **Index Swap**. In the original data, we find an element at $row * cols + col$. In transposed data, the position becomes $col * rows + row$.
 
 ```rust
     pub fn transpose(&self) -> Result<Tensor, TensorError> {
@@ -780,61 +769,27 @@ To implement transpose, we have to physically move our numbers into a new Vec. W
     }
 ```
 
-
-
 ## Reduction
-A matrix or a vector gives us information about individual elements, but at times we need an aggregation of those individual elements.
 
-Let's look at an example of a matrix which represents sales records of cars in the last three months:
+A matrix or a vector gives us information about individual elements, but we often need an aggregation of those individual elements. There are three types of aggregation we can perform row wise total (axis 1 sum) or column wise total (axis 0 sum) or grand total where the whole matrix reduces to a single scalar.
 
-$$
-\begin{array}{c|ccc}
-\mathbf {} & \mathbf{Maruti} & \mathbf{Hyundai} & \mathbf{Toyota} \\
-\hline
-Oct  & 1000 & 2000 & 3000 \\
-Nov  & 1200 & 1800 & 2000 \\
-Dec  & 1500 & 2500 & 2200 \\
-\end{array}
-$$
-
-This individual representation is great for individual sales of a particular brand in a particular month.
-
-However, if we need to know how many cars were sold in October or how many Maruti cars were sold in the last three months, we need to reduce all the row-wise or column-wise entries into a single number. This operation is known as **Reduction**.
-
-Using reduction we can represent this:
+Consider a matrix representing car sales over three months:
 
 $$
 \begin{array}{c|ccc|c}
-{} & \mathbf{Maruti} & \mathbf{Hyundai} & \mathbf{Toyota} & \mathbf{Monthly\ Total} \\
+\mathbf {} & \mathbf{Maruti} & \mathbf{Hyundai} & \mathbf{Toyota} & \mathbf{Row\ Wise\ Total} \\
 \hline
-Oct  & 1000 & 2000 & 3000 & 6000 \\
-Nov  & 1200 & 1800 & 2000 & 5000 \\
-Dec  & 1500 & 2500 & 2200 & 6200 \\
+Oct  & 1000 & 2000 & 3000 & \color{gold}{6000} \\
+Nov  & 1200 & 1800 & 2000 & \color{gold}{5000} \\
+Dec  & 1500 & 2500 & 2200 & \color{gold}{6200} \\
 \hline
-Brand\ Total  & 3700 & 6300 & 7200 & \\
-\end{array}
-$$
-
-The 'Brand Total' is a column wise (later represented as Axis 0 sum) reduction and the 'Monthly Total' is a row wise (later represented as Axis 1 sum) reduction.
-
-If we sum across the rows first and then do another sum of the resulting vector, it will result in the grand sum (the bottom right corner '17200'). This sums up every element in the whole matrix into a single scalar value.
-
-$$
-\begin{array}{c|ccc|c}
-\mathbf {} & \mathbf{Maruti} & \mathbf{Hyundai} & \mathbf{Toyota} & \mathbf{Monthly\ Total} \\
-\hline
-Oct  & 1000 & 2000 & 3000 & 6000 \\
-Nov  & 1200 & 1800 & 2000 & 5000 \\
-Dec  & 1500 & 2500 & 2200 & 6200 \\
-\hline
-\mathbf{Brand\ Total}  & 3700 & 6300 & 7200 & \mathbf{\color{green}17200} \\
+\mathbf{Column\ Wise\ Total}  & \color{cyan}{3700} & \color{cyan}{6300} & \color{cyan}{7200} & \mathbf{\color{lime}17200\ (Grand\ Total)} \\
 \end{array}
 $$
 
 ### Implementation
-We are almost coming to an end to our tensor journey. The only remaining tensor operation we'll implement is a sum reducer.
 
-Following our mathematical definitions, let's start defining our method first. We should be able to sum across rows or columns or reduce the whole tensor into a single scalar value. We would need the axis on which to sum but for a global sum, we don't have anything to pass. We will use `Option` type for the `axis` parameter and we will return a tensor object.
+Following our mathematical definition, let's start defining our method first. We should be able to sum across rows or columns or reduce the whole tensor into a single scalar value. We would need the axis on which to sum but for a global sum, we don't have anything to pass. We will use `Option` type for the `axis` parameter and we will return a tensor object.
 
 Let's put the definition in a function in the existing tensor `impl`
 
@@ -864,7 +819,7 @@ fn setup_matrix_for_reduction() -> Tensor {
     }
 
     #[test]
-    fn test_reduce_sum_axis_0_brand_total() {
+    fn test_reduce_sum_axis_0_total() {
         let tensor = setup_matrix_for_reduction();
         let res = tensor.sum(Some(0)).unwrap();
 
@@ -873,7 +828,7 @@ fn setup_matrix_for_reduction() -> Tensor {
     }
 
     #[test]
-    fn test_reduce_sum_axis_1_monthly_total() {
+    fn test_reduce_sum_axis_1_total() {
         let tensor = setup_matrix_for_reduction();
         let res = tensor.sum(Some(1)).unwrap();
 
@@ -954,44 +909,38 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
     }
 ```
 
-That's all the heavy mathematics that we care for now and all the implementations are completed. A few minor functions will still be needed, we'll implement them as required. Next we'll be able to dive deep into our first ML algorithm which we'll use to train a model to learn from data.
-
 ## Dot Product
 
-At this point, the guide splits readers into two camps:
+**Dot Product** is the most critical operation for neural networks. Following our neighborhood analogy, this operation allows numbers to infer information across neighborhoods.
 
-- ML practitioners who know *what* matrix multiplication does
-- systems programmers who know *how* memory works
-The goal of the next section is to bridge that gap.
-
-We have already seen how to multiply two matrices or vectors element wise. However, there is another multiplication operation we can perform on tensors, known as the **Dot Product**. It is slightly more involved, as it combines element wise multiplication and a reduction operation into a single step.
-
-The dot product of two vectors $A$ and $B$ of length n is defined as:
-
-$$
-A \cdot B = \sum_{i=1}^{n} A_i B_i
-$$
-
-Let's take a few examples.
+We'll go slowly over the concepts and examples, if required please re-read this topic until you get a good grasp. I recommend, practicing a few examples by hand too.
 
 ### Vector Vector Dot Product
-Here is an example of a dot product between two vectors:
+
+Mathematically, the dot product of two vectors $A$ and $B$ of length $n$ is defined as:
+
+$$
+A \cdot B = \sum_{i=1}^{n} A_i \cdot B_i
+$$
+
+Let's look at an example:
 
 $$
 \begin{bmatrix} \color{#2ECC71}{1} \\\ \color{cyan}{2} \\\ \color{magenta}{3} \\\ \color{#D4A017}{4} \end{bmatrix} \cdot \begin{bmatrix} \color{#2ECC71}1 \\\ \color{cyan}2 \\\ \color{magenta}3 \\\ \color{#D4A017}4 \end{bmatrix} = \color{#2ECC71}{(1 \times 1)} \color{white}+ \color{cyan}{(2 \times 2)} \color{white}+ \color{magenta}{(3 \times 3)} \color{white}+ \color{#D4A017}{(4 \times 4)}\color{white}=30
 $$
 
 ### Matrix Vector Dot Product
+
 In a Matrix Vector dot product, we calculate the dot product of every row from the matrix with the single column of the vector.
 
 To perform a dot product between a matrix $A$ and a vector $v$, the number of columns in the matrix must equal the number of elements (rows) in the vector.
 
-If matrix $A$ has the shape $(m \times n)$ and vector $v$ has the shape $(n \times 1)$, the resulting vector w will have the shape $(m \times 1)$.
+If matrix $A$ has the shape $(m \times n)$ and vector $v$ has the shape $(n \times 1)$, the resulting vector $w$ will have the shape $(m \times 1)$.
 
 Matrix Vector dot product is defined as:
 
 $$
-C_{m,1} = A_{m, n}v_{n, 1}
+C_{m} = A_{m, :} \cdot v
 $$
 
 Let's take an example:
@@ -1002,16 +951,17 @@ $$
 $$
 
 ### Matrix Matrix Dot Product
-In a Matrix-Matrix dot product (often simply called **Matrix Multiplication**), we don't just multiply corresponding "neighborhoods." Instead, we calculate the dot product of every row from the first matrix with every column of the second matrix.
 
-To perform a dot product between matrix $A$ and matrix $B$, the number of columns in $A$ must equal the number of rows in $B$.
+In a Matrix-Matrix dot product (often simply called **Matrix Multiplication**), we calculate the dot product of every row from the first matrix with every column of the second matrix.
+
+To perform a dot product between matrix $A$ and matrix $B$, the number of columns in $A$ must match the number of rows in $B$.
 
 If $A$ is $(m \times n)$ and $B$ is $(n \times p)$, the resulting matrix $C$ will have the shape $(m \times p)$.
 
 Matrix Multiplication is defined as:
 
 $$
-C_{m,p} = A_{m, n}B_{n, p}
+C_{m,p} = A_{m, :} \cdot B_{:, p}
 $$
 
 Let's take an example:
@@ -1022,11 +972,11 @@ $$
 
 ### Implementation
 
-Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the most simple network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
+Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the simplest network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim yet. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
 
-Unfortunately, by nature, matrix multiplication is an $O(n^3)$ operation. Tons of optimizations have been done over the decades on this operation both on Software front as well as Hardware front. Those optimization techniques are themselves worthy of their own book.
+Unfortunately, by nature, matrix multiplication is an $O(n^3)$ operation. Tons of optimizations have been done over the decades on this operation both on software front as well as hardware front. Those optimization techniques are themselves worthy of their own book and a detailed explanation of each and every optimization is out of this guide's scope.
 
-First we'll add the method definition in our tensor implementation, write tests for matrix multiplications with correct assumptions and then we'll jump into the textbook definition.
+First we'll add the method definition in our tensor implementation, write tests for matrix multiplications with correct assumptions and then we'll jump into the textbook implementation.
 
 This definition goes into `impl` of `Tensor` in `tensor.rs`:
 
@@ -1037,12 +987,12 @@ pub fn matmul_naive(&self, other: &Tensor) -> Result<Tensor, TensorError> {
 
 ```
 
-##### Tests for Matrix Multiplication
+**Tests for Matrix Multiplication**
 
 This test captures a wide range of scenarios: vectors, matrices, and mixed shapes.
 
 Don’t worry if the full set of cases feels overwhelming at first.
-You’re not expected to memorize these combinations—only try to recognize the patterns as they emerge.
+You’re not expected to memorize these combinations, only try to recognize the patterns as they emerge.
 
 ```rust
     #[test]
@@ -1093,7 +1043,7 @@ You’re not expected to memorize these combinations—only try to recognize the
     }
 ```
 
-##### The Naive Implementation
+**The Naive Implementation**
 
 In a standard textbook, you learn to calculate one cell of the result matrix at a time by taking the dot product of a row from $A$ and a column from $B$. In code, it looks like this:
 
@@ -1165,64 +1115,17 @@ C_{0,0} & i=0  & j=0 & k=2 & 25 + (\color{#2ECC71}A_{0,2}​ \color{white}\times
 \end{array}
 $$
 
-**Calculation of $C_{0,1}$​ (Top Right)**
+To keep this chapter short, I have kept one cell calculation, the rest follows the same. Still, if you want to look at the whole derivation, I  have covered the whole multiplication step by step in [Appendix A](#appendix-a)
 
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{0,1} & i=0  & j=1 & k=0 & 0 +(\color{#2ECC71}A_{0,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0 +(\color{#2ECC71}1 \times \color{magenta}8) \color{white}= 8 \\
-\hline
-C_{0,1} & i=0  & j=1 & k=1 & 8 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 8+(\color{#2ECC71}2 \times \color{magenta}10\color{white}) = 28 \\
-\hline
-C_{0,1} & i=0  & j=1 & k=2 & 28 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{magenta}B_{1,2}\color{white}) ​= 28+(\color{#2ECC71}3 \times \color{magenta}12\color{white}) = 64\\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & \mathbf{\color{lightgray}64} \\\
-0 & 0
-\end{bmatrix}
-\end{array}
-$$
+## Checkpoint
 
-**Calculation of $C_{1,0}$​ (Bottom Left)**
+1. By now, you should be explain the **Transpose** operation by flipping the matrix
+2. You should be able to calculate row wise, column wise and global sum reduction
+3. You should be able to multiply two matrices of different dimensions like $2 \times 2$ vs. $2 \times 3$
 
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{1,0} & i=1  & j=0 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​=0+ (\color{#D4A017}4 \times \color{cyan}7\color{white}) = 28 \\
-\hline
-C_{1,0} & i=1  & j=0 & k=1 & 28 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 28+(\color{#D4A017}5 \times \color{cyan}9\color{white}) = 73 \\
-\hline
-C_{1,0} & i=1  & j=0 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{cyan}11\color{white}) = 139 \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-\mathbf{\color{lightgray}139} & 0
-\end{bmatrix}
-\end{array}
-$$
+With these operations successfully implemented and tested, we move on to build the simplest machine learning technique: **Linear Regression**.
 
-**Calculation of $C_{1,1}$​ (Bottom Right)**
-
-$$
-\begin{array}{}
-\begin{array}{c|c|c|c|c}
-C_{1,1} & i=1  & j=1 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0+ (\color{#D4A017}4 \times \color{magenta}8\color{white}) = 32 \\
-\hline
-C_{1,1} & i=1  & j=1 & k=1 & 32 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 32+(\color{#D4A017}5 \times \color{magenta}10\color{white}) = 82 \\
-\hline
-C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{magenta}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{magenta}12\color{white}) = 154 \\
-\end{array}
-\implies
-\begin{bmatrix}
-58 & 64 \\\
-139 & \mathbf{\color{lightgray}154}
-\end{bmatrix}
-\end{array}
-$$
-
-
+<!-- Locked in, no more edits -->
 
 # Linear Regression
 Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. A machine learns the rules from data, thus the term "Machine Learning".
@@ -3658,3 +3561,106 @@ If any of the following ticks for you, please feel free to skip the rest:
 ## PBM Generator tool
 ## Plotter Tool
 ## Image Renderer
+
+# Appendix A
+
+In this Appendix, we complete the Matrix Multiplication example we left in the [Dot Product Implementation](#implementation-4) section.
+
+We'll start with the matrices
+
+$$
+A = \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix},\ 
+B = \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix}
+$$
+
+Here is the Matrix Multiplication logic code snippet:
+
+```rust
+for i in 0..a_rows {
+    for j in 0..b_cols {
+        for k in 0..a_cols {
+            result_data[i * b_cols + j] +=
+                self.data[i * a_cols + k] * other.data[k * b_cols + j];
+        }
+    }
+}
+```
+
+Below are the step by step calculation of all the cells:
+
+**Calculation of $C_{0,0}$​ (Top Left)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{0,0} & i=0  & j=0 & k=0 & 0 + (\color{#2ECC71}A_{0,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​= 0 + (\color{#2ECC71}1 \times \color{cyan}7\color{white}) = 7 \\
+\hline
+C_{0,0} & i=0  & j=0 & k=1 & 7 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 7+(\color{#2ECC71}2 \times \color{cyan}9\color{white}) = 25 \\
+\hline
+C_{0,0} & i=0  & j=0 & k=2 & 25 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= (\color{#2ECC71}3 \times \color{cyan}11\color{white}) = 58 \\
+\end{array}
+\implies
+\begin{bmatrix}
+\mathbf{\color{lightgray}58} & 0 \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{0,1}$​ (Top Right)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{0,1} & i=0  & j=1 & k=0 & 0 +(\color{#2ECC71}A_{0,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0 +(\color{#2ECC71}1 \times \color{magenta}8) \color{white}= 8 \\
+\hline
+C_{0,1} & i=0  & j=1 & k=1 & 8 + (\color{#2ECC71}A_{0,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 8+(\color{#2ECC71}2 \times \color{magenta}10\color{white}) = 28 \\
+\hline
+C_{0,1} & i=0  & j=1 & k=2 & 28 + (\color{#2ECC71}A_{0,2}​ \color{white}\times \color{magenta}B_{1,2}\color{white}) ​= 28+(\color{#2ECC71}3 \times \color{magenta}12\color{white}) = 64\\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & \mathbf{\color{lightgray}64} \\\
+0 & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{1,0}$​ (Bottom Left)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{1,0} & i=1  & j=0 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{cyan}B_{0,0} \color{white})​=0+ (\color{#D4A017}4 \times \color{cyan}7\color{white}) = 28 \\
+\hline
+C_{1,0} & i=1  & j=0 & k=1 & 28 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{cyan}B_{1,0}\color{white}) ​= 28+(\color{#D4A017}5 \times \color{cyan}9\color{white}) = 73 \\
+\hline
+C_{1,0} & i=1  & j=0 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{cyan}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{cyan}11\color{white}) = 139 \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+\mathbf{\color{lightgray}139} & 0
+\end{bmatrix}
+\end{array}
+$$
+
+**Calculation of $C_{1,1}$​ (Bottom Right)**
+
+$$
+\begin{array}{}
+\begin{array}{c|c|c|c|c}
+C_{1,1} & i=1  & j=1 & k=0 & 0+(\color{#D4A017}A_{1,0}​ \color{white}\times \color{magenta}B_{0,1} \color{white})​= 0+ (\color{#D4A017}4 \times \color{magenta}8\color{white}) = 32 \\
+\hline
+C_{1,1} & i=1  & j=1 & k=1 & 32 + (\color{#D4A017}A_{1,1}​ \color{white}\times \color{magenta}B_{1,1}\color{white}) ​= 32+(\color{#D4A017}5 \times \color{magenta}10\color{white}) = 82 \\
+\hline
+C_{1,1} & i=1  & j=1 & k=2 & 73 + (\color{#D4A017}A_{1,2}​ \color{white}\times \color{magenta}B_{2,0}\color{white}) ​= 73+(\color{#D4A017}6 \times \color{magenta}12\color{white}) = 154 \\
+\end{array}
+\implies
+\begin{bmatrix}
+58 & 64 \\\
+139 & \mathbf{\color{lightgray}154}
+\end{bmatrix}
+\end{array}
+$$
+

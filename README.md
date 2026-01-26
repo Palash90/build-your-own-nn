@@ -1,14 +1,12 @@
 # Prologue — Opening the Black Box
 
-<!-- No more edit to this chapter. -->
-
 Modern machine learning tools have become remarkably easy to use and increasingly difficult to understand.
 
 Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you start training a model.
 
 These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric computations and assumptions - none of which are visible to users. Models work; gradients flow; machines learn. Yet the machinery underneath fades into abstraction.
 
-This guide is an attempt to reverse that process. We build a minimal machine-learning engine from first principles, exposing every step along the way.
+This guide is an attempt to reverse that process. We build a minimal machine learning engine from first principles, exposing every step along the way.
 
 Please note, we are not building a drop‑in replacement for PyTorch or ndarray.
 
@@ -92,11 +90,7 @@ assets/spiral_50.pbm:50 * 50 Original Image, assets/arrow.pbm, output/reconstruc
 
 And that’s where the story begins...
 
-<!-- Locked In, no more edits -->
-
 # The Tensor: From Math to Memory
-
-<!-- No more edit to this chapter. -->
 
 To build a neural network from scratch, we need to construct its foundational building block first. Any machine learning library performs the operations on a data structure known as **Tensor**. We will also build our own tensor.
 
@@ -114,7 +108,7 @@ Before typing a single line of code, we'll share a mental model of the data stru
 - **Scalar (Rank 0):** A single number (e.g. 5.3), used in day-to-day calculations. In code, this is a single variable like `x = 5.3`.
 - **Vector (Rank 1):** When we arrange a collection of numbers in a linear fashion, we get a `Vector`. In code, this is represented as a flat array or `Vec` like `a = [1.0, 2.0, 3.0]`
 - **Matrix (Rank 2):** When we stack multiple vectors together, we get a Matrix. In code, this would be an array of arrays (or `Vec` of `Vec`s): `a = [[1.0, 2.0], [3.0, 4.0]]`. Our workspace revolves around this.
-- **Tensor:** When we arrange multiple matrices in an array or `Vec`, we get higher rank tensors. This would be beyond our scope in this guide and we will keep things simple by restricting ourselves to _2D_ tensors only.
+- **Tensor:** When we arrange multiple matrices in an array or `Vec`, we get higher rank tensors. This would be beyond our scope in this guide and we will keep things simple by restricting ourselves up to _2D_ tensors only.
 
 Here is a visual representation of the concept:
 
@@ -170,7 +164,7 @@ These costs are invisible at small scales but dominate performance and correctne
 
 **Solution: Flat Buffer**
 
-Instead we will store all the numbers in a `Vec`, allowing **cache locality** for efficient access patterns, and keep a separate `shape` vector to guide us on how to interpret the flat list.
+Instead we will store all the numbers in a `Vec`, allowing **cache locality** for efficient access patterns, and keep a separate `shape` vector to guide us on how to interpret the flat list. We use this convention: `shape[0]` is number of rows and `shape[1]` is number of columns.
 
 ```rust
 pub struct Tensor {
@@ -482,13 +476,9 @@ You have reached a critical milestone. By implementing the `Display` trait, you�
 
 If you understand how the formula $(row×cols)+col$ folds a flat buffer into a $2D$ grid, you have mastered the foundational logic of all modern machine learning.
 
-Every operation that follows: whether it is transposing a matrix, performing a dot product, or reducing a loss function—is simply a strategic way of traversing this flat list of numbers.
-
-<!-- Locked In, no more edits -->
+A tensor that can only be stored is not very useful. Learning systems require tensors to interact: values must be added, scaled, and transformed. Before we can build models, we need a minimal algebra.
 
 # Basic Tensor Arithmetic
-
-<!-- No more edit to this chapter. -->
 
 If you already have a good grasp of tensor arithmetic and linear algebra, you may skip to [Linear Regression](#linear-regression).
 
@@ -660,9 +650,7 @@ A ø B
 
 We have mastered element wise arithmetic, where tensors interact only with their mirror images in the opposing container. For a neural network to identify a pattern though, it must be able to look across, not just its mirror match.
 
-In the next chapter, we introduce the operations that enable this global view. We will learn to flip our perspective with **Transpose**, condense our knowledge with **Sum**, and finally, implement Matrix Multiplication—the engine’s heart.
-
-<!-- Locked In, no more edits -->
+In the next chapter, we introduce the operations that enable this global view. We will learn to flip our perspective with **Transpose**, condense our knowledge with **Sum**, and finally, implement **Matrix Multiplication**: the engine’s heart.
 
 # Linear Transformations and Aggregations
 
@@ -919,9 +907,11 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 
 ## Dot Product
 
-**Dot Product** is the most critical operation for neural networks. Following our neighborhood analogy, this operation allows numbers to infer information across neighborhoods.
+**Dot Product** (a.k.a **Matrix Multiplication** or `matmul`) is the most critical operation for neural networks. Following our neighborhood analogy, this operation allows numbers to infer information across neighborhoods.
 
 We'll go slowly over the concepts and examples, if required please re-read this topic until you get a good grasp. I recommend, practicing a few examples by hand too.
+
+If this feels slow, that’s normal. This is the hardest operation we’ll implement by hand.
 
 ### Vector Vector Dot Product
 
@@ -977,8 +967,6 @@ Let's take an example:
 $$
 \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 9, 11]} & \color{#2ECC71}{[1, 2, 3]}\cdot \color{magenta}{[8, 10, 12]} \\\ \color{#D4A017}[4, 5, 6] \cdot \color{cyan}{[7, 9, 11]} & \color{#D4A017}[4, 5, 6] \cdot \color{magenta}{[8, 10, 12]} \\\ \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{9} + \color{#2ECC71}{3} \times \color{cyan}{11}) & (\color{#2ECC71}{1} \times \color{magenta}{8} + \color{#2ECC71}{2} \times \color{magenta}{10} + \color{#2ECC71}{3} \times \color{magenta}{12}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{9} + \color{#D4A017}{6} \times \color{cyan}{11}) & (\color{#D4A017}{4} \times \color{magenta}{8} + \color{#D4A017}{5} \times \color{magenta}{10} + \color{#D4A017}{6} \times \color{magenta}{12}) \end{bmatrix} = \begin{bmatrix} 58 & 64 \\\ 139 & 154 \end{bmatrix}
 $$
-
-If this feels slow, that’s normal. This is the hardest operation we’ll implement by hand.
 
 ### Implementation
 
@@ -1133,13 +1121,9 @@ To keep this chapter short, I have kept one cell calculation, the rest follows t
 2. You should be able to calculate row wise, column wise and global sum reduction
 3. You should be able to multiply two matrices of different dimensions like $2 \times 2$ vs. $2 \times 3$
 
-With these operations successfully implemented and tested, we move on to build the simplest machine learning technique: **Linear Regression**.
-
-<!-- Locked in, no more edits -->
+With these operations successfully implemented and tested, we can now express functions whose behavior depends on parameters. This allows us to build the simplest machine learning technique: **Linear Regression**.
 
 # Linear Regression
-
-In this chapter, we build our first machine learning model.
 
 The static tensors introduced earlier now become _learnable parameters_, updated through mathematics rather than hard-coded rules. Every major concept introduced here—prediction, loss, gradients, and parameter updates—will be reused throughout the rest of this guide.
 
@@ -1151,7 +1135,7 @@ $$
 y = mx+c
 $$
 
-Let's visualize this on a 2 Dimensional Plane:
+On a two dimensional Plane, this looks like:
 
 ```plotly
 {
@@ -1167,11 +1151,9 @@ Let's visualize this on a 2 Dimensional Plane:
 
 ```
 
-Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can determine these two values, we can find the output of the equation given any unknown $x$ value.
+Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can determine these two values from data, we can find the output of the equation for any unknown $x$ value.
 
 For example, if we want to know the value of $y$ when $x$ is $900$, we can easily arrive at the output - $1803$.
-
-The goal of linear regression is to estimate these parameters directly from data.
 
 Given enough input–output pairs that approximately follow a linear relationship, we can infer the values of $m$ and $c$ and use them to predict unseen inputs.
 
@@ -1185,12 +1167,14 @@ We'll continue with the following minimal dataset to follow the calculations eas
     {
       "type": "scatter",
       "x": [1, 2, 3, 4, 5],
-      "y": [5.6, 6.6, 9.5, 10.2, 14]
+      "y": [5.6, 6.6, 9.5, 10.2, 14],
+      "name": "Actual Data"
     },
     {
       "type": "line",
       "x": [0, 1, 2, 3, 4, 5, 6],
-      "y": [3, 5, 7, 9, 11, 13, 15]
+      "y": [3, 5, 7, 9, 11, 13, 15],
+      "name": "Approximate Line"
     }
   ]
 }
@@ -1198,19 +1182,19 @@ We'll continue with the following minimal dataset to follow the calculations eas
 
 ## The Random Starting Point
 
-If you look at the dataset carefully, you will find that the data (blue dots) does not follow a perfect straight line but the green straight line is a quite close approximation to all those data points. We'll try to train our model to guess the straight line from the dataset.
+When we examine the dataset, we notice that the data points (blue dots) don’t align perfectly along a straight line. However, the green line provides a close approximation. Our goal is to train a model that can learn this straight-line relationship from the dataset.
 
-The model starts with random values for $m$ and $c$. 
+The model begins with random values for $m$ and $c$. 
 
 Using these values, it produces predictions $\hat{y}$, which are then compared against the actual outputs $y$.
 
-Let's start implementing this first part. We have five data points here in this small example (in real-world datasets, we often have millions of such data points and once  we pass through the basic understanding of linear regression, we'll also work with larger datasets).
+To illustrate, let’s start with a small example containing just five data points. In real-world scenarios, datasets often contain millions of points, but working with a smaller set helps us build an intuitive understanding of linear regression before scaling up.
 
-We can define a random variables `m` and `c` separately and can initialize those variables with random values. Then we run a `for` loop on each entry of $x$ values to derive $y = mx + c$. However, this approach is not flexible. If we have $z = mx + ny +c$, where we deal with two inputs $x$ and $y$, rather than only $x$, we now need to trace two variables and this goes out of hand very quickly.
+A simple approach would be to define random variables `m` and `c` separately, initialize them with random values, and then run a loop over each input to compute predictions. However, this method quickly becomes inflexible. For instance, if we extend the model to handle two inputs (`x1`,`x2`) instead of just one, we would need to track multiple variables, which becomes cumbersome.
 
-To solve this problem, we will use our `Tensor` implementation instead. With tensors, we can handle multiple inputs and outputs at once and we can easily switch between different length of inputs and outputs.
+To address this, we use our `Tensor` implementation. Tensors allow us to handle multiple inputs and outputs simultaneously, making it easy to adapt to datasets of varying sizes.
 
-We combine both parameters into a single tensor using a standard shortcut known as the **bias trick**:
+We combine both parameters into a single tensor using a standard shortcut known as the **bias trick**. Where `weights[0]` represents $m$ and `weights[1]` represents $c$:
 
 $$
 W=\begin{bmatrix} m \\ c \end{bmatrix}
@@ -1222,13 +1206,13 @@ $$
 X=\begin{bmatrix} x & 1\end{bmatrix}
 $$
 
-If we now calculate the dot product of these two matrices, we get the equation back:
+The dot product neatly recovers the linear equation:
 
 $$
 X \cdot W = \begin{bmatrix} x & 1\end{bmatrix} \cdot \begin{bmatrix} m \\ c \end{bmatrix} = x \cdot m + 1 \cdot c = mx + c
 $$
 
-To implement this, we need a random number generator first. As we are maintaining a no third-party policy, we'll write the maths ourselves. First we create a `trait` in `lib.rs`.
+Finally, to implement this, we need a random number generator. Since we are maintaining a no third-party policy, we'll write the math ourselves. The first step is to create a `trait` in `lib.rs`.
 
 ```rust
 pub trait Rng {
@@ -1259,7 +1243,7 @@ impl Rng for SimpleRng {
 > 
 > In real life scenarios, we would rather use optimized and more flexible libraries like `rand`, `rand_distr` etc. and I encourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
 
-We'll now create a new module (`linear.rs`) in our project to implement the linear regression. It will be a `struct` to hold the weights. The `impl` block will have the initiation, accessor and prediction methods. We'll name our prediction method as `forward` and very soon we'll see why such a naming convention is used.
+We create a new module (`linear.rs`) in our project to implement the linear regression. It will be a `struct` to hold the weights. The `impl` block will have the initialization, accessor and prediction methods. We'll name our prediction method as `forward` and very soon we discover why such a naming convention is used.
 
 ```rust
 pub struct Linear {
@@ -1287,7 +1271,7 @@ impl Linear {
 
 ```
 
-Finally, we'll add some driver code in our `main` function by replacing the existing code with the following:
+Finally, add some driver code in `main` function:
 
 ```rust
 fn main() -> Result<(), TensorError> {
@@ -1311,7 +1295,7 @@ fn main() -> Result<(), TensorError> {
 }
 ```
 
-Look closer on when we are forming the `input` tensor. We are manually adding five `1.0_f32` after each original $x$ input values and we are adding one extra column in the input for bias. The resulting `output` will have $(5 \times 2) \cdot (2 \times 1) = (5 \times 1)$ predictions, matching our actual output dimensions. However, setting the bias this way is very cumbersome and error prone. Soon we'll add a method to add the bias term.
+Take a closer look at how we are forming the `input` tensor. We are manually adding five `1.0_f32` after each original $x$ input values and we are adding one extra column in the input for bias. The resulting `output` will have $(5 \times 2) \cdot (2 \times 1) = (5 \times 1)$ predictions, matching our actual output dimensions. However, setting the bias this way is very cumbersome and error prone. Soon we'll add a method to add the bias term.
 
 Once built, we'll see the generated random weights and generated predictions:
 
@@ -1560,7 +1544,7 @@ At this point, our system has three moving parts:
 
 - Parameters that influence both
 
-What we’re missing is a systematic way to adjust those parameters.”
+What we’re missing is a systematic way to adjust those parameters.
 
 This is where the optimizer comes in.
 
@@ -1639,7 +1623,7 @@ Decreased c Loss:
 
 By looking at the output of losses, we know that if we increase both $m$ and $c$, we decrease the loss and come closer to the data values.
 
-Now, let's increase both $m$ and $c$ by a small margin(0.01) for 5 times, 50 times and  500 times and let's see what happens.
+Now, let's increase both $m$ and $c$ by a small margin (0.01) for 5 times, 50 times and  500 times and let's see what happens.
 
 ```text
 MSE Loss:
@@ -1664,19 +1648,31 @@ Increased b Loss:
 [14.170615]
 
 ```
+
 As we saw in our experiment, increasing the weights helped for a while, but eventually, the loss started increasing again. We encountered two major problems:
 
 - **Overshooting:** We didn't know when to stop increasing $m$. We eventually went past the "sweet spot" and made the model worse.
 
 - **Efficiency:** We increased $m$ and $c$ by the same amount (0.01), but the data suggests that $m$ might need to move faster or slower than $c$ to reach the minimum loss efficiently.
 
-- **Scalability:** We are dealing here with just two parameters. That itself involved a lot of guess work and code changes. Imagine doing this even for 100 parameters. Now imagine, in a real dataset we have thousands, millions or even billion parameters. Performing the same task would be practically impossible.
+- **Scalability:** We are dealing here with just two parameters. That itself involved a lot of guess work and code changes. Imagine doing this even for 100 parameters. Now imagine, in a real dataset we have thousands, millions or even billions parameters. Performing the same task would be practically impossible.
+
+> **checkpoint** 
+> 
+> What We Have Built So Far
+>
+> - A parameterized model (Linear)
+> - A forward pass
+> - A scalar loss
+> - Evidence that naive tuning fails
 
 ### Gradient Descent: Calculus Guided Tuning
 
-Luckily, mathematics comes to rescue us here. For this example, we are using L2 or Mean Squared Error function to calculate the loss which squares the loss.
+We have seen how manual tuning is practically impossible to handle.
 
-Let's visualize a square function:
+This is where mathematics finally gives us leverage. For this example, we are using L2 or Mean Squared Error function to calculate the loss which squares the loss.
+
+Let's visualize a quadratic function:
 
 ```plotly
 {
@@ -1694,7 +1690,7 @@ Let's visualize a square function:
 
 By looking into this plot, we can understand, why our guess initially worked but eventually failed once we crossed the "sweet spot" at the bottom of the parabola. Somewhere between 50 iterations and 500 iterations lies the optimal value of $m$. For $c$ the loss was still decreasing at 500 iterations, we could have continued increasing the parameter to find a better fit.
 
-This is where **calculus** shines. In calculus, the minimum of a curve is found where the derivative is zero. This is the exact transition point where the function stops going down and starts going up. If the slope is zero, you have found the bottom, the minimum loss. When we work with multiple parameters, we don't work with a single slope, we work with gradient, a list of slopes. The Gradient gives us the steepest ascent, we walk in the opposite direction to reach the minimum. This is the **Gradient Descent** algorithm.
+This is where **calculus** shines. In calculus, the minimum of a curve is found where the derivative is zero. This is the exact transition point where the function stops going down and starts going up. If the slope is zero, you have found the bottom, the minimum loss. When we work with multiple parameters, we don't work with a single slope, we work with gradient, a list of slopes. The gradient gives us the steepest ascent, we walk in the opposite direction to reach the minimum. This is the **Gradient Descent** algorithm.
 
 To reach minimum loss by tweaking the weights, we need to perform a series of derivatives. The **chain rule** explains how to find the impact of the weights on the final error by multiplying the local slopes together:
 
@@ -1912,6 +1908,7 @@ Final Output
   | 13.2600|
 ```
 
+Nothing in this loop is magical; only repeated, careful application of the same rules we built from scratch.
 
 ## Success: The Machine Learns
 
@@ -1947,6 +1944,8 @@ Now, let's verify our predicted line along with data:
 > **TIP**: 
 > 
 > If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
+
+<!-- Locked In -->
 
 # Matrix Multiplication Revisited
 

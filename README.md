@@ -6,7 +6,7 @@ Modern machine learning tools have become remarkably easy to use and increasingl
 
 Most tutorials follow a similar path: introduce **NumPy**, then move to frameworks such as **scikit‑learn**, **PyTorch**, or **TensorFlow**. With only a few imports and function calls, you start training a model.
 
-These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric computations and assumptions - none of which are visible to users. Models work; gradients flow; losses decrease; and the machinery underneath fades into abstraction.
+These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric computations and assumptions - none of which are visible to users. Models work; gradients flow; machines learn. Yet the machinery underneath fades into abstraction.
 
 This guide is an attempt to reverse that process. We build a minimal machine-learning engine from first principles, exposing every step along the way.
 
@@ -179,6 +179,8 @@ pub struct Tensor {
 }
 ```
 
+If this design makes sense to you, you already understand how many tensor libraries store tensors.
+
 ## Implementation
 
 Let's get our hands dirty and initialize the project:
@@ -341,6 +343,12 @@ Cargo.toml
 
 ## Visualizing the Memory in Math Format
 
+>**TIP**
+>
+>This section is optional but highly recommended.
+>
+>You may skip it without losing any conceptual understanding in later chapters; the only difference will be how easily you can visualize tensor data during debugging and exploration.
+
 The definition and implementation of the tensor are now clear. We now need a way to intuitively inspect the data. Inspecting a `Vec` of floating-point numbers in a single line is not very helpful for 2D data.
 
 To fix this, we will implement the `std::fmt::Display` trait for our Tensor. This will allow us to print tensors in a recognizable matrix format and ensure our understanding of one dimensional data to $2D$ matrix transformation.
@@ -488,7 +496,7 @@ Moving to the next phase of our journey, we step into the machinery of movement:
 
 ## The Element Wise Foundation
 
-We treat matrices as fluid containers. For the most basic operations - Addition, Subtraction, Multiplication (the **Hadamard Product**) and Division—we follow a strict rule: the matrices must be of identical shape. We don't just operate on numbers; we operate on neighborhoods.
+We treat matrices as dynamic containers. For the most basic operations - Addition, Subtraction, Multiplication (the **Hadamard Product**) and Division—we follow a strict rule: the matrices must be of identical shape. We don't just operate on numbers; we operate on neighborhoods.
 
 Mathematically, if $A$ and $B$ are both $m \times n$, then any operation $g$ on $A$ and $B$ is defined as:
 
@@ -970,6 +978,8 @@ $$
 \begin{bmatrix} \color{#2ECC71}1 & \color{#2ECC71}2 & \color{#2ECC71}3 \\\ \color{#D4A017}4 & \color{#D4A017}5 & \color{#D4A017}6 \end{bmatrix} \cdot \begin{bmatrix} \color{cyan}7 & \color{magenta}8 \\\ \color{cyan}9 & \color{magenta}10 \\\ \color{cyan}11 & \color{magenta}12 \end{bmatrix} = \begin{bmatrix} \color{#2ECC71}{[1, 2, 3]} \cdot \color{cyan}{[7, 9, 11]} & \color{#2ECC71}{[1, 2, 3]}\cdot \color{magenta}{[8, 10, 12]} \\\ \color{#D4A017}[4, 5, 6] \cdot \color{cyan}{[7, 9, 11]} & \color{#D4A017}[4, 5, 6] \cdot \color{magenta}{[8, 10, 12]} \\\ \end{bmatrix} = \begin{bmatrix} (\color{#2ECC71}{1} \times \color{cyan}{7} + \color{#2ECC71}{2} \times \color{cyan}{9} + \color{#2ECC71}{3} \times \color{cyan}{11}) & (\color{#2ECC71}{1} \times \color{magenta}{8} + \color{#2ECC71}{2} \times \color{magenta}{10} + \color{#2ECC71}{3} \times \color{magenta}{12}) \\\ (\color{#D4A017}{4} \times \color{cyan}{7} + \color{#D4A017}{5} \times \color{cyan}{9} + \color{#D4A017}{6} \times \color{cyan}{11}) & (\color{#D4A017}{4} \times \color{magenta}{8} + \color{#D4A017}{5} \times \color{magenta}{10} + \color{#D4A017}{6} \times \color{magenta}{12}) \end{bmatrix} = \begin{bmatrix} 58 & 64 \\\ 139 & 154 \end{bmatrix}
 $$
 
+If this feels slow, that’s normal. This is the hardest operation we’ll implement by hand.
+
 ### Implementation
 
 Matrix multiplication is the ultimate workhorse in any neural network library and arguably the most complex operation too. In a single step of neural network with the simplest network architecture we can count matrix multiplication is used three times, element wise functional operations are called three times, addition/subtraction once and transpose twice. Don't worry if you did not understand this claim yet. We'll soon dive into this counting. For now, just understand Matrix Multiplication is the most frequent operation in a training cycle.
@@ -1119,7 +1129,7 @@ To keep this chapter short, I have kept one cell calculation, the rest follows t
 
 ## Checkpoint
 
-1. By now, you should be explain the **Transpose** operation by flipping the matrix
+1. By now, you should be able to explain the **Transpose** operation by flipping the matrix
 2. You should be able to calculate row wise, column wise and global sum reduction
 3. You should be able to multiply two matrices of different dimensions like $2 \times 2$ vs. $2 \times 3$
 
@@ -1128,9 +1138,14 @@ With these operations successfully implemented and tested, we move on to build t
 <!-- Locked in, no more edits -->
 
 # Linear Regression
-Now that we have covered the mathematics, let's take a look at the simplest training process: **Linear Regression**. In this section, we will see how we train machines to identify the linear relationship between input $X$ and output $Y$. A machine learns the rules from data, thus the term "Machine Learning".
 
-The equation of a straight line expressed as:
+In this chapter, we build our first machine learning model.
+
+The static tensors introduced earlier now become _learnable parameters_, updated through mathematics rather than hard-coded rules. Every major concept introduced here—prediction, loss, gradients, and parameter updates—will be reused throughout the rest of this guide.
+
+In this chapter, we teach machines to learn a linear relationship between input $X$ and output $Y$ using **Linear Regression**. A machine learns the rules from data, hence the term "Machine Learning".
+
+The equation of a straight line is expressed as:
 
 $$
 y = mx+c
@@ -1152,14 +1167,15 @@ Let's visualize this on a 2 Dimensional Plane:
 
 ```
 
-Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can derive these two values, we can find the output of the equation given any unknown $x$ value.
+Here the slope($m$) is $2$ and the constant($c$) is $3$. If we either know these two values or can determine these two values, we can find the output of the equation given any unknown $x$ value.
 
-For example, if we want to know the value of $y$ when $x$ is $900$, we can easily derive at the output - $1803$.
+For example, if we want to know the value of $y$ when $x$ is $900$, we can easily arrive at the output - $1803$.
 
-The aim of linear regression is to derive these foundational values from data. If we can collect many data points in input/output pair we can try to find the $m$ and $c$ of the equation to predict any value of $x$, provided the given data set has an almost linear representation.
+The goal of linear regression is to estimate these parameters directly from data.
 
-We'll continue with the following minimal dataset, such that we can follow the calculations easily:
+Given enough input–output pairs that approximately follow a linear relationship, we can infer the values of $m$ and $c$ and use them to predict unseen inputs.
 
+We'll continue with the following minimal dataset to follow the calculations easily:
 
 ```plotly
 
@@ -1178,21 +1194,23 @@ We'll continue with the following minimal dataset, such that we can follow the c
     }
   ]
 }
-
 ```
 
 ## The Random Starting Point
+
 If you look at the dataset carefully, you will find that the data (blue dots) does not follow a perfect straight line but the green straight line is a quite close approximation to all those data points. We'll try to train our model to guess the straight line from the dataset.
 
-The model starts with random values for $m$ and $c$. Then it calculates the $y$ values for the input $x$. This is model's prediction. Model now verifies the prediction with the actual output $y$ value for the corresponding $x$ value.
+The model starts with random values for $m$ and $c$. 
 
-Let's start implementing this first part. We have five data points here in this small example (in real-world datasets, we often have millions of such datapoints and once  we pass through the basic understanding of linear regression, we'll also work with larger datasets).
+Using these values, it produces predictions $\hat{y}$, which are then compared against the actual outputs $y$.
+
+Let's start implementing this first part. We have five data points here in this small example (in real-world datasets, we often have millions of such data points and once  we pass through the basic understanding of linear regression, we'll also work with larger datasets).
 
 We can define a random variables `m` and `c` separately and can initialize those variables with random values. Then we run a `for` loop on each entry of $x$ values to derive $y = mx + c$. However, this approach is not flexible. If we have $z = mx + ny +c$, where we deal with two inputs $x$ and $y$, rather than only $x$, we now need to trace two variables and this goes out of hand very quickly.
 
 To solve this problem, we will use our `Tensor` implementation instead. With tensors, we can handle multiple inputs and outputs at once and we can easily switch between different length of inputs and outputs.
 
-In fact, right now, we will use a single tensor to track both the values of $m$ and $c$. We will use a shortcut known as **Bias Trick**:
+We combine both parameters into a single tensor using a standard shortcut known as the **bias trick**:
 
 $$
 W=\begin{bmatrix} m \\ c \end{bmatrix}
@@ -1210,8 +1228,7 @@ $$
 X \cdot W = \begin{bmatrix} x & 1\end{bmatrix} \cdot \begin{bmatrix} m \\ c \end{bmatrix} = x \cdot m + 1 \cdot c = mx + c
 $$
 
-
-Let's implement this. We need a random number generator first. As we are maintaining a no third-party policy, we'll write the maths ourselves. First we create a `trait` in `lib.rs`.
+To implement this, we need a random number generator first. As we are maintaining a no third-party policy, we'll write the maths ourselves. First we create a `trait` in `lib.rs`.
 
 ```rust
 pub trait Rng {
@@ -1240,7 +1257,7 @@ impl Rng for SimpleRng {
 
 > **WARNING**
 > 
-> In real life scenarios, we would rather use optmized and more flexible libraries like `rand`, `rand_distr` etc. and I endourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
+> In real life scenarios, we would rather use optimized and more flexible libraries like `rand`, `rand_distr` etc. and I encourage you to replace our `SimpleRng` implementation with these sophisticated libraries later.
 
 We'll now create a new module (`linear.rs`) in our project to implement the linear regression. It will be a `struct` to hold the weights. The `impl` block will have the initiation, accessor and prediction methods. We'll name our prediction method as `forward` and very soon we'll see why such a naming convention is used.
 
@@ -1320,7 +1337,7 @@ Output:
 
 ```
 
-The output gives us the predicted $y$ values or $\hat(y)$. Let's visualize the generated line at this point, along with the target we are trying to achieve and the actual data:
+The output gives us the predicted $y$ values or $(\hat{y})$. Let's visualize the randomly generated line at this point, along with the target we are trying to achieve and the actual data:
 
 ```plotly
 {
@@ -1350,10 +1367,11 @@ The output gives us the predicted $y$ values or $\hat(y)$. Let's visualize the g
 
 > **NOTE**
 > 
-> As the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
->A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fasctinating by nature. If you spare some time, I would encourage you to look further.
+> As the code uses a seed, it will always generate same result. This is how Pseudo Random Number Generators work. In most of our tasks, this will be sufficient. In a computer, which is a deterministic machine by its nature, it is very difficult to generate true random numbers and to generate true random numbers, we need hardware support.
+>A detailed discussion on this topic is beyond the scope of this guide but that topic is itself very fascinating by nature. If you spare some time, I would encourage you to look further.
 
 ## The Loss Function
+
 Looking at the plot above, our eyes immediately register that the generated line is 'wrong'. It’s too low, and the slope is too shallow. But a computer doesn't have eyes—it cannot see that the line is far away, the way we see it. We need a way to translate this visual distance into a single number that the computer can minimize. This is where Loss Functions come in. We need a 'scorecard' that tells the model exactly how much it is failing.
 
 The easiest way would be to measure the distance between our predicted values and the actual values as follows:
@@ -1390,6 +1408,8 @@ The easiest way would be to measure the distance between our predicted values an
 In this lucky guess, we somehow got every error on the positive side but for a large number of data, this may not be the case. So, if we sum the differences, the result may become negative. 
 
 To solve the problem, we can choose to use the absolute differences, which automatically makes everything positive. This is a loss function (a.k.a **L1 loss**) used in many applications. However, L1 loss is not the only choice. Another common option is **L2 Loss** and is preferred over L1 at times.
+
+In practice, we average the error to keep the loss scale independent of dataset size.
 
 Now let's quickly write the functions to calculate the loss. We'll write these two functions in a separate module `loss` and also create a separate tests module `test_loss.rs`.
 
@@ -1450,7 +1470,7 @@ mod tests {
 }
 ```
 
-We lack the implementation of few math functions in our tensor library.
+We lack the implementation of a few math functions in our tensor library.
 
 ```rust
     fn _element_wise_op_single<F>(&self, op: F) -> Result<Tensor, TensorError>
@@ -1532,18 +1552,25 @@ Let's also look at both the results. We'll add the following lines after the las
 
 ```
 
-We now have all the ingredients to make predictions and to measure how wrong those predictions are. Let’s pause for a moment and restate where we are:
+At this point, our system has three moving parts:
 
-- We have a model that produces predictions $\hat{y}$
-- We have actual values $y$
-- We have a loss function that converts the difference between $y$ and $\hat{y}$ into a single number
+- A function that makes predictions
 
-At this point, the computer can tell us how bad the prediction is, but it still has no idea how to improve it.
+- A function that measures error
+
+- Parameters that influence both
+
+What we’re missing is a systematic way to adjust those parameters.”
 
 This is where the optimizer comes in.
 
 ## Optimizer
-The loss value itself is not super useful. We just know that, the loss is high and we have to minimize the loss. Now, let's do a small experiment involving only these two parameters $m$ and $c$.
+
+The loss value itself is not super useful. We just know that, the loss is high and we have to minimize the loss. 
+
+### The Limits of Manual Tuning
+
+We do a small experiment involving only these two parameters $m$ and $c$.
 
 We start a methodical experiment and compute loss for each of the following steps:
 
@@ -1555,39 +1582,39 @@ We start a methodical experiment and compute loss for each of the following step
 ```rust
 let starting_weights = linear.weight().data().clone();
 
-    let mut decreased_m_weights = starting_weights.to_owned();
-    decreased_m_weights[0] -= 0.1;
+let mut decreased_m_weights = starting_weights.to_owned();
+decreased_m_weights[0] -= 0.1;
 
-    let decreased_m_tensor = Tensor::new(decreased_m_weights.to_vec(), vec![2, 1])?;
-    let decreased_m_output = input.matmul(&decreased_m_tensor)?;
-    let decreased_m_loss = mse_loss(&decreased_m_output, &actual)?;
-    println!("Decreased m Loss:");
-    println!("{}", decreased_m_loss);
+let decreased_m_tensor = Tensor::new(decreased_m_weights.to_vec(), vec![2, 1])?;
+let decreased_m_output = input.matmul(&decreased_m_tensor)?;
+let decreased_m_loss = mse_loss(&decreased_m_output, &actual)?;
+println!("Decreased m Loss:");
+println!("{}", decreased_m_loss);
 
-    let mut increased_m_weights = starting_weights.to_owned();
-    increased_m_weights[0] += 0.1;
-    let increased_m_tensor = Tensor::new(increased_m_weights.to_vec(), vec![2, 1])?;
-    let increased_m_output = input.matmul(&increased_m_tensor)?;
-    let increased_m_loss = mse_loss(&increased_m_output, &actual)?;
-    println!("Increased m Loss:");
-    println!("{}", increased_m_loss);
+let mut increased_m_weights = starting_weights.to_owned();
+increased_m_weights[0] += 0.1;
+let increased_m_tensor = Tensor::new(increased_m_weights.to_vec(), vec![2, 1])?;
+let increased_m_output = input.matmul(&increased_m_tensor)?;
+let increased_m_loss = mse_loss(&increased_m_output, &actual)?;
+println!("Increased m Loss:");
+println!("{}", increased_m_loss);
 
-    let mut increased_b_weights = starting_weights.to_owned();
-    increased_b_weights[1] += 0.1;
+let mut increased_b_weights = starting_weights.to_owned();
+increased_b_weights[1] += 0.1;
 
-    let increased_b_tensor = Tensor::new(increased_b_weights.to_vec(), vec![2, 1])?;
-    let increased_b_output = input.matmul(&increased_b_tensor)?;
-    let increased_b_loss = mse_loss(&increased_b_output, &actual)?;
-    println!("Increased c Loss:");
-    println!("{}", increased_b_loss);
+let increased_b_tensor = Tensor::new(increased_b_weights.to_vec(), vec![2, 1])?;
+let increased_b_output = input.matmul(&increased_b_tensor)?;
+let increased_b_loss = mse_loss(&increased_b_output, &actual)?;
+println!("Increased c Loss:");
+println!("{}", increased_b_loss);
 
-    let mut decreased_b_weights = starting_weights.to_owned();
-    decreased_b_weights[1] -= 0.1;  
-    let decreased_b_tensor = Tensor::new(decreased_b_weights.to_vec(), vec![2, 1])?;
-    let decreased_b_output = input.matmul(&decreased_b_tensor)?;
-    let decreased_b_loss = mse_loss(&decreased_b_output, &actual)?;
-    println!("Decreased c Loss:");
-    println!("{}", decreased_b_loss);
+let mut decreased_b_weights = starting_weights.to_owned();
+decreased_b_weights[1] -= 0.1;  
+let decreased_b_tensor = Tensor::new(decreased_b_weights.to_vec(), vec![2, 1])?;
+let decreased_b_output = input.matmul(&decreased_b_tensor)?;
+let decreased_b_loss = mse_loss(&decreased_b_output, &actual)?;
+println!("Decreased c Loss:");
+println!("{}", decreased_b_loss);
 ```
 
 Here is the output of 5 losses:
@@ -1610,7 +1637,7 @@ Decreased c Loss:
 
 ```
 
-By looking at the outpput of losses, we know that if we increase both $m$ and $c$, we decrease the loss and come closer to the data values.
+By looking at the output of losses, we know that if we increase both $m$ and $c$, we decrease the loss and come closer to the data values.
 
 Now, let's increase both $m$ and $c$ by a small margin(0.01) for 5 times, 50 times and  500 times and let's see what happens.
 
@@ -1643,7 +1670,9 @@ As we saw in our experiment, increasing the weights helped for a while, but even
 
 - **Efficiency:** We increased $m$ and $c$ by the same amount (0.01), but the data suggests that $m$ might need to move faster or slower than $c$ to reach the minimum loss efficiently.
 
-- **Scalability:** We are dealing here with just two parameters. That itself involved a lot of guess work and code changes. Imaging doing this even for 100 parameters. Now imagine, in a real dataset we have thousands, millions or even billion parameters. Performing the same task would be humanly impossible.
+- **Scalability:** We are dealing here with just two parameters. That itself involved a lot of guess work and code changes. Imagine doing this even for 100 parameters. Now imagine, in a real dataset we have thousands, millions or even billion parameters. Performing the same task would be practically impossible.
+
+### Gradient Descent: Calculus Guided Tuning
 
 Luckily, mathematics comes to rescue us here. For this example, we are using L2 or Mean Squared Error function to calculate the loss which squares the loss.
 
@@ -1739,7 +1768,7 @@ impl Linear {
 }
 ```
 
-And to satisy type safety, we add an empty method in our tensor implementation:
+And to satisfy type safety, we add an empty method in our tensor implementation:
 
 ```rust
 pub fn empty() -> Tensor { Tensor { data: vec![], shape: vec![] }}
@@ -1780,7 +1809,7 @@ fn main() -> Result<(), TensorError> {
 
     let mut linear = Linear::new(2, 1, &mut rng);
 
-    println!("Intial Weights:");
+    println!("Initial Weights:");
     println!("{}", linear.weight());
 
     let input = Tensor::new(vec![1.0, 1.0_f32, 2.0, 1.0_f32, 3.0, 1.0_f32, 4.0, 1.0_f32, 5.0, 1.0_f32], vec![5, 2])?;
@@ -1885,7 +1914,8 @@ Final Output
 
 
 ## Success: The Machine Learns
-After 5000 iterations, the transformation is undeniable. We started with a random guess and a high loss, but through the power of **Gradient Descent** and our `backward` method, the model "discovered" the underlying pattern in our data. We started with $m=2$ and $c=3$, added with some noise. Our model derived at it.
+
+After 5,000 iterations, the model converges to a low-error solution:
 
 ```text
 Final MSE Loss: 0.4463997
@@ -1918,8 +1948,8 @@ Now, let's verify our predicted line along with data:
 > 
 > If you want to visualize how the training process happens, I have made a visualizer to tinker around. Please visit [visualizer](/visualizers/linear-regression.html).
 
-
 # Matrix Multiplication Revisited
+
 #### The Optimized Implementation (IKJ)
 
 This loop order matters more than the math itself.

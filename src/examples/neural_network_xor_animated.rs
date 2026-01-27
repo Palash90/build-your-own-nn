@@ -82,7 +82,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: vec![],
                 color: PlotColor::Yellow,
                 is_line: false,
-                hide_axes:false
+                hide_axes: false,
             });
             traces.push(Trace {
                 name: "Predict 1".into(),
@@ -90,7 +90,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: cyan_y,
                 color: PlotColor::Cyan,
                 is_line: false,
-                hide_axes:false
+                hide_axes: false,
             });
             traces.push(Trace {
                 name: "Predict 0".into(),
@@ -98,7 +98,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: magenta_y,
                 color: PlotColor::Magenta,
                 is_line: false,
-                hide_axes:false
+                hide_axes: false,
             });
 
             let x_pts = [0.0, 0.0, 1.0, 1.0];
@@ -115,10 +115,9 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                     y: vec![y_pts[i]],
                     color,
                     is_line: false,
-                    hide_axes:false
+                    hide_axes: false,
                 });
             }
-
 
             let topology_traces = visualize_topology(l1.weight(), l2.weight());
 
@@ -134,6 +133,10 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                     epoch
                 ),
             );
+
+            let weight_display = format_weights_side_by_side(l1.weight(), l2.weight());
+            println!("{}", weight_display);
+
             thread::sleep(Duration::from_millis(10));
         }
     }
@@ -141,79 +144,142 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
     Ok(())
 }
 
-pub fn visualize_topology(
-    l1_weights: &Tensor, 
-    l2_weights: &Tensor
-) -> Vec<Trace> {
+pub fn visualize_topology(l1_weights: &Tensor, l2_weights: &Tensor) -> Vec<Trace> {
     let mut traces = Vec::new();
-    let layers = [3, 3, 1];
+    let layers = [3, 3, 1]; // Input (including bias), Hidden, Output
     let mut node_coords = Vec::new();
 
+    // 1. Calculate and store coordinates first
     for (l_idx, &count) in layers.iter().enumerate() {
         let mut layer_nodes = Vec::new();
         let x = l_idx as f32 / (layers.len() - 1) as f32;
         for i in 0..count {
-            let y = if count > 1 { i as f32 / (count - 1) as f32 } else { 0.5 };
-            layer_nodes.push((x, y));
-            
-            // Logic for input point colors
-            let color = if l_idx == 0 {
-                if i < 2 { PlotColor::Green } else { PlotColor::White } // Features vs Bias
-            } else if l_idx == 1 {
-                PlotColor::Yellow // Hidden Layer
+            let y = if count > 1 {
+                i as f32 / (count - 1) as f32
             } else {
-                PlotColor::Cyan // Output Layer
+                0.5
             };
-
-            let name = if l_idx == 0 && i < 2 { format!("Input {}", i) } 
-                       else if l_idx == 0 { "Bias".into() } 
-                       else { "".into() };
-
-            traces.push(Trace {
-                name,
-                x: vec![x],
-                y: vec![y],
-                color,
-                is_line: false,
-                hide_axes:true
-            });
+            layer_nodes.push((x, y));
         }
         node_coords.push(layer_nodes);
     }
 
+    // 2. DRAW WEIGHTS FIRST (so nodes appear on top)
     let get_weight_type = |w: f32| {
         let abs_w = w.abs();
-        if abs_w > 4.0 { "heavy" } else if abs_w > 1.5 { "medium" } else { "light" }
+        if abs_w > 4.0 {
+            "heavy"
+        } else if abs_w > 1.5 {
+            "medium"
+        } else {
+            "light"
+        }
     };
 
-    // L1 -> L2 Weights
     let w1 = l1_weights.data();
-    for i in 0..3 { 
-        for j in 0..3 { 
+    for i in 0..3 {
+        for j in 0..3 {
             let weight = w1[i * 3 + j];
             traces.push(Trace {
                 name: get_weight_type(weight).into(),
                 x: vec![node_coords[0][i].0, node_coords[1][j].0],
                 y: vec![node_coords[0][i].1, node_coords[1][j].1],
-                color: if weight > 0.0 { PlotColor::Cyan } else { PlotColor::Magenta },
+                color: if weight > 0.0 {
+                    PlotColor::Green
+                } else {
+                    PlotColor::Red
+                },
                 is_line: true,
-                hide_axes:true
+                hide_axes: true,
             });
         }
     }
 
-    // L2 -> Output Weights
     let w2 = l2_weights.data();
-    for i in 0..3 { 
+    for i in 0..3 {
         let weight = w2[i];
         traces.push(Trace {
             name: get_weight_type(weight).into(),
             x: vec![node_coords[1][i].0, node_coords[2][0].0],
             y: vec![node_coords[1][i].1, node_coords[2][0].1],
-            color: if weight > 0.0 { PlotColor::Cyan } else { PlotColor::Magenta },
+            color: if weight > 0.0 {
+                PlotColor::Cyan
+            } else {
+                PlotColor::Magenta
+            },
             is_line: true,
-            hide_axes:true
+            hide_axes: true,
         });
     }
+
+    // 3. DRAW NODES LAST
+    for (l_idx, layer) in node_coords.iter().enumerate() {
+        for (i, &(x, y)) in layer.iter().enumerate() {
+            let color = match l_idx {
+                0 => PlotColor::Magenta, // Input Nodes
+                1 => PlotColor::Blue,    // Hidden Nodes (Sigmoid)
+                _ => PlotColor::White,   // Output Node
+            };
+
+            traces.push(Trace {
+                name: format!("L{}I{}", l_idx, i),
+                x: vec![x],
+                y: vec![y],
+                color,
+                is_line: false,
+                hide_axes: true,
+            });
+        }
+    }
+
     traces
+}
+
+/// Formats two tensors (matrices) side-by-side as strings for the terminal
+pub fn format_weights_side_by_side(l1_weights: &Tensor, l2_weights: &Tensor) -> String {
+    let mut output = String::new();
+
+    // Get raw data and shapes
+    let w1 = l1_weights.data();
+    let s1 = l1_weights.shape(); // e.g., [3, 3]
+    let w2 = l2_weights.data();
+    let s2 = l2_weights.shape(); // e.g., [3, 1]
+
+    let max_rows = s1[0].max(s2[0]);
+
+    output.push_str("\n    L1 Weights (Input -> Hidden)         L2 Weights (Hidden -> Output)\n");
+    output.push_str("    ----------------------------         -----------------------------\n");
+
+    for r in 0..max_rows {
+        // Format L1 Row
+        let mut row_str = String::from("    ");
+        if r < s1[0] {
+            row_str.push_str("[ ");
+            for c in 0..s1[1] {
+                let val = w1[r * s1[1] + c];
+                row_str.push_str(&format!("{:>7.3} ", val));
+            }
+            row_str.push_str("]");
+        } else {
+            row_str.push_str(&" ".repeat(s1[1] * 8 + 3));
+        }
+
+        // Spacer between matrices
+        row_str.push_str("         ");
+
+        // Format L2 Row
+        if r < s2[0] {
+            row_str.push_str("[ ");
+            for c in 0..s2[1] {
+                let val = w2[r * s2[1] + c];
+                row_str.push_str(&format!("{:>7.3} ", val));
+            }
+            row_str.push_str("]");
+        }
+
+        output.push_str(&row_str);
+        output.push('\n');
+    }
+
+    output
 }

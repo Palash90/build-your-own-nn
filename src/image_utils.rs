@@ -281,7 +281,7 @@ pub fn render_dual_plots(
             ));
         }
     }
-    
+
     print!("{}", buffer);
     println!("\x1b[?25h");
 }

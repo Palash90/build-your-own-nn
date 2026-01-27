@@ -1,3 +1,5 @@
+![Cover Image](visualizers/dashboard.png)
+
 # Prologue — Opening the Black Box
 
 Modern machine learning tools have become remarkably easy to use and increasingly difficult to understand.

@@ -55,6 +55,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 y: y_train.clone(),
                 color: PlotColor::Blue,
                 is_line: false,
+                hide_axes: false
             };
 
             let trace_pred = Trace {
@@ -63,6 +64,7 @@ pub fn linear_regression(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 y: line_pred.data().to_vec(),
                 color: PlotColor::Red,
                 is_line: true,
+                hide_axes: false
             };
 
             render_plot(&[trace_actual, trace_pred], 100, 35, bounds, String::from("Linear Regression"));

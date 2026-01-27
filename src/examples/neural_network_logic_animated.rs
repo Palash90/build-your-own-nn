@@ -84,6 +84,7 @@ pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), Te
                 y: cyan_y,
                 color: PlotColor::Cyan,
                 is_line: false,
+                hide_axes: false
             });
 
             traces.push(Trace {
@@ -92,6 +93,7 @@ pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), Te
                 y: magenta_y,
                 color: PlotColor::Magenta,
                 is_line: false,
+                hide_axes: false
             });
 
             let mut x_line = Vec::new();
@@ -110,6 +112,7 @@ pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), Te
                 y: y_line,
                 color: PlotColor::Yellow,
                 is_line: true,
+                hide_axes: false
             });
 
             let x_coords = [5.0, 5.0, 15.0, 15.0];
@@ -128,6 +131,7 @@ pub fn demonstrate_logic(rng: &mut dyn Rng, gate: AnimatedGate) -> Result<(), Te
                     y: vec![y_coords[i]],
                     color: goal_color,
                     is_line: false,
+                    hide_axes: false
                 });
             }
 

@@ -1,7 +1,7 @@
 use crate::{
     Layer, Rng,
     activation::{Activation, ActivationType},
-    image_utils::{PlotColor, Trace, render_plot},
+    image_utils::{PlotColor, Trace, render_dual_plots, render_plot},
     linear::Linear,
     loss::bce_sigmoid_delta,
     tensor::{Tensor, TensorError},
@@ -82,6 +82,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: vec![],
                 color: PlotColor::Yellow,
                 is_line: false,
+                hide_axes:false
             });
             traces.push(Trace {
                 name: "Predict 1".into(),
@@ -89,6 +90,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: cyan_y,
                 color: PlotColor::Cyan,
                 is_line: false,
+                hide_axes:false
             });
             traces.push(Trace {
                 name: "Predict 0".into(),
@@ -96,6 +98,7 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                 y: magenta_y,
                 color: PlotColor::Magenta,
                 is_line: false,
+                hide_axes:false
             });
 
             let x_pts = [0.0, 0.0, 1.0, 1.0];
@@ -112,19 +115,105 @@ pub fn xor_neural_network(rng: &mut dyn Rng, xnor: bool) -> Result<(), TensorErr
                     y: vec![y_pts[i]],
                     color,
                     is_line: false,
+                    hide_axes:false
                 });
             }
 
-            render_plot(
+
+            let topology_traces = visualize_topology(l1.weight(), l2.weight());
+
+            render_dual_plots(
+                &topology_traces,
                 &traces,
                 70,
                 25,
                 bounds,
-                format!("{} Gate Approximation", if xnor { "XNOR" } else { "XOR" }),
+                format!(
+                    "{} Training - Epoch {}",
+                    if xnor { "XNOR" } else { "XOR" },
+                    epoch
+                ),
             );
             thread::sleep(Duration::from_millis(10));
         }
     }
 
     Ok(())
+}
+
+pub fn visualize_topology(
+    l1_weights: &Tensor, 
+    l2_weights: &Tensor
+) -> Vec<Trace> {
+    let mut traces = Vec::new();
+    let layers = [3, 3, 1];
+    let mut node_coords = Vec::new();
+
+    for (l_idx, &count) in layers.iter().enumerate() {
+        let mut layer_nodes = Vec::new();
+        let x = l_idx as f32 / (layers.len() - 1) as f32;
+        for i in 0..count {
+            let y = if count > 1 { i as f32 / (count - 1) as f32 } else { 0.5 };
+            layer_nodes.push((x, y));
+            
+            // Logic for input point colors
+            let color = if l_idx == 0 {
+                if i < 2 { PlotColor::Green } else { PlotColor::White } // Features vs Bias
+            } else if l_idx == 1 {
+                PlotColor::Yellow // Hidden Layer
+            } else {
+                PlotColor::Cyan // Output Layer
+            };
+
+            let name = if l_idx == 0 && i < 2 { format!("Input {}", i) } 
+                       else if l_idx == 0 { "Bias".into() } 
+                       else { "".into() };
+
+            traces.push(Trace {
+                name,
+                x: vec![x],
+                y: vec![y],
+                color,
+                is_line: false,
+                hide_axes:true
+            });
+        }
+        node_coords.push(layer_nodes);
+    }
+
+    let get_weight_type = |w: f32| {
+        let abs_w = w.abs();
+        if abs_w > 4.0 { "heavy" } else if abs_w > 1.5 { "medium" } else { "light" }
+    };
+
+    // L1 -> L2 Weights
+    let w1 = l1_weights.data();
+    for i in 0..3 { 
+        for j in 0..3 { 
+            let weight = w1[i * 3 + j];
+            traces.push(Trace {
+                name: get_weight_type(weight).into(),
+                x: vec![node_coords[0][i].0, node_coords[1][j].0],
+                y: vec![node_coords[0][i].1, node_coords[1][j].1],
+                color: if weight > 0.0 { PlotColor::Cyan } else { PlotColor::Magenta },
+                is_line: true,
+                hide_axes:true
+            });
+        }
+    }
+
+    // L2 -> Output Weights
+    let w2 = l2_weights.data();
+    for i in 0..3 { 
+        let weight = w2[i];
+        traces.push(Trace {
+            name: get_weight_type(weight).into(),
+            x: vec![node_coords[1][i].0, node_coords[2][0].0],
+            y: vec![node_coords[1][i].1, node_coords[2][0].1],
+            color: if weight > 0.0 { PlotColor::Cyan } else { PlotColor::Magenta },
+            is_line: true,
+            hide_axes:true
+        });
+    }
+    traces
 }

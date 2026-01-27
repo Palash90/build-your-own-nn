@@ -59,8 +59,8 @@ pub fn not_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
                 }
             }
 
-            traces.push(Trace { name: "Predict 1".into(), x: cyan_x, y: cyan_y, color: PlotColor::Cyan, is_line: false });
-            traces.push(Trace { name: "Predict 0".into(), x: magenta_x, y: magenta_y, color: PlotColor::Magenta, is_line: false });
+            traces.push(Trace { name: "Predict 1".into(), x: cyan_x, y: cyan_y, color: PlotColor::Cyan, is_line: false, hide_axes: false });
+            traces.push(Trace { name: "Predict 0".into(), x: magenta_x, y: magenta_y, color: PlotColor::Magenta, is_line: false, hide_axes: false });
 
             // Boundary Line: Since it's 1D, the boundary is a vertical line where w1*x + b = 0
             let boundary_x = -b / w1;
@@ -71,6 +71,7 @@ pub fn not_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
                     y: vec![0.0, 20.0],
                     color: PlotColor::Yellow,
                     is_line: true,
+                    hide_axes: false
                 });
             }
 
@@ -85,6 +86,7 @@ pub fn not_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
                     y: vec![10.0], // Center on Y axis
                     color,
                     is_line: false,
+                    hide_axes: false
                 });
             }
 

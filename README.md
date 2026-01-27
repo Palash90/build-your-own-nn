@@ -656,6 +656,22 @@ In the next chapter, we introduce the operations that enable this global view. W
 
 Previously, we treated matrices as containers, adding or multiplying elements in the same neighborhood. To build a neural network, we need operations that move data across different neighborhoods.
 
+**Chapter Goals**
+
+By the end of this section, you will have implemented:
+
+- _Spatial Reorientation (Transpose):_ Mastering the "Index Swap" logic to flip tensors between row-major and column-major perspectives.
+- _Information Compression (Reduction):_ Implementing axis-based summation (Axis 0 vs. Axis 1) to extract global or feature-specific totals.
+- _The Computational Workhorse (Dot Product):_ Developing a naive $O(n^3)$ matrix multiplication engine that handles vector-vector, matrix-vector, and matrix-matrix interactions.
+
+**Why This Matters for Machine Learning**
+
+In a typical neural network "forward pass," these operations are the primary actors:
+
+- Dot Products allow input features to interact with learned weights.
+- Transpositions are essential for aligning data during backpropagation.
+- Reductions are the foundation for calculating loss and cost functions.
+
 Below are the three operations we'll need for Machine Learning.
 
 ## Transpose
@@ -1126,6 +1142,15 @@ With these operations successfully implemented and tested, we can now express fu
 # Linear Regression
 
 The static tensors introduced earlier now become _learnable parameters_, updated through mathematics rather than hard-coded rules. Every major concept introduced here—prediction, loss, gradients, and parameter updates—will be reused throughout the rest of this guide.
+
+**Chapter Goals**
+
+By the end of this chpapter, you will have concrete idea and implementation of:
+
+- _Weight Initialization:_ A random strting point from where the machine starts learning
+- _Prediction:_ The process by which machine predicts the output
+- _Loss:_ The measurement of the difference betwee Prediction and the actual target
+- _Optimizer:_ The process by which machine learns from its mistake
 
 In this chapter, we teach machines to learn a linear relationship between input $X$ and output $Y$ using **Linear Regression**. A machine learns the rules from data, hence the term "Machine Learning".
 

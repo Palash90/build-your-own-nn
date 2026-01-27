@@ -1,5 +1,5 @@
-title: "A First-Principles Guide to Deep Learning in Rust."
-subtitle: "— A systems-level journey through tensor math"
+title: "Deep Learning from First Principles"
+subtitle: "— A systems-level journey through tensors and memory in Rust"
 markdown: kramdown
 highlighter: rouge
 github_repo: "build-your-own-nn"

@@ -3094,6 +3094,16 @@ pub fn xor_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
 ```
 We have now simplified the whole training process. With just a few lines of code, we can now train the network with data.
 
+## Two Moons Experiment
+
+To verify that the system can learn genuinely non-linear structure, we evaluate it on the **two moons** dataset. This dataset cannot be separated by a linear model and therefore serves as a useful diagnostic rather than a benchmark.
+
+With a small increase in network capacity, the model learns a curved decision boundary directly from the data:
+
+![two moons](visualizers/two_moons.png)
+
+The plotting and drawing machinery used to generate this visualization is intentionally kept separate from the learning system. Details of the visualization pipeline are described in [Appendix C](#appendix-c)
+
 ## Checkpoint
 
 That covers the fundamentals of **Deep Learning**. This is the foundation. From here, you can begin your journey with complex architectures like:
@@ -3653,3 +3663,18 @@ Final Result:
 ```
 
 Here you can see, why the mathematical derivation matches but with modern CPU tricks, we have minimized the execution time.
+
+# Appendix C — Visualization and Auxiliary Tools
+
+This appendix lists auxiliary tools used while developing the examples in this book.  
+These tools are not part of the learning engine itself and are included solely to aid inspection and debugging.
+
+Detailed explanations of each tool would significantly increase the length of the guide without contributing to the core learning objectives. Instead, links to focused, standalone articles are provided for readers who wish to explore the implementations in depth.
+
+1. **Terminal Plotting Tool**  
+   This tool is used to render simple plots directly in the terminal. It is implemented from scratch and has no external dependencies, making it useful for understanding terminal rendering at a low level.
+
+   For production-grade terminal UIs, the Rust ecosystem provides more capable libraries such as `ratatui`. However, for small diagnostic visualizations and educational purposes, this minimal approach is sufficient.
+
+   A detailed walkthrough of the implementation can be found here:  
+   [Writing a Very Simple Terminal Plotter in Rust](https://dev.to/palash90/visualizing-the-machinery-building-a-terminal-plotter-from-first-principles-jj5)

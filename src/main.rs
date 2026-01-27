@@ -3,13 +3,14 @@ use build_your_own_nn::examples::benchmark::run_benchmark;
 use build_your_own_nn::examples::image_reconstructor;
 use build_your_own_nn::examples::linear_regression;
 use build_your_own_nn::examples::linear_regression_animated;
-use build_your_own_nn::examples::neural_network_not_animated;
 use build_your_own_nn::examples::neural_network_logic;
 use build_your_own_nn::examples::neural_network_logic::Gate;
 use build_your_own_nn::examples::neural_network_logic_animated;
 use build_your_own_nn::examples::neural_network_logic_animated::AnimatedGate;
+use build_your_own_nn::examples::neural_network_not_animated;
 use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
+use build_your_own_nn::examples::two_moons;
 use build_your_own_nn::tensor::TensorError;
 use std::io::{self, Write};
 
@@ -52,6 +53,7 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
         "XOR Gate Approximation",
         "Animated XOR Decision Boundary",
         "Animated XNOR Decision Boundary",
+        "Run Two Moons Example",
         "Image Reconstructor",
         "Run Matrix Multiplication Benchmark",
         "Exit",
@@ -88,12 +90,15 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
             13 => neural_network_xor_animated::xor_neural_network(rng, false)?,
             14 => neural_network_xor_animated::xor_neural_network(rng, true)?,
 
-            15 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 150, rng) {
+            // Classic Two Moons Data
+            15 => two_moons::two_moons_neural_network(rng)?,
+
+            16 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 150, rng) {
                 Ok(_) => println!("Done"),
                 Err(err) => println!("Error: {:?}", err),
             },
-            16 => run_benchmark(),
-            17 | _ => {
+            17 => run_benchmark(),
+            18 | _ => {
                 println!("Goodbye!");
                 break;
             }

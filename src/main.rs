@@ -10,7 +10,9 @@ use build_your_own_nn::examples::neural_network_logic_animated::AnimatedGate;
 use build_your_own_nn::examples::neural_network_not_animated;
 use build_your_own_nn::examples::neural_network_xor;
 use build_your_own_nn::examples::neural_network_xor_animated;
+
 use build_your_own_nn::examples::two_moons;
+use build_your_own_nn::examples::two_moons_3layers;
 use build_your_own_nn::tensor::TensorError;
 use std::io::{self, Write};
 
@@ -54,6 +56,7 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
         "Animated XOR Decision Boundary",
         "Animated XNOR Decision Boundary",
         "Run Two Moons Example",
+        "Run Two Moons Example with 3 Layers",
         "Image Reconstructor",
         "Run Matrix Multiplication Benchmark",
         "Exit",
@@ -92,13 +95,14 @@ fn run_user_io(rng: &mut dyn Rng) -> Result<(), TensorError> {
 
             // Classic Two Moons Data
             15 => two_moons::two_moons_neural_network(rng)?,
+            16 => two_moons_3layers::two_moons_neural_network(rng)?,
 
-            16 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 150, rng) {
+            17 => match image_reconstructor::reconstruct_image("assets/spiral_25.pbm", 150, rng) {
                 Ok(_) => println!("Done"),
                 Err(err) => println!("Error: {:?}", err),
             },
-            17 => run_benchmark(),
-            18 | _ => {
+            18 => run_benchmark(),
+            19 | _ => {
                 println!("Goodbye!");
                 break;
             }

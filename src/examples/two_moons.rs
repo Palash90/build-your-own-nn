@@ -52,7 +52,7 @@ pub fn two_moons_neural_network(rng: &mut dyn Rng) -> Result<(), TensorError> {
     // Bounds adjusted for Two Moons coordinates
     let bounds = Some((-1.5, 2.5, -1.0, 1.5));
 
-    for epoch in 0..1_000_000 {
+    for epoch in 0..100_000 {
         // Forward & Backward pass
         let z1 = l1.forward(&input)?;
         let h1 = a1.forward(&z1)?;

@@ -925,6 +925,8 @@ pub fn sum(&self, axis: Option<usize>) -> Result<Tensor, TensorError> {
 
 **Dot Product** (a.k.a **Matrix Multiplication** or `matmul`) is the most critical operation for neural networks. Following our neighborhood analogy, this operation allows numbers to infer information across neighborhoods.
 
+If this math is familiar, feel free to skim to the Rust implementation. The code is where the real learning happens.
+
 We'll go slowly over the concepts and examples, if required please re-read this topic until you get a good grasp. I recommend, practicing a few examples by hand too.
 
 If this feels slow, that’s normal. This is the hardest operation we’ll implement by hand.
@@ -1145,9 +1147,9 @@ The static tensors introduced earlier now become _learnable parameters_, updated
 
 **Chapter Goals**
 
-By the end of this chpapter, you will have concrete idea and implementation of:
+By the end of this chapter, you will have concrete idea and implementation of:
 
-- _Weight Initialization:_ A random strting point from where the machine starts learning
+- _Weight Initialization:_ A random starting point from where the machine starts learning
 - _Prediction:_ The process by which machine predicts the output
 - _Loss:_ The measurement of the difference betwee Prediction and the actual target
 - _Optimizer:_ The process by which machine learns from its mistake

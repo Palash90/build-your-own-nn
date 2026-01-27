@@ -745,18 +745,8 @@ layout: default
 
 * TOC
 {:toc}
+<!-- -->
 
-<div class="sticky-author-container">
-    <a href="https://github.com/{{ site.github_username }}">
-    <div>
-        <img src="https://github.com/{{ site.github_username }}.png" alt="Author" class="sticky-author-image">
-        </div>
-        <div style="flex-grow: 1;">
-            <p class="sticky-author-name">{{ site.author_name }}</p>
-           
-        </div>
-    </a>
-</div>
 
 {% include_relative README.md %}
 
@@ -1035,3 +1025,16 @@ layout: default
         data-lang="en" crossorigin="anonymous" async>
         </script>
 </section>
+
+
+<div class="sticky-author-container">
+    <a href="https://github.com/{{ site.github_username }}">
+    <div>
+        <img src="https://github.com/{{ site.github_username }}.png" alt="Author" class="sticky-author-image">
+        </div>
+        <div style="flex-grow: 1;">
+            <p class="sticky-author-name">{{ site.author_name }}</p>
+           
+        </div>
+    </a>
+</div>

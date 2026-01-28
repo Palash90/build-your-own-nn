@@ -8,7 +8,7 @@ Most tutorials follow a similar path: introduce **NumPy**, then move to framewor
 
 These are powerful tools, providing abstraction over multiple memory accesses, index mapping, numeric computations and assumptions - none of which are visible to users. Models work; gradients flow; machines learn. Yet the machinery underneath fades into abstraction.
 
-This guide is an attempt to reverse that process. We build a minimal machine learning engine from first principles, exposing every step along the way.
+This guide is an attempt to reverse that process. We build a minimal machine learning engine from first principles, exposing every step along the way. This guide exists because backpropagation is not confusing due to calculus, but because gradient flow is invisible in most learning resources.
 
 Please note, we are not building a drop‑in replacement for PyTorch or ndarray.
 
@@ -1578,6 +1578,8 @@ What we’re missing is a systematic way to adjust those parameters.
 This is where the optimizer comes in.
 
 ## Optimizer
+
+Everything so far — tensors, shapes, transposes, matrix multiplication — exists for one reason: to make backpropagation (the **Optimizer**) mechanically understandable.
 
 The loss value itself is not super useful. We just know that, the loss is high and we have to minimize the loss. 
 
